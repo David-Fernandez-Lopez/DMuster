@@ -1,0 +1,49 @@
+# Development: docker compose up -> starts both services. Source code is mounted
+#   as a volume, changes are reflected immediately via hot-reload.
+#
+# Production:  docker build -t dmuster . (no target, defaults to runner).
+#   Minimal image (~200MB) with standalone server.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Bind-mount source so that Next.js hot-reload picks up every change.
+      - .:/app
+      # Anonymous volumes prevent the host mounts from overwriting the
+      # node_modules and .next directories installed inside the image.
+      - /app/node_modules
+      - /app/.next
+    environment:
+      DATABASE_URL: "mysql://${MYSQL_USER:-dmuster}:${MYSQL_PASSWORD:-dmuster_pass}@db:3306/${MYSQL_DATABASE:-dmuster}"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.4
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-dmuster_root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-dmuster}
+      MYSQL_USER: ${MYSQL_USER:-dmuster}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dmuster_pass}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-dmuster_root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

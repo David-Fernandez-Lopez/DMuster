@@ -1,0 +1,38 @@
+# Dependencies (installed inside the image)
+node_modules
+
+# Next.js build output (generated inside the image)
+.next
+out
+
+# Version control
+.git
+.gitignore
+
+# Environment files (secrets must never be baked into the image)
+.env
+.env*
+
+# Docker files (not needed inside the image)
+Dockerfile*
+docker-compose*
+
+# Local volumes
+mysql_data
+
+# IDE and local tooling
+.cursor
+.vscode
+.idea
+
+# Documentation
+README.md
+CLAUDE.md
+ROADMAP.md
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage
