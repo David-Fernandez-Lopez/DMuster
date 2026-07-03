@@ -45,6 +45,9 @@ COPY . .
 ENV NODE_ENV=production
 # Disable Next.js telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
+# The builder has no runtime secrets (DATABASE_URL, AUTH_SECRET, ...); skip
+# env validation here and let it run for real when the container starts.
+ENV SKIP_ENV_VALIDATION=1
 
 RUN npm run build
 
