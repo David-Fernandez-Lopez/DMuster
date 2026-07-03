@@ -21,6 +21,9 @@ services:
       - /app/.next
     environment:
       DATABASE_URL: "mysql://${MYSQL_USER:-dmuster}:${MYSQL_PASSWORD:-dmuster_pass}@db:3306/${MYSQL_DATABASE:-dmuster}"
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set in .env}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-es}
     depends_on:
       db:
         condition: service_healthy
