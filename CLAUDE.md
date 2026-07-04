@@ -20,11 +20,15 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 
 | Entity | Key fields |
 |---|---|
-| `User` | id, name, email, password (hashed), role, locale, timestamps |
+| `User` | id, name, email, password (hashed), locale, timestamps |
 | `Campaign` | id, name, description, createdById, timestamps |
-| `CampaignPlayer` | campaignId, userId *(M:N join table)* |
+| `CampaignPlayer` | campaignId, userId, role (DM/PLAYER) *(M:N join table)* |
 | `SessionDate` | id, date, createdById, timestamps |
 | `Availability` | id, sessionDateId, userId, status (YES/NO/MAYBE), timestamps |
+
+Role is **per campaign**, stored on `CampaignPlayer.role`: the same user can be DM in one
+campaign and player in another. `User` has no global role. `Campaign.createdById` records
+ownership (the creator, who becomes that campaign's DM).
 
 ### Viability logic
 
@@ -36,8 +40,10 @@ For a given date and campaign, filter only the players belonging to that campaig
 
 ## 4. Roles & Permissions
 
-- **DM**: creates campaigns, manages players, proposes session dates
-- **Player**: can only set their own availability
+- Roles are **per campaign** (`CampaignPlayer.role`), not global. Any authenticated user can
+  create a campaign and thereby becomes its **DM**.
+- **DM** (of a given campaign): manages that campaign's players and proposes session dates
+- **Player** (of a given campaign): can only set their own availability
 - A user may be DM of some campaigns and player in others
 - Data model is designed to support multi-group in the future
 

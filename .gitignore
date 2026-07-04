@@ -30,6 +30,9 @@ node_modules/
 *.tsbuildinfo
 next-env.d.ts
 
+# Prisma generated client (regenerated via `prisma generate`)
+/src/generated/
+
 # Logs
 *.log
 npm-debug.log*
