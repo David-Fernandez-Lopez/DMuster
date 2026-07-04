@@ -28,7 +28,8 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 
 Role is **per campaign**, stored on `CampaignPlayer.role`: the same user can be DM in one
 campaign and player in another. `User` has no global role. `Campaign.createdById` records
-ownership (the creator, who becomes that campaign's DM).
+the creator for audit purposes only; management rights come from holding the DM role in
+that campaign (see §4). A campaign may have **several DMs**.
 
 ### Viability logic
 
@@ -42,7 +43,9 @@ For a given date and campaign, filter only the players belonging to that campaig
 
 - Roles are **per campaign** (`CampaignPlayer.role`), not global. Any authenticated user can
   create a campaign and thereby becomes its **DM**.
-- **DM** (of a given campaign): manages that campaign's players and proposes session dates
+- **DM** (of a given campaign): manages the campaign itself (edit/delete), its players, and proposes session dates
+- A campaign can have **multiple DMs** (several `CampaignPlayer` rows with role `DM`); each of them has full management rights over that campaign
+- Campaign mutation permissions are checked against `CampaignPlayer.role = DM` **in that campaign**, never against `createdById` (audit only)
 - **Player** (of a given campaign): can only set their own availability
 - A user may be DM of some campaigns and player in others
 - Data model is designed to support multi-group in the future
@@ -117,6 +120,7 @@ prisma/         # Schema and migrations
 ### Commits
 Follow **Conventional Commits**: `feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `style:`, `test:`.
 Messages must be concise, imperative, and lowercase.
+Never do commits, theyu will always be done by the developer, only give the conventional commit.
 
 ### Error handling
 - Use `try/catch` with descriptive messages that identify the origin and cause
