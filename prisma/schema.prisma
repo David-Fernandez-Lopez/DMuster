@@ -1,0 +1,147 @@
+// DMuster Prisma schema.
+// Datasource URL is provided by prisma.config.ts (Prisma 7 config-driven setup).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum CampaignRole {
+  DM
+  PLAYER
+}
+
+enum Locale {
+  es
+  en
+}
+
+enum AvailabilityStatus {
+  YES
+  NO
+  MAYBE
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String
+  locale        Locale    @default(es)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts         Account[]
+  sessions         Session[]
+  createdCampaigns Campaign[]       @relation("CampaignCreatedBy")
+  campaigns        CampaignPlayer[]
+  createdDates     SessionDate[]    @relation("SessionDateCreatedBy")
+  availabilities   Availability[]
+
+  @@map("users")
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User             @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  players   CampaignPlayer[]
+
+  @@map("campaigns")
+}
+
+model CampaignPlayer {
+  campaignId String
+  userId     String
+  role       CampaignRole @default(PLAYER)
+  createdAt  DateTime     @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, userId])
+  @@map("campaign_players")
+}
+
+model SessionDate {
+  id          String   @id @default(cuid())
+  date        DateTime @unique @db.Date
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy      User           @relation("SessionDateCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  availabilities Availability[]
+
+  @@map("session_dates")
+}
+
+model Availability {
+  id            String             @id @default(cuid())
+  sessionDateId String
+  userId        String
+  status        AvailabilityStatus
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  sessionDate SessionDate @relation(fields: [sessionDateId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionDateId, userId])
+  @@map("availabilities")
+}
+
+// ─── Auth.js v5 adapter tables ───────────────────────────────────────────────
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?  @db.Text
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+  @@map("verification_tokens")
+}
