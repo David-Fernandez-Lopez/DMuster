@@ -1,5 +1,6 @@
 // Seeds the database with the reference group data from CLAUDE.md §7:
-// 9 users, 9 campaigns and their memberships (with per-campaign DM roles).
+// 9 users, 9 campaigns (with 2-letter tags and per-campaign DM roles), their
+// memberships, the extra weekday holidays, and the sample per-day availability.
 // Idempotent: running it multiple times produces no errors or duplicates.
 import "dotenv/config";
 
@@ -7,7 +8,11 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
-import { PrismaClient, CampaignRole } from "../src/generated/prisma/client";
+import {
+  PrismaClient,
+  CampaignRole,
+  AvailabilityStatus,
+} from "../src/generated/prisma/client";
 
 const EMAIL_DOMAIN = "dmuster.local";
 const BCRYPT_COST = 10;
@@ -28,6 +33,8 @@ type Nick = (typeof PLAYER_NICKS)[number];
 
 interface CampaignSeed {
   name: string;
+  /** Two-letter chip label shown in the calendar UI (e.g. "AC"). */
+  tag: string;
   /** Members holding the DM role in this campaign (a campaign may have several). */
   dms: Nick[];
   /** Recorded as `Campaign.createdById` (audit only — permissions come from the DM role). */
@@ -35,15 +42,15 @@ interface CampaignSeed {
 }
 
 const CAMPAIGNS: CampaignSeed[] = [
-  { name: "academia", dms: ["adri"], createdBy: "adri" },
-  { name: "orden", dms: ["salgado"], createdBy: "salgado" },
-  { name: "cyberPunk", dms: ["sergio"], createdBy: "sergio" },
-  { name: "poulard", dms: ["paola"], createdBy: "paola" },
-  { name: "fishing", dms: ["cgoob"], createdBy: "cgoob" },
-  { name: "starWars", dms: ["adri"], createdBy: "adri" },
-  { name: "chicasMagicas", dms: ["cgoob", "paola", "adri"], createdBy: "cgoob" },
-  { name: "vampiro", dms: ["sergio"], createdBy: "sergio" },
-  { name: "verkko", dms: ["david"], createdBy: "david" },
+  { name: "academia", tag: "AC", dms: ["adri"], createdBy: "adri" },
+  { name: "orden", tag: "OR", dms: ["salgado"], createdBy: "salgado" },
+  { name: "cyberPunk", tag: "CP", dms: ["sergio"], createdBy: "sergio" },
+  { name: "poulard", tag: "PO", dms: ["paola"], createdBy: "paola" },
+  { name: "fishing", tag: "FI", dms: ["cgoob"], createdBy: "cgoob" },
+  { name: "starWars", tag: "SW", dms: ["adri"], createdBy: "adri" },
+  { name: "chicasMagicas", tag: "CM", dms: ["cgoob", "paola", "adri"], createdBy: "cgoob" },
+  { name: "vampiro", tag: "VA", dms: ["sergio"], createdBy: "sergio" },
+  { name: "verkko", tag: "VE", dms: ["david"], createdBy: "david" },
 ];
 
 /** Campaign membership per player, exactly as listed in CLAUDE.md §7. */
@@ -57,6 +64,45 @@ const MEMBERSHIPS: Record<Nick, string[]> = {
   adri: ["academia", "orden", "cyberPunk", "poulard", "fishing", "starWars", "chicasMagicas", "vampiro", "verkko"],
   patri: ["academia", "orden", "cyberPunk", "poulard", "starWars", "chicasMagicas", "vampiro", "verkko"],
   ana: ["poulard", "vampiro"],
+};
+
+/**
+ * Weekday dates that are eligible for play in addition to weekends (which are
+ * always eligible and never stored). Managed at runtime via the Holiday table.
+ */
+const HOLIDAYS: string[] = ["2026-07-15", "2026-08-06"];
+
+/** Player used as the audit creator of the seeded holidays (audit-only). */
+const HOLIDAY_CREATED_BY: Nick = "david";
+
+/**
+ * Sample per-day availability, grouped by eligible day. Each player's response
+ * is global (applies to all their campaigns) and only ever "S" (yes) or "N"
+ * (no); a missing player on a date means "no response" and is derived as
+ * pending, never stored. Grouping by date makes duplicate (date, player) pairs
+ * impossible by construction. Ported from the design handoff seed (jul–aug 2026).
+ */
+const DAY_AVAILABILITY_SEED: Record<string, Partial<Record<Nick, "S" | "N">>> = {
+  "2026-07-04": { sergio: "S", salgado: "S", paola: "S", tucho: "S", david: "S", adri: "S", ana: "S" },
+  "2026-07-05": { cgoob: "N", sergio: "S", salgado: "S", tucho: "N", david: "S", adri: "S", ana: "S" },
+  "2026-07-11": { sergio: "S", salgado: "N", paola: "S", tucho: "S", david: "S", adri: "S", patri: "S", ana: "S" },
+  "2026-07-12": { cgoob: "S", sergio: "S", salgado: "S", paola: "S", david: "N", patri: "N" },
+  "2026-07-15": { cgoob: "S", sergio: "S", salgado: "S", paola: "N", tucho: "S", david: "N", patri: "S", ana: "S" },
+  "2026-07-18": { cgoob: "N", sergio: "S", salgado: "S", tucho: "S", david: "N", adri: "N", ana: "S" },
+  "2026-07-19": { sergio: "N", salgado: "N", paola: "N", tucho: "S", david: "S", adri: "S" },
+  "2026-07-25": { cgoob: "N", sergio: "S", salgado: "N", paola: "S", tucho: "S", david: "S", patri: "S", ana: "S" },
+  "2026-07-26": { sergio: "S", salgado: "S", paola: "N", tucho: "S", david: "S", adri: "N", patri: "S", ana: "S" },
+  "2026-08-01": { cgoob: "S", sergio: "S", salgado: "S", paola: "S", tucho: "S", david: "S", adri: "S", patri: "S", ana: "N" },
+  "2026-08-02": { cgoob: "S", sergio: "S", salgado: "S", paola: "N", tucho: "S", david: "S", adri: "S", patri: "S", ana: "S" },
+  "2026-08-06": { cgoob: "S", salgado: "S", tucho: "S", david: "S", adri: "S", patri: "S", ana: "N" },
+  "2026-08-08": { cgoob: "S", sergio: "S", salgado: "S", paola: "S", tucho: "S", david: "S", adri: "S", patri: "S", ana: "S" },
+  "2026-08-09": { cgoob: "S", sergio: "S", paola: "S", tucho: "S", david: "S", patri: "S" },
+  "2026-08-15": { cgoob: "N", sergio: "S", salgado: "S", paola: "S", tucho: "S", david: "S", adri: "S", ana: "N" },
+  "2026-08-16": { cgoob: "S", sergio: "S", salgado: "N", tucho: "S", david: "S", patri: "S", ana: "N" },
+  "2026-08-22": { cgoob: "S", sergio: "S", salgado: "S", paola: "S", david: "S", patri: "S", ana: "N" },
+  "2026-08-23": { cgoob: "S", sergio: "S", salgado: "S", tucho: "S", david: "S", adri: "S", patri: "S", ana: "S" },
+  "2026-08-29": { cgoob: "N", sergio: "S", salgado: "S", paola: "S", tucho: "S", david: "N", adri: "S", patri: "S", ana: "N" },
+  "2026-08-30": { cgoob: "S", sergio: "N", salgado: "S", paola: "N", david: "N", adri: "S", patri: "S", ana: "S" },
 };
 
 const seedEnvSchema = z.object({
@@ -89,11 +135,37 @@ function loadSeedEnv(): SeedEnv {
 }
 
 /**
- * Asserts that the static seed data is internally consistent: every DM and
- * every creator of a campaign must also appear in that campaign's membership
- * list. Guards against typos when the reference data is edited by hand.
+ * Parses a "YYYY-MM-DD" string into a Date pinned to UTC midnight, so values
+ * stored in `@db.Date` columns land on the intended calendar day regardless of
+ * the host timezone. The local `Date` constructor would shift the day (e.g. in
+ * Madrid summer time it would store the previous day).
  *
- * @throws {Error} If a campaign lists a DM or creator that is not a member.
+ * @param {string} dateStr - ISO calendar date, "YYYY-MM-DD".
+ * @returns {Date} The date at 00:00:00 UTC.
+ */
+function toUtcDate(dateStr: string): Date {
+  return new Date(`${dateStr}T00:00:00.000Z`);
+}
+
+/**
+ * Mirrors the app's day-eligibility rule to validate seed dates: a date is
+ * eligible when it is a Saturday, a Sunday, or listed in HOLIDAYS.
+ *
+ * @param {string} dateStr - ISO calendar date, "YYYY-MM-DD".
+ * @returns {boolean} True when the date is eligible for play.
+ */
+function isEligibleDate(dateStr: string): boolean {
+  const day = toUtcDate(dateStr).getUTCDay(); // 0 = Sunday, 6 = Saturday
+  return day === 0 || day === 6 || HOLIDAYS.includes(dateStr);
+}
+
+/**
+ * Asserts that the static seed data is internally consistent: every DM and
+ * every creator of a campaign must be a member of it, every availability
+ * response must reference a known player, and every availability date must be
+ * eligible. Guards against typos when the reference data is edited by hand.
+ *
+ * @throws {Error} If any consistency invariant is violated.
  */
 function assertSeedDataConsistency(): void {
   for (const campaign of CAMPAIGNS) {
@@ -101,6 +173,22 @@ function assertSeedDataConsistency(): void {
       if (!MEMBERSHIPS[nick].includes(campaign.name)) {
         throw new Error(
           `[SEED/DATA] "${nick}" is DM/creator of "${campaign.name}" but is not listed as a member`
+        );
+      }
+    }
+  }
+
+  const knownNicks = new Set<string>(PLAYER_NICKS);
+  for (const [dateStr, responses] of Object.entries(DAY_AVAILABILITY_SEED)) {
+    if (!isEligibleDate(dateStr)) {
+      throw new Error(
+        `[SEED/DATA] availability date "${dateStr}" is not eligible (not a weekend or holiday)`
+      );
+    }
+    for (const nick of Object.keys(responses)) {
+      if (!knownNicks.has(nick)) {
+        throw new Error(
+          `[SEED/DATA] availability on "${dateStr}" references unknown player "${nick}"`
         );
       }
     }
@@ -140,9 +228,10 @@ async function seedUsers(
 }
 
 /**
- * Ensures every reference campaign exists. `Campaign.name` is intentionally
- * not unique at the schema level (future multi-group support), so idempotency
- * is achieved with findFirst-by-name plus create instead of a native upsert.
+ * Ensures every reference campaign exists with its tag. `Campaign.name` is
+ * intentionally not unique at the schema level (future multi-group support),
+ * so idempotency is achieved with findFirst-by-name plus create instead of a
+ * native upsert. The tag is rewritten on re-runs so seed corrections propagate.
  *
  * @param {PrismaClient} prisma - Connected Prisma client.
  * @param {Map<Nick, string>} userIds - Map of nick to user id (for createdById).
@@ -155,18 +244,22 @@ async function seedCampaigns(
   const campaignIds = new Map<string, string>();
 
   for (const campaignSeed of CAMPAIGNS) {
-    let campaign = await prisma.campaign.findFirst({
+    const existing = await prisma.campaign.findFirst({
       where: { name: campaignSeed.name },
     });
 
-    if (!campaign) {
-      campaign = await prisma.campaign.create({
-        data: {
-          name: campaignSeed.name,
-          createdById: userIds.get(campaignSeed.createdBy)!,
-        },
-      });
-    }
+    const campaign = existing
+      ? await prisma.campaign.update({
+          where: { id: existing.id },
+          data: { tag: campaignSeed.tag },
+        })
+      : await prisma.campaign.create({
+          data: {
+            name: campaignSeed.name,
+            tag: campaignSeed.tag,
+            createdById: userIds.get(campaignSeed.createdBy)!,
+          },
+        });
 
     campaignIds.set(campaignSeed.name, campaign.id);
   }
@@ -210,6 +303,59 @@ async function seedMemberships(
 }
 
 /**
+ * Upserts the extra weekday holidays keyed by their unique date. Weekends are
+ * eligible automatically and are never stored here. The audit creator is a
+ * fixed reference player (audit-only, has no bearing on permissions).
+ *
+ * @param {PrismaClient} prisma - Connected Prisma client.
+ * @param {Map<Nick, string>} userIds - Map of nick to user id (for createdById).
+ */
+async function seedHolidays(
+  prisma: PrismaClient,
+  userIds: Map<Nick, string>
+): Promise<void> {
+  const createdById = userIds.get(HOLIDAY_CREATED_BY)!;
+
+  for (const dateStr of HOLIDAYS) {
+    const date = toUtcDate(dateStr);
+    await prisma.holiday.upsert({
+      where: { date },
+      update: {},
+      create: { date, createdById },
+    });
+  }
+}
+
+/**
+ * Upserts the sample availability responses keyed by the unique (date, user)
+ * pair, mapping "S" to YES and "N" to NO. Absent players on a date are left
+ * without a row (derived as pending), matching the storage model.
+ *
+ * @param {PrismaClient} prisma - Connected Prisma client.
+ * @param {Map<Nick, string>} userIds - Map of nick to user id.
+ */
+async function seedAvailability(
+  prisma: PrismaClient,
+  userIds: Map<Nick, string>
+): Promise<void> {
+  for (const [dateStr, responses] of Object.entries(DAY_AVAILABILITY_SEED)) {
+    const date = toUtcDate(dateStr);
+
+    for (const [nick, code] of Object.entries(responses)) {
+      const userId = userIds.get(nick as Nick)!;
+      const status =
+        code === "S" ? AvailabilityStatus.YES : AvailabilityStatus.NO;
+
+      await prisma.availability.upsert({
+        where: { date_userId: { date, userId } },
+        update: { status },
+        create: { date, userId, status },
+      });
+    }
+  }
+}
+
+/**
  * Builds the MariaDB driver adapter from the DATABASE_URL connection string.
  * Parsed into an explicit pool config because the MySQL 8 default auth plugin
  * (caching_sha2_password) requires `allowPublicKeyRetrieval` when connecting
@@ -234,7 +380,8 @@ function createAdapter(databaseUrl: string): PrismaMariaDb {
 
 /**
  * Seed entry point: validates the environment and static data, then seeds
- * users, campaigns and memberships, logging final row counts.
+ * users, campaigns, memberships, holidays and availability, logging final
+ * row counts.
  */
 async function main(): Promise<void> {
   const env = loadSeedEnv();
@@ -250,17 +397,23 @@ async function main(): Promise<void> {
     const userIds = await seedUsers(prisma, passwordHash);
     const campaignIds = await seedCampaigns(prisma, userIds);
     await seedMemberships(prisma, userIds, campaignIds);
+    await seedHolidays(prisma, userIds);
+    await seedAvailability(prisma, userIds);
 
-    const [users, campaigns, memberships, dmMemberships] = await Promise.all([
-      prisma.user.count(),
-      prisma.campaign.count(),
-      prisma.campaignPlayer.count(),
-      prisma.campaignPlayer.count({ where: { role: CampaignRole.DM } }),
-    ]);
+    const [users, campaigns, memberships, dmMemberships, holidays, availabilities] =
+      await Promise.all([
+        prisma.user.count(),
+        prisma.campaign.count(),
+        prisma.campaignPlayer.count(),
+        prisma.campaignPlayer.count({ where: { role: CampaignRole.DM } }),
+        prisma.holiday.count(),
+        prisma.availability.count(),
+      ]);
 
     console.log(
       `[SEED] Done: ${users} users, ${campaigns} campaigns, ` +
-        `${memberships} memberships (${dmMemberships} DM, ${memberships - dmMemberships} PLAYER).`
+        `${memberships} memberships (${dmMemberships} DM, ${memberships - dmMemberships} PLAYER), ` +
+        `${holidays} holidays, ${availabilities} availabilities.`
     );
   } finally {
     await prisma.$disconnect();

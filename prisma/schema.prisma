@@ -23,7 +23,6 @@ enum Locale {
 enum AvailabilityStatus {
   YES
   NO
-  MAYBE
 }
 
 model User {
@@ -41,7 +40,7 @@ model User {
   sessions         Session[]
   createdCampaigns Campaign[]       @relation("CampaignCreatedBy")
   campaigns        CampaignPlayer[]
-  createdDates     SessionDate[]    @relation("SessionDateCreatedBy")
+  createdHolidays  Holiday[]        @relation("HolidayCreatedBy")
   availabilities   Availability[]
 
   @@map("users")
@@ -50,6 +49,10 @@ model User {
 model Campaign {
   id          String   @id @default(cuid())
   name        String
+  // Two-letter chip label shown in the calendar UI (e.g. "AC", "OR").
+  // Not @unique on purpose: the model is designed for future multi-group
+  // support (CLAUDE.md §4), where tags are only unique within a group.
+  tag         String   @db.VarChar(2)
   description String?  @db.Text
   createdById String
   createdAt   DateTime @default(now())
@@ -74,31 +77,34 @@ model CampaignPlayer {
   @@map("campaign_players")
 }
 
-model SessionDate {
+// Weekday dates that are eligible for play in addition to weekends.
+// Weekends (Sat/Sun) are always eligible and are not stored here.
+model Holiday {
   id          String   @id @default(cuid())
   date        DateTime @unique @db.Date
   createdById String
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
-  createdBy      User           @relation("SessionDateCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  availabilities Availability[]
+  createdBy User @relation("HolidayCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
 
-  @@map("session_dates")
+  @@map("holidays")
 }
 
+// A player's global availability for a single calendar day. The response is
+// not scoped to a campaign: it applies to every campaign the player belongs
+// to. Only YES/NO is ever stored — the "MAYBE"/pending state is derived from
+// the absence of a row for a (date, user) pair, never persisted.
 model Availability {
-  id            String             @id @default(cuid())
-  sessionDateId String
-  userId        String
-  status        AvailabilityStatus
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id        String             @id @default(cuid())
+  date      DateTime           @db.Date
+  userId    String
+  status    AvailabilityStatus
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
 
-  sessionDate SessionDate @relation(fields: [sessionDateId], references: [id], onDelete: Cascade)
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([sessionDateId, userId])
+  @@unique([date, userId])
   @@map("availabilities")
 }
 

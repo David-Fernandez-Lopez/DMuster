@@ -21,32 +21,50 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 | Entity | Key fields |
 |---|---|
 | `User` | id, name, email, password (hashed), locale, timestamps |
-| `Campaign` | id, name, description, createdById, timestamps |
+| `Campaign` | id, name, tag (2-letter chip label), description, createdById, timestamps |
 | `CampaignPlayer` | campaignId, userId, role (DM/PLAYER) *(M:N join table)* |
-| `SessionDate` | id, date, createdById, timestamps |
-| `Availability` | id, sessionDateId, userId, status (YES/NO/MAYBE), timestamps |
+| `Holiday` | id, date (unique), createdById, createdAt |
+| `Availability` | id, date, userId, status (YES/NO), timestamps — unique per (date, user) |
 
 Role is **per campaign**, stored on `CampaignPlayer.role`: the same user can be DM in one
 campaign and player in another. `User` has no global role. `Campaign.createdById` records
 the creator for audit purposes only; management rights come from holding the DM role in
 that campaign (see §4). A campaign may have **several DMs**.
 
+### Availability model
+
+Nobody proposes specific session dates. Every **eligible day** is automatically respondable by
+every player, and a player's response is **global per day** — a single YES/NO that applies to
+**all** campaigns that player belongs to, not scoped to any campaign or proposed session.
+
+Only `YES`/`NO` is ever stored in `Availability`. The third state **T** (pending / "maybe") is
+**derived** from the *absence* of a response for a `(date, user)` pair — it is never persisted
+and is never an option the player taps.
+
+### Day eligibility
+
+A day is eligible (playable / respondable) if it is a **Saturday**, a **Sunday**, or its date
+is present in the `Holiday` table. Weekends are always eligible and are never stored; `Holiday`
+only holds the extra weekday dates.
+
 ### Viability logic
 
-For a given date and campaign, filter only the players belonging to that campaign, then apply in priority order:
+For a given eligible day and campaign, filter only the players belonging to that campaign, then
+apply in priority order:
 
 1. Any player responds **N** → result **N**
-2. Any player responds **T** or has not responded → result **T**
+2. Any player responds **T** (i.e. has no stored response) → result **T**
 3. All players respond **S** → result **S**
 
 ## 4. Roles & Permissions
 
 - Roles are **per campaign** (`CampaignPlayer.role`), not global. Any authenticated user can
   create a campaign and thereby becomes its **DM**.
-- **DM** (of a given campaign): manages the campaign itself (edit/delete), its players, and proposes session dates
+- **DM** (of a given campaign): manages the campaign itself (edit/delete) and its players. DMs do **not** propose dates
 - A campaign can have **multiple DMs** (several `CampaignPlayer` rows with role `DM`); each of them has full management rights over that campaign
 - Campaign mutation permissions are checked against `CampaignPlayer.role = DM` **in that campaign**, never against `createdById` (audit only)
 - **Player** (of a given campaign): can only set their own availability
+- **Holidays**: any user who is DM of **at least one** campaign may add/remove holidays (extra weekday-eligible dates). There is no global admin role; this reuses the existing DM signal
 - A user may be DM of some campaigns and player in others
 - Data model is designed to support multi-group in the future
 
@@ -55,7 +73,9 @@ For a given date and campaign, filter only the players belonging to that campaig
 - Visual style: minimalist with RPG/fantasy touches (medieval-style headings, thematic icons, clean layout)
 - **Mobile-first** responsive design (players respond primarily from mobile)
 - Main view: monthly calendar with color-coded viability indicators per campaign per day
-- Status colors: green (S — all confirmed), red (N — someone cannot), amber (T — pending/maybe)
+- Only **eligible days** (weekends + holidays) are interactive; non-eligible days are dimmed and non-interactive
+- Status colors: green (S — all confirmed), red (N — someone cannot), amber (T — pending/no response)
+- **Design reference**: the authoritative visual spec lives in `design/README.md` and `design/screenshots/` (local, gitignored — a Claude design handoff). Follow it for layout, tokens, and flows
 
 ## 6. Conventions
 
@@ -151,5 +171,17 @@ Current group data — use as seed and for tests.
 | patri | academia, orden, cyberPunk, poulard, starWars, chicasMagicas, vampiro, verkko |
 | ana | poulard, vampiro |
 
-**Campaigns** (9 total):
-`academia`, `orden`, `cyberPunk`, `poulard`, `fishing`, `starWars`, `chicasMagicas`, `vampiro`, `verkko`
+**Campaigns** (9 total) with their 2-letter `tag`:
+
+| Key | Tag |  | Key | Tag |
+|---|---|---|---|---|
+| `academia` | AC |  | `starWars` | SW |
+| `orden` | OR |  | `chicasMagicas` | CM |
+| `cyberPunk` | CP |  | `vampiro` | VA |
+| `poulard` | PO |  | `verkko` | VE |
+| `fishing` | FI |  | | |
+
+**Holidays** (extra weekday-eligible dates, seed): `2026-07-15`, `2026-08-06`.
+
+**Availability**: the seed includes ~152 sample per-day responses (YES/NO) across Jul–Aug 2026,
+on eligible days only. Absence of a response is "pending" (T) and is not stored.
