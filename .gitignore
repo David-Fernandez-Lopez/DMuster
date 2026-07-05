@@ -2,6 +2,9 @@
 CLAUDE.md
 ROADMAP.md
 
+# Design handoff (local reference, not versioned)
+/design/
+
 # Cursor IDE local config
 .cursor/
 
