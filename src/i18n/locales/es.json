@@ -1,0 +1,31 @@
+{
+  "common": {
+    "appName": "DMuster",
+    "tagline": "Gestor de disponibilidad para campañas de rol — próximamente.",
+    "loading": "Cargando…",
+    "save": "Guardar",
+    "cancel": "Cancelar"
+  },
+  "nav": {
+    "home": "Inicio",
+    "calendar": "Calendario",
+    "campaigns": "Campañas",
+    "profile": "Perfil",
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión"
+  },
+  "auth": {
+    "login": {
+      "title": "Iniciar sesión",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "submit": "Entrar",
+      "noAccount": "¿No tienes cuenta?",
+      "registerLink": "Regístrate",
+      "errors": {
+        "invalidCredentials": "Correo o contraseña incorrectos.",
+        "required": "Este campo es obligatorio."
+      }
+    }
+  }
+}

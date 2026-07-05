@@ -1,0 +1,31 @@
+{
+  "common": {
+    "appName": "DMuster",
+    "tagline": "RPG campaign availability manager — coming soon.",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "nav": {
+    "home": "Home",
+    "calendar": "Calendar",
+    "campaigns": "Campaigns",
+    "profile": "Profile",
+    "login": "Log in",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": {
+      "title": "Log in",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Sign up",
+      "errors": {
+        "invalidCredentials": "Incorrect email or password.",
+        "required": "This field is required."
+      }
+    }
+  }
+}
