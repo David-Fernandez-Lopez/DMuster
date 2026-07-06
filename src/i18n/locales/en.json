@@ -14,6 +14,9 @@
     "login": "Log in",
     "logout": "Log out"
   },
+  "home": {
+    "welcome": "Hi, {{name}}"
+  },
   "auth": {
     "login": {
       "title": "Log in",
@@ -26,6 +29,26 @@
         "invalidCredentials": "Incorrect email or password.",
         "required": "This field is required."
       }
+    },
+    "register": {
+      "title": "Create account",
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Repeat password",
+      "submit": "Sign up",
+      "haveAccount": "Already have an account?",
+      "loginLink": "Log in"
+    },
+    "errors": {
+      "required": "This field is required.",
+      "invalidEmail": "Enter a valid email address.",
+      "nameRequired": "Name is required.",
+      "nameTooLong": "Name is too long.",
+      "passwordTooShort": "Password must be at least 8 characters.",
+      "passwordMismatch": "Passwords do not match.",
+      "emailTaken": "An account with this email already exists.",
+      "unknown": "Something went wrong. Please try again."
     }
   }
 }

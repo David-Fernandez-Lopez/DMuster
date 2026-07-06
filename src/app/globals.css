@@ -1,1 +1,73 @@
 @import "tailwindcss";
+
+/*
+ * Design tokens ported from the design handoff (design/README.md §Design Tokens).
+ * Light theme: parchment/browns. Dark theme (prefers-color-scheme): greens.
+ * Status colors S/N/T are shared, with light/dark variants. A manual theme
+ * toggle arrives with the profile screen (step 11); for now the OS preference
+ * drives the dark palette.
+ */
+:root {
+  --color-bg: #f2ece0;
+  --color-bg-elevated: #f8f3ea;
+  --color-ink: #43382c;
+  --color-ink-muted: #7a6b58;
+  --color-border: #d8cbb8;
+  --color-brand: #7a4a2e;
+  --color-brand-soft: #e9dece;
+
+  --color-s: #3e9a63;
+  --color-s-soft: #cde9d5;
+  --color-n: #c24b3a;
+  --color-n-soft: #f1cfc7;
+  --color-t: #c79a3e;
+  --color-t-soft: #ede0be;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #12201a;
+    --color-bg-elevated: #1c2c24;
+    --color-ink: #dee6da;
+    --color-ink-muted: #94a594;
+    --color-border: #39493f;
+    --color-brand: #9cb878;
+    --color-brand-soft: #2c3e2f;
+
+    --color-s: #5fbe85;
+    --color-s-soft: #233b2c;
+    --color-n: #e0745e;
+    --color-n-soft: #3e241e;
+    --color-t: #dcb85a;
+    --color-t-soft: #3a3016;
+  }
+}
+
+/* Expose the tokens as Tailwind v4 theme utilities (bg-bg, text-ink, ...). */
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-bg-elevated: var(--color-bg-elevated);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-border: var(--color-border);
+  --color-brand: var(--color-brand);
+  --color-brand-soft: var(--color-brand-soft);
+  --color-s: var(--color-s);
+  --color-s-soft: var(--color-s-soft);
+  --color-n: var(--color-n);
+  --color-n-soft: var(--color-n-soft);
+  --color-t: var(--color-t);
+  --color-t-soft: var(--color-t-soft);
+
+  --font-display: var(--font-cinzel), serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 14px;
+  --radius-control: 8px;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}

@@ -1,8 +1,22 @@
 import type { Metadata } from "next";
+import { Cinzel, Manrope } from "next/font/google";
 import "./globals.css";
 
 import I18nProvider from "@/i18n/I18nProvider";
 import { getLocale } from "@/i18n/server";
+
+// Display font for headings and the brand (subtle medieval serif); body/UI font.
+const cinzel = Cinzel({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-cinzel",
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-manrope",
+});
 
 export const metadata: Metadata = {
   title: "DMuster",
@@ -25,7 +39,10 @@ export default async function RootLayout({
   const locale = await getLocale();
 
   return (
-    <html lang={locale} className="h-full">
+    <html
+      lang={locale}
+      className={`h-full ${cinzel.variable} ${manrope.variable}`}
+    >
       <body className="min-h-full flex flex-col antialiased">
         <I18nProvider locale={locale}>{children}</I18nProvider>
       </body>

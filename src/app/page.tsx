@@ -1,23 +1,38 @@
-import LocaleBadge from "@/components/LocaleBadge";
+import { redirect } from "next/navigation";
+
+import { logout } from "@/app/(auth)/actions";
 import { getServerTranslation } from "@/i18n/server";
+import { auth } from "@/lib/auth";
 
 /**
- * Home page — placeholder until the calendar view is implemented.
- * Renders translated keys on the server and a client badge to exercise
- * both sides of the i18n setup.
+ * Home page. Requires an authenticated session (the proxy already redirects
+ * anonymous users, but the session is verified here against the database).
+ * Shows a greeting and a logout control until the calendar view is built.
  *
  * @returns {Promise<JSX.Element>}
  */
 export default async function Home() {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
   const { t } = await getServerTranslation();
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center p-8">
-      <h1 className="text-4xl font-bold tracking-tight">
-        {t("common.appName")}
+    <main className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
+      <h1 className="font-display text-4xl font-bold tracking-tight text-ink">
+        {t("home.welcome", { name: session.user.name ?? "" })}
       </h1>
-      <p className="mt-4 text-lg text-gray-500">{t("common.tagline")}</p>
-      <LocaleBadge />
+      <p className="text-lg text-ink-muted">{t("common.tagline")}</p>
+      <form action={logout}>
+        <button
+          type="submit"
+          className="min-h-[44px] rounded-[var(--radius-control)] border border-border px-4 font-semibold text-ink transition-colors hover:bg-brand-soft"
+        >
+          {t("nav.logout")}
+        </button>
+      </form>
     </main>
   );
 }
