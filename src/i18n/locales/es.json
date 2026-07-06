@@ -18,6 +18,47 @@
   "home": {
     "welcome": "Hola, {{name}}"
   },
+  "campaigns": {
+    "title": "Mis campañas",
+    "new": "Nueva campaña",
+    "editTitle": "Editar campaña",
+    "empty": "Aún no tienes campañas.",
+    "emptyHint": "Crea tu primera campaña para empezar.",
+    "groups": {
+      "dm": "Como máster",
+      "player": "Como jugador",
+      "dmEmpty": "No diriges ninguna campaña todavía.",
+      "playerEmpty": "No juegas en ninguna campaña todavía."
+    },
+    "role": {
+      "DM": "Máster",
+      "PLAYER": "Jugador"
+    },
+    "form": {
+      "name": "Nombre",
+      "tag": "Etiqueta (2 letras)",
+      "description": "Descripción (opcional)",
+      "submitCreate": "Crear campaña",
+      "submitSave": "Guardar cambios"
+    },
+    "actions": {
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Eliminar esta campaña?",
+      "confirmYes": "Sí, eliminar"
+    },
+    "errors": {
+      "nameRequired": "El nombre es obligatorio.",
+      "nameTooLong": "El nombre es demasiado largo.",
+      "tagInvalid": "La etiqueta debe tener exactamente 2 letras o números.",
+      "descriptionTooLong": "La descripción es demasiado larga.",
+      "validation": "Revisa los campos del formulario.",
+      "unauthorized": "Debes iniciar sesión.",
+      "forbidden": "Solo un máster de esta campaña puede hacer esto.",
+      "notFound": "Campaña no encontrada.",
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo."
+    }
+  },
   "profile": {
     "title": "Perfil",
     "language": {

@@ -9,6 +9,12 @@ interface AuthFieldProps {
   label: string;
   autoComplete?: string;
   required?: boolean;
+  /** Pre-filled value for edit forms (uncontrolled input). */
+  defaultValue?: string;
+  /** Maximum number of characters the input accepts. */
+  maxLength?: number;
+  /** Extra classes appended to the input (e.g. `uppercase`). */
+  inputClassName?: string;
   /** i18n key of the field-level error, if any. */
   errorKey?: string;
 }
@@ -27,6 +33,9 @@ export default function AuthField({
   label,
   autoComplete,
   required,
+  defaultValue,
+  maxLength,
+  inputClassName,
   errorKey,
 }: AuthFieldProps) {
   const { t } = useTranslation();
@@ -42,8 +51,12 @@ export default function AuthField({
         type={type}
         autoComplete={autoComplete}
         required={required}
+        defaultValue={defaultValue}
+        maxLength={maxLength}
         aria-invalid={errorKey ? true : undefined}
-        className="min-h-[44px] rounded-[var(--radius-control)] border border-border bg-bg px-3 text-ink outline-none focus:border-brand"
+        className={`min-h-[44px] rounded-[var(--radius-control)] border border-border bg-bg px-3 text-ink outline-none focus:border-brand${
+          inputClassName ? ` ${inputClassName}` : ""
+        }`}
       />
       {errorKey ? (
         <p className="text-sm text-n" role="alert">

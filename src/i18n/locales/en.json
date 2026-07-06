@@ -18,6 +18,47 @@
   "home": {
     "welcome": "Hi, {{name}}"
   },
+  "campaigns": {
+    "title": "My campaigns",
+    "new": "New campaign",
+    "editTitle": "Edit campaign",
+    "empty": "You don't have any campaigns yet.",
+    "emptyHint": "Create your first campaign to get started.",
+    "groups": {
+      "dm": "As DM",
+      "player": "As player",
+      "dmEmpty": "You're not running any campaigns yet.",
+      "playerEmpty": "You're not playing in any campaign yet."
+    },
+    "role": {
+      "DM": "DM",
+      "PLAYER": "Player"
+    },
+    "form": {
+      "name": "Name",
+      "tag": "Tag (2 letters)",
+      "description": "Description (optional)",
+      "submitCreate": "Create campaign",
+      "submitSave": "Save changes"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Delete this campaign?",
+      "confirmYes": "Yes, delete"
+    },
+    "errors": {
+      "nameRequired": "Name is required.",
+      "nameTooLong": "Name is too long.",
+      "tagInvalid": "The tag must be exactly 2 letters or digits.",
+      "descriptionTooLong": "The description is too long.",
+      "validation": "Check the form fields.",
+      "unauthorized": "You must log in.",
+      "forbidden": "Only a DM of this campaign can do that.",
+      "notFound": "Campaign not found.",
+      "unknown": "Something went wrong. Please try again."
+    }
+  },
   "profile": {
     "title": "Profile",
     "language": {

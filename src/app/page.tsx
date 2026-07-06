@@ -28,6 +28,12 @@ export default async function Home() {
       <p className="text-lg text-ink-muted">{t("common.tagline")}</p>
       <div className="flex items-center gap-3">
         <Link
+          href="/campaigns"
+          className="flex min-h-[44px] items-center rounded-[var(--radius-control)] border border-border px-4 font-semibold text-ink transition-colors hover:bg-brand-soft"
+        >
+          {t("nav.campaigns")}
+        </Link>
+        <Link
           href="/profile"
           className="flex min-h-[44px] items-center rounded-[var(--radius-control)] border border-border px-4 font-semibold text-ink transition-colors hover:bg-brand-soft"
         >
