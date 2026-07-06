@@ -4,7 +4,8 @@
     "tagline": "RPG campaign availability manager — coming soon.",
     "loading": "Loading…",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "back": "Back"
   },
   "nav": {
     "home": "Home",
@@ -16,6 +17,23 @@
   },
   "home": {
     "welcome": "Hi, {{name}}"
+  },
+  "profile": {
+    "title": "Profile",
+    "language": {
+      "label": "Language",
+      "es": "ES",
+      "en": "EN"
+    },
+    "theme": {
+      "label": "Theme",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "errors": {
+      "invalidLocale": "Invalid language.",
+      "updateFailed": "Could not save the change. Please try again."
+    }
   },
   "auth": {
     "login": {

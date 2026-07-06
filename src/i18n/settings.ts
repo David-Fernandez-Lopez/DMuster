@@ -18,6 +18,9 @@ export const DEFAULT_NAMESPACE = "translation";
 /** Cookie holding the visitor's preferred locale. */
 export const LOCALE_COOKIE = "NEXT_LOCALE";
 
+/** Locale cookie lifetime, in seconds (one year). */
+export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
 /** Translation resources bundled statically (no fs/backend needed). */
 export const resources: Resource = {
   es: { [DEFAULT_NAMESPACE]: es },

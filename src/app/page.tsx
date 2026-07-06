@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { logout } from "@/app/(auth)/actions";
@@ -25,14 +26,22 @@ export default async function Home() {
         {t("home.welcome", { name: session.user.name ?? "" })}
       </h1>
       <p className="text-lg text-ink-muted">{t("common.tagline")}</p>
-      <form action={logout}>
-        <button
-          type="submit"
-          className="min-h-[44px] rounded-[var(--radius-control)] border border-border px-4 font-semibold text-ink transition-colors hover:bg-brand-soft"
+      <div className="flex items-center gap-3">
+        <Link
+          href="/profile"
+          className="flex min-h-[44px] items-center rounded-[var(--radius-control)] border border-border px-4 font-semibold text-ink transition-colors hover:bg-brand-soft"
         >
-          {t("nav.logout")}
-        </button>
-      </form>
+          {t("nav.profile")}
+        </Link>
+        <form action={logout}>
+          <button
+            type="submit"
+            className="min-h-[44px] rounded-[var(--radius-control)] border border-border px-4 font-semibold text-ink transition-colors hover:bg-brand-soft"
+          >
+            {t("nav.logout")}
+          </button>
+        </form>
+      </div>
     </main>
   );
 }

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { cache } from "react";
 import { initReactI18next } from "react-i18next/initReactI18next";
 
+import { auth } from "@/lib/auth";
 import { env } from "@/lib/env";
 
 import {
@@ -14,14 +15,24 @@ import {
 
 /**
  * Resolves the locale for the current request. Resolution order:
- * user profile → cookie → default (`env.DEFAULT_LOCALE`).
- * Wrapped in React `cache` so it runs once per request.
+ * authenticated user's profile (`User.locale`) → cookie → default
+ * (`env.DEFAULT_LOCALE`). Reading the profile first is what makes a saved
+ * language survive logout/login, outranking a stale cookie.
+ *
+ * Wrapped in React `cache` so it runs once per request. Server actions must not
+ * call this (nor `getServerTranslation`) — they return raw i18n keys instead —
+ * so the memoized value can never go stale within an action→re-render request.
  *
  * @returns {Promise<AppLocale>} Locale to render the request with.
  */
 export const getLocale = cache(async (): Promise<AppLocale> => {
-  // TODO(step 11): prefer the authenticated user's profile locale (User.locale)
-  // before falling back to the cookie, once auth (step 10) is in place.
+  // Authenticated users: their persisted preference wins over any cookie.
+  const session = await auth();
+  if (isAppLocale(session?.user?.locale)) {
+    return session.user.locale;
+  }
+
+  // Anonymous visitors (login/register) fall back to the cookie, then default.
   const cookieStore = await cookies();
   const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
 

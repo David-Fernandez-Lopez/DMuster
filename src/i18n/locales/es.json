@@ -4,7 +4,8 @@
     "tagline": "Gestor de disponibilidad para campañas de rol — próximamente.",
     "loading": "Cargando…",
     "save": "Guardar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "back": "Volver"
   },
   "nav": {
     "home": "Inicio",
@@ -16,6 +17,23 @@
   },
   "home": {
     "welcome": "Hola, {{name}}"
+  },
+  "profile": {
+    "title": "Perfil",
+    "language": {
+      "label": "Idioma",
+      "es": "ES",
+      "en": "EN"
+    },
+    "theme": {
+      "label": "Tema",
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
+    "errors": {
+      "invalidLocale": "Idioma no válido.",
+      "updateFailed": "No se ha podido guardar el cambio. Inténtalo de nuevo."
+    }
   },
   "auth": {
     "login": {

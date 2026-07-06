@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 
 import { Prisma } from "@/generated/prisma/client";
 import { getLocale } from "@/i18n/server";
+import type { AppLocale } from "@/i18n/settings";
 import { prisma } from "@/lib/prisma";
 import type { RegisterInput } from "@/lib/validation/auth";
 
@@ -54,5 +55,35 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
 
     console.error("[AUTH/REGISTER] Failed to create user:", error);
     return { ok: false, error: "auth.errors.unknown" };
+  }
+}
+
+/** Result of a locale update. `error` holds an i18n key on failure. */
+export type UpdateLocaleResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Persists a user's preferred locale to their profile. Failures are logged
+ * server-side and returned as a friendly i18n error key rather than thrown.
+ *
+ * @param {string} userId - Id of the user whose locale is being updated.
+ * @param {AppLocale} locale - New locale to persist.
+ * @returns {Promise<UpdateLocaleResult>} Success, or an error key
+ *   (`profile.errors.updateFailed`).
+ */
+export async function updateUserLocale(
+  userId: string,
+  locale: AppLocale,
+): Promise<UpdateLocaleResult> {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { locale },
+      select: { id: true },
+    });
+
+    return { ok: true };
+  } catch (error) {
+    console.error("[PROFILE/UPDATE_LOCALE] Failed to update user locale:", error);
+    return { ok: false, error: "profile.errors.updateFailed" };
   }
 }

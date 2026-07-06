@@ -2,45 +2,40 @@
 
 /*
  * Design tokens ported from the design handoff (design/README.md §Design Tokens).
- * Light theme: parchment/browns. Dark theme (prefers-color-scheme): greens.
- * Status colors S/N/T are shared, with light/dark variants. A manual theme
- * toggle arrives with the profile screen (step 11); for now the OS preference
- * drives the dark palette.
+ * Light theme: parchment/browns. Dark theme: greens. Status colors S/N/T are
+ * shared, with light/dark variants. Each token uses `light-dark()` so a single
+ * definition covers both palettes; `color-scheme` selects which side applies.
+ *
+ * Theme selection (step 11): without a manual override `color-scheme: light dark`
+ * follows the OS preference. The profile screen sets a `theme` cookie which the
+ * root layout stamps as `data-theme` on <html>, forcing one side and preventing
+ * a flash on SSR.
  */
 :root {
-  --color-bg: #f2ece0;
-  --color-bg-elevated: #f8f3ea;
-  --color-ink: #43382c;
-  --color-ink-muted: #7a6b58;
-  --color-border: #d8cbb8;
-  --color-brand: #7a4a2e;
-  --color-brand-soft: #e9dece;
+  color-scheme: light dark;
 
-  --color-s: #3e9a63;
-  --color-s-soft: #cde9d5;
-  --color-n: #c24b3a;
-  --color-n-soft: #f1cfc7;
-  --color-t: #c79a3e;
-  --color-t-soft: #ede0be;
+  --color-bg: light-dark(#f2ece0, #12201a);
+  --color-bg-elevated: light-dark(#f8f3ea, #1c2c24);
+  --color-ink: light-dark(#43382c, #dee6da);
+  --color-ink-muted: light-dark(#7a6b58, #94a594);
+  --color-border: light-dark(#d8cbb8, #39493f);
+  --color-brand: light-dark(#7a4a2e, #9cb878);
+  --color-brand-soft: light-dark(#e9dece, #2c3e2f);
+
+  --color-s: light-dark(#3e9a63, #5fbe85);
+  --color-s-soft: light-dark(#cde9d5, #233b2c);
+  --color-n: light-dark(#c24b3a, #e0745e);
+  --color-n-soft: light-dark(#f1cfc7, #3e241e);
+  --color-t: light-dark(#c79a3e, #dcb85a);
+  --color-t-soft: light-dark(#ede0be, #3a3016);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-bg: #12201a;
-    --color-bg-elevated: #1c2c24;
-    --color-ink: #dee6da;
-    --color-ink-muted: #94a594;
-    --color-border: #39493f;
-    --color-brand: #9cb878;
-    --color-brand-soft: #2c3e2f;
+:root[data-theme="light"] {
+  color-scheme: light;
+}
 
-    --color-s: #5fbe85;
-    --color-s-soft: #233b2c;
-    --color-n: #e0745e;
-    --color-n-soft: #3e241e;
-    --color-t: #dcb85a;
-    --color-t-soft: #3a3016;
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 /* Expose the tokens as Tailwind v4 theme utilities (bg-bg, text-ink, ...). */
