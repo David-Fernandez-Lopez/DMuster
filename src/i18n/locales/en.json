@@ -42,10 +42,24 @@
       "submitSave": "Save changes"
     },
     "actions": {
+      "players": "Players",
       "edit": "Edit",
       "delete": "Delete",
       "confirmDelete": "Delete this campaign?",
       "confirmYes": "Yes, delete"
+    },
+    "players": {
+      "title": "Players",
+      "add": "Add player",
+      "remove": "Remove",
+      "noneToAdd": "There are no more registered users to add.",
+      "errors": {
+        "validation": "Select a valid user.",
+        "alreadyMember": "This user is already in this campaign.",
+        "userNotFound": "User not found.",
+        "notMember": "This user is not in this campaign.",
+        "lastDm": "You can't remove the last DM of the campaign."
+      }
     },
     "errors": {
       "nameRequired": "Name is required.",

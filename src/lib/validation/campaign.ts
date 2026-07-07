@@ -41,6 +41,20 @@ export const campaignSchema = z.object({
 export type CampaignInput = z.infer<typeof campaignSchema>;
 
 /**
+ * Payload for adding/removing a member of a campaign. Both the `POST` and
+ * `DELETE` handlers on `/api/campaigns/[id]/players` carry the target user in
+ * the JSON body, so the same schema validates both.
+ */
+export const campaignPlayerSchema = z.object({
+  userId: z
+    .string()
+    .trim()
+    .min(1, { error: "campaigns.players.errors.validation" }),
+});
+
+export type CampaignPlayerInput = z.infer<typeof campaignPlayerSchema>;
+
+/**
  * State shared by the campaign form (client) to surface validation results.
  * `error` is a top-level i18n key; `fieldErrors` maps a field name to an i18n
  * key. Both are translated on the client — never user-facing text.

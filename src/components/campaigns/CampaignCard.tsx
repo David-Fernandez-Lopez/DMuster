@@ -45,7 +45,13 @@ export default function CampaignCard({ campaign, t }: CampaignCardProps) {
       ) : null}
 
       {isDm ? (
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Link
+            href={`/campaigns/${campaign.id}/players`}
+            className="flex min-h-[44px] items-center rounded-[var(--radius-control)] border border-border px-3 text-sm font-semibold text-ink transition-colors hover:bg-brand-soft"
+          >
+            {t("campaigns.actions.players")}
+          </Link>
           <Link
             href={`/campaigns/${campaign.id}/edit`}
             className="flex min-h-[44px] items-center rounded-[var(--radius-control)] border border-border px-3 text-sm font-semibold text-ink transition-colors hover:bg-brand-soft"
