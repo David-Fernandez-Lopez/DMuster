@@ -1,7 +1,6 @@
 {
   "common": {
     "appName": "DMuster",
-    "tagline": "Gestor de disponibilidad para campañas de rol — próximamente.",
     "loading": "Cargando…",
     "save": "Guardar",
     "cancel": "Cancelar",
@@ -10,13 +9,24 @@
   "nav": {
     "home": "Inicio",
     "calendar": "Calendario",
+    "availability": "Mi disponibilidad",
     "campaigns": "Campañas",
     "profile": "Perfil",
     "login": "Iniciar sesión",
     "logout": "Cerrar sesión"
   },
-  "home": {
-    "welcome": "Hola, {{name}}"
+  "calendar": {
+    "title": "Calendario de sesiones",
+    "help": "Toca un día para ver el detalle.",
+    "prevMonth": "Mes anterior",
+    "nextMonth": "Mes siguiente",
+    "today": "Hoy",
+    "legend": {
+      "note": "Solo fines de semana y festivos",
+      "yes": "Sí",
+      "no": "No",
+      "maybe": "Tal vez"
+    }
   },
   "campaigns": {
     "title": "Mis campañas",

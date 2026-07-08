@@ -64,14 +64,7 @@ export default async function CampaignsPage() {
 
   return (
     <main className="mx-auto w-full max-w-[480px] flex-1 px-6 py-8 md:max-w-4xl">
-      <Link
-        href="/"
-        className="text-sm font-semibold text-brand hover:underline"
-      >
-        ← {t("common.back")}
-      </Link>
-
-      <div className="mt-4 flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <h1 className="font-display text-3xl font-semibold text-ink">
           {t("campaigns.title")}
         </h1>

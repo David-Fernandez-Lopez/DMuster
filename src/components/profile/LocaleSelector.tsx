@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { updateLocale } from "@/app/profile/actions";
+import { updateLocale } from "@/app/(app)/profile/actions";
 import { LOCALES } from "@/i18n/settings";
 import type { ProfileActionState } from "@/lib/validation/profile";
 

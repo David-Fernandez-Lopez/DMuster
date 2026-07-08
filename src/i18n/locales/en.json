@@ -1,7 +1,6 @@
 {
   "common": {
     "appName": "DMuster",
-    "tagline": "RPG campaign availability manager — coming soon.",
     "loading": "Loading…",
     "save": "Save",
     "cancel": "Cancel",
@@ -10,13 +9,24 @@
   "nav": {
     "home": "Home",
     "calendar": "Calendar",
+    "availability": "My availability",
     "campaigns": "Campaigns",
     "profile": "Profile",
     "login": "Log in",
     "logout": "Log out"
   },
-  "home": {
-    "welcome": "Hi, {{name}}"
+  "calendar": {
+    "title": "Session calendar",
+    "help": "Tap a day to see its details.",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "legend": {
+      "note": "Weekends and holidays only",
+      "yes": "Yes",
+      "no": "No",
+      "maybe": "Maybe"
+    }
   },
   "campaigns": {
     "title": "My campaigns",

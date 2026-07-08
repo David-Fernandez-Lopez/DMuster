@@ -18,8 +18,8 @@ import { listHolidays } from "@/lib/holidayService";
  * Lists the extra weekday holidays (weekends are eligible automatically and are
  * never listed) with a long localized date and a remove control, plus a form to
  * add a new one. Reads go straight through the service layer; mutations go
- * through the API. The temporary entry point lives on the campaigns list until
- * the shared nav lands (roadmap #15).
+ * through the API. Reached from the "Gestionar festivos" link in the calendar
+ * header (shown only to DMs).
  *
  * @returns {Promise<JSX.Element>}
  */
@@ -49,7 +49,7 @@ export default async function HolidaysPage() {
   return (
     <main className="mx-auto w-full max-w-[480px] flex-1 px-6 py-8">
       <Link
-        href="/campaigns"
+        href="/"
         className="text-sm font-semibold text-brand hover:underline"
       >
         ← {t("common.back")}

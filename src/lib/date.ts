@@ -85,3 +85,71 @@ export function isEligible(iso: string, holidays: Set<string>): boolean {
 export function todayIso(): string {
   return toIsoDate(new Date());
 }
+
+/** Matches a strict "YYYY-MM" month with a month component in 01–12. */
+const ISO_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/**
+ * Reports whether a string is a well-formed "YYYY-MM" month (month 01–12).
+ * Used to validate the calendar's `?month=` search param before rendering.
+ *
+ * @param {string} month - Candidate month, "YYYY-MM".
+ * @returns {boolean} True when `month` is a valid year-month.
+ */
+export function isValidIsoMonth(month: string): boolean {
+  return ISO_MONTH_PATTERN.test(month);
+}
+
+/**
+ * Shifts a "YYYY-MM" month by a whole number of months, forward or backward,
+ * carrying across year boundaries. Example: `addMonths("2026-01", -1)` →
+ * "2025-12". Pure integer math on the year/month components.
+ *
+ * @param {string} month - A valid "YYYY-MM" month.
+ * @param {number} delta - Number of months to add (may be negative).
+ * @returns {string} The resulting month, "YYYY-MM" (zero-padded).
+ */
+export function addMonths(month: string, delta: number): string {
+  const year = Number(month.slice(0, 4));
+  const monthIndex = Number(month.slice(5, 7)) - 1; // 0-based
+  const total = year * 12 + monthIndex + delta;
+  const newYear = Math.floor(total / 12);
+  const newMonth = total - newYear * 12 + 1; // back to 1-based
+  return `${String(newYear).padStart(4, "0")}-${String(newMonth).padStart(2, "0")}`;
+}
+
+/**
+ * Builds the Monday-first calendar grid for a "YYYY-MM" month: every day, as a
+ * "YYYY-MM-DD" string, from the Monday on or before the 1st through the Sunday
+ * on or after the last day of the month. The result is a whole number of weeks
+ * (28, 35 or 42 days) so it tiles a 7-column grid exactly. All math is done in
+ * UTC to stay timezone-stable, matching the rest of this module.
+ *
+ * @param {string} month - A valid "YYYY-MM" month.
+ * @returns {string[]} Ordered calendar days covering the month's grid.
+ */
+export function monthGridDays(month: string): string[] {
+  const year = Number(month.slice(0, 4));
+  const monthIndex = Number(month.slice(5, 7)) - 1; // 0-based
+
+  // Monday on or before the 1st: getUTCDay() is 0 (Sun)..6 (Sat); (day + 6) % 7
+  // maps Monday→0, so subtracting it lands on the grid's first Monday.
+  const first = new Date(Date.UTC(year, monthIndex, 1));
+  const startOffset = (first.getUTCDay() + 6) % 7;
+  const start = new Date(Date.UTC(year, monthIndex, 1 - startOffset));
+
+  // Sunday on or after the last day: last day of the month is day 0 of the next.
+  const last = new Date(Date.UTC(year, monthIndex + 1, 0));
+  const endOffset = (7 - last.getUTCDay()) % 7; // days to reach the next Sunday
+  const end = new Date(Date.UTC(year, monthIndex + 1, endOffset));
+
+  const days: string[] = [];
+  for (
+    let cursor = start;
+    cursor.getTime() <= end.getTime();
+    cursor = new Date(cursor.getTime() + 24 * 60 * 60 * 1000)
+  ) {
+    days.push(toIsoDate(cursor));
+  }
+  return days;
+}
