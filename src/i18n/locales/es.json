@@ -73,6 +73,23 @@
       "unknown": "Algo ha ido mal. Inténtalo de nuevo."
     }
   },
+  "holidays": {
+    "title": "Festivos",
+    "manage": "Gestionar festivos",
+    "add": "Añadir festivo",
+    "remove": "Quitar",
+    "empty": "Aún no hay festivos configurados.",
+    "dateLabel": "Fecha",
+    "errors": {
+      "invalidDate": "Introduce una fecha válida.",
+      "weekend": "Los fines de semana ya son jugables; añade solo días entre semana.",
+      "duplicate": "Este festivo ya existe.",
+      "notFound": "Festivo no encontrado.",
+      "forbidden": "Solo un máster puede gestionar los festivos.",
+      "unauthorized": "Debes iniciar sesión.",
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo."
+    }
+  },
   "profile": {
     "title": "Perfil",
     "language": {

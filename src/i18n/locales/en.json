@@ -73,6 +73,23 @@
       "unknown": "Something went wrong. Please try again."
     }
   },
+  "holidays": {
+    "title": "Holidays",
+    "manage": "Manage holidays",
+    "add": "Add holiday",
+    "remove": "Remove",
+    "empty": "No holidays configured yet.",
+    "dateLabel": "Date",
+    "errors": {
+      "invalidDate": "Enter a valid date.",
+      "weekend": "Weekends are already playable; add weekdays only.",
+      "duplicate": "This holiday already exists.",
+      "notFound": "Holiday not found.",
+      "forbidden": "Only a DM can manage holidays.",
+      "unauthorized": "You must log in.",
+      "unknown": "Something went wrong. Please try again."
+    }
+  },
   "profile": {
     "title": "Profile",
     "language": {

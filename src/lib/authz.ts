@@ -25,3 +25,20 @@ export async function getCampaignRole(
 
   return membership?.role ?? null;
 }
+
+/**
+ * Reports whether the user is a DM of at least one campaign. This is the signal
+ * that gates holiday management (CLAUDE.md §4): there is no global admin role,
+ * so anyone holding the DM role anywhere may add/remove the extra weekday
+ * holidays. Reused by the `/api/holidays` guard and the `/holidays` page.
+ *
+ * @param {string} userId - Id of the user to check.
+ * @returns {Promise<boolean>} True when the user is DM of one or more campaigns.
+ */
+export async function isDmOfAnyCampaign(userId: string): Promise<boolean> {
+  const dmCount = await prisma.campaignPlayer.count({
+    where: { userId, role: CampaignRole.DM },
+  });
+
+  return dmCount > 0;
+}

@@ -6,6 +6,7 @@ import LocaleSelector from "@/components/profile/LocaleSelector";
 import ThemeSelector from "@/components/profile/ThemeSelector";
 import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
+import { isDmOfAnyCampaign } from "@/lib/authz";
 import { isTheme, THEME_COOKIE } from "@/lib/theme";
 
 /**
@@ -25,6 +26,10 @@ export default async function ProfilePage() {
 
   const themeValue = (await cookies()).get(THEME_COOKIE)?.value;
   const initialTheme = isTheme(themeValue) ? themeValue : null;
+
+  // Holiday management is a DM power (no global admin role — CLAUDE.md §4), so
+  // the entry point only shows for users who are DM of at least one campaign.
+  const canManageHolidays = await isDmOfAnyCampaign(session.user.id);
 
   const name = session.user.name ?? "";
   const initial = name.trim().charAt(0).toUpperCase() || "?";
@@ -59,6 +64,18 @@ export default async function ProfilePage() {
         <LocaleSelector />
         <ThemeSelector initialTheme={initialTheme} />
       </section>
+
+      {canManageHolidays ? (
+        <Link
+          href="/holidays"
+          className="mt-6 flex min-h-[56px] items-center justify-between rounded-[var(--radius-card)] border border-border bg-bg-elevated px-6 py-4 font-semibold text-ink transition-colors hover:bg-brand-soft"
+        >
+          {t("holidays.manage")}
+          <span aria-hidden="true" className="text-ink-muted">
+            →
+          </span>
+        </Link>
+      ) : null}
     </main>
   );
 }
