@@ -6,6 +6,8 @@ import { useTranslation } from "react-i18next";
 import AvailabilityToggle, {
   type ResponseStatus,
 } from "@/components/availability/AvailabilityToggle";
+import CampaignViabilityCard from "@/components/date/CampaignViabilityCard";
+import type { CampaignDayViability } from "@/lib/calendarService";
 import { toUtcDate } from "@/lib/date";
 
 interface DayAvailabilityModalProps {
@@ -15,41 +17,61 @@ interface DayAvailabilityModalProps {
   tags: string[];
   /** The user's current stored response for the day, or `null` when pending. */
   initialStatus: ResponseStatus;
+  /** The user's campaigns' viability for the day (the per-campaign breakdown). */
+  detail: CampaignDayViability[];
   /** Forwarded to the toggle; keeps the calendar's live map in sync. */
   onPersisted: (date: string, status: ResponseStatus) => void;
-  /** Called when the dialog closes (Escape, backdrop click, or close button). */
+  /** Called on any close path (Escape, backdrop click, or close button). */
   onClose: () => void;
 }
 
 /**
  * Modal for responding to a single calendar day, opened when a day is tapped on
- * the grid. Built on the native `<dialog>` element via `showModal()`, which
- * gives the focus trap, Escape handling, top-layer stacking and focus restore
- * for free — no portal or focus-trap library needed. The component is only
- * mounted while a day is selected, so it opens on mount and every exit path
- * (Escape, backdrop click, the close button) funnels through the dialog's
- * native `close` event into `onClose`, which unmounts it. Responding does not
- * auto-close, so the player can adjust their answer.
+ * the grid. Deliberately **not** a native `showModal()` dialog: that promotes the
+ * element to the browser top layer, which paints above everything including the
+ * sticky navbar. Instead it is a `fixed` overlay at `z-[5]`, below the navbar's
+ * `z-10`, so the navbar stays visible and usable on top while the rest is dimmed.
+ *
+ * Because it is not top-layer, the affordances `<dialog>` gave for free are
+ * reimplemented: Escape and a click on the backdrop call `onClose`; focus moves
+ * to the box on mount and is restored to the previously focused element on
+ * unmount. `aria-modal="false"` reflects that the navbar is intentionally still
+ * reachable (no focus trap). Responding does not auto-close, so the player can
+ * adjust their answer.
  *
  * @param {DayAvailabilityModalProps} props - The day, affected tags, current
- *   status, and the persisted/close callbacks.
+ *   status, the per-campaign breakdown, and the persisted/close callbacks.
  * @returns {JSX.Element} The day availability modal.
  */
 export default function DayAvailabilityModal({
   date,
   tags,
   initialStatus,
+  detail,
   onPersisted,
   onClose,
 }: DayAvailabilityModalProps) {
   const { t, i18n } = useTranslation();
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
-  // Open as a true modal on mount (top layer + focus trap + Escape come free).
+  // Close on Escape, move focus into the box on open, and restore it on close.
   useEffect(() => {
-    dialogRef.current?.showModal();
-  }, []);
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    boxRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [onClose]);
 
   const longDate = new Intl.DateTimeFormat(i18n.language, {
     weekday: "long",
@@ -60,53 +82,79 @@ export default function DayAvailabilityModal({
   }).format(toUtcDate(date));
 
   return (
-    <dialog
-      ref={dialogRef}
-      aria-labelledby={titleId}
-      onClose={onClose}
+    <div
+      className="fixed inset-0 z-[5] overflow-y-auto bg-black/40"
       onClick={(event) => {
-        // A click whose target is the dialog itself lands on the backdrop (the
-        // padded inner div covers the box), so it closes; content clicks don't.
-        if (event.target === dialogRef.current) {
-          dialogRef.current.close();
+        // Only a click on the padded flex wrapper (the backdrop area) closes;
+        // clicks inside the box bubble up with a different target.
+        if (event.target === event.currentTarget) {
+          onClose();
         }
       }}
-      className="m-auto w-[min(92vw,420px)] rounded-[var(--radius-card)] border border-border bg-bg-elevated p-0 text-ink backdrop:bg-black/40"
     >
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-3">
-          <h2
-            id={titleId}
-            className="font-display text-xl font-semibold text-ink first-letter:uppercase"
-          >
-            {longDate}
-          </h2>
-          <button
-            type="button"
-            onClick={() => dialogRef.current?.close()}
-            aria-label={t("common.close")}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-border text-ink-muted transition-colors hover:bg-brand-soft"
-          >
-            <span aria-hidden="true" className="text-lg leading-none">
-              ×
-            </span>
-          </button>
-        </div>
+      <div
+        className="flex min-h-full items-start justify-center p-4 pt-20"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) {
+            onClose();
+          }
+        }}
+      >
+        <div
+          ref={boxRef}
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby={titleId}
+          tabIndex={-1}
+          className="w-[min(92vw,420px)] rounded-[var(--radius-card)] border border-border bg-bg-elevated text-ink outline-none md:w-[min(92vw,760px)]"
+        >
+          <div className="p-5">
+            <div className="flex items-start justify-between gap-3">
+              <h2
+                id={titleId}
+                className="font-display text-xl font-semibold text-ink first-letter:uppercase"
+              >
+                {longDate}
+              </h2>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={t("common.close")}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-control)] border border-border text-ink-muted transition-colors hover:bg-brand-soft"
+              >
+                <span aria-hidden="true" className="text-lg leading-none">
+                  ×
+                </span>
+              </button>
+            </div>
 
-        {tags.length > 0 ? (
-          <p className="mt-1 text-sm text-ink-muted">
-            {t("availability.affects", { tags: tags.join(", ") })}
-          </p>
-        ) : null}
+            {tags.length > 0 ? (
+              <p className="mt-1 text-sm text-ink-muted">
+                {t("availability.affects", { tags: tags.join(", ") })}
+              </p>
+            ) : null}
 
-        <div className="mt-4">
-          <AvailabilityToggle
-            date={date}
-            initialStatus={initialStatus}
-            onPersisted={onPersisted}
-          />
+            <div className="mt-4">
+              <AvailabilityToggle
+                date={date}
+                initialStatus={initialStatus}
+                onPersisted={onPersisted}
+              />
+            </div>
+
+            {detail.length > 0 ? (
+              <div className="mt-5 grid grid-cols-1 items-start gap-3 md:grid-cols-2">
+                {detail.map((campaign) => (
+                  <CampaignViabilityCard
+                    key={campaign.campaignId}
+                    campaign={campaign}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
-    </dialog>
+    </div>
   );
 }

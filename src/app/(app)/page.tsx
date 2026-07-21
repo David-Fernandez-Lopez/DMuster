@@ -7,7 +7,7 @@ import { getServerTranslation } from "@/i18n/server";
 import { getUserAvailability } from "@/lib/availabilityService";
 import { auth } from "@/lib/auth";
 import { isDmOfAnyCampaign } from "@/lib/authz";
-import { listCampaignsForUser } from "@/lib/campaignService";
+import { getCalendarViability } from "@/lib/calendarService";
 import { isValidIsoMonth, monthGridDays, todayIso } from "@/lib/date";
 import { listHolidays } from "@/lib/holidayService";
 
@@ -17,7 +17,8 @@ import { listHolidays } from "@/lib/holidayService";
  * invalid or missing param falls back silently to the current month. DMs of any
  * campaign also get a "Gestionar festivos" entry point in the header. Requires
  * an authenticated session (verified here; the proxy also gates anonymous
- * users). Viability colors are added in a later step (#18).
+ * users). Per-campaign viability chips are computed server-side via
+ * `getCalendarViability` and rendered on each eligible day.
  *
  * @param {{ searchParams: Promise<{ month?: string }> }} props
  * @returns {Promise<JSX.Element>}
@@ -39,13 +40,20 @@ export default async function CalendarPage({
   const { t, locale } = await getServerTranslation();
   const days = monthGridDays(month);
 
-  const [canManageHolidays, holidays, campaigns, responses] = await Promise.all([
+  const rangeStart = days[0];
+  const rangeEnd = days[days.length - 1];
+  const [canManageHolidays, holidays, responses] = await Promise.all([
     isDmOfAnyCampaign(session.user.id),
     listHolidays(),
-    listCampaignsForUser(session.user.id),
-    getUserAvailability(session.user.id, days[0], days[days.length - 1]),
+    getUserAvailability(session.user.id, rangeStart, rangeEnd),
   ]);
   const holidayDates = holidays.map((holiday) => holiday.date);
+  const { campaigns, byDate } = await getCalendarViability(
+    session.user.id,
+    rangeStart,
+    rangeEnd,
+    new Set(holidayDates),
+  );
   const tags = campaigns.map((campaign) => campaign.tag);
 
   return (
@@ -101,6 +109,8 @@ export default async function CalendarPage({
           locale={locale}
           tags={tags}
           initialResponses={responses}
+          campaigns={campaigns}
+          viabilityByDate={byDate}
         />
       </div>
 

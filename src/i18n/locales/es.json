@@ -27,7 +27,25 @@
       "yes": "Sí",
       "no": "No",
       "maybe": "Tal vez"
+    },
+    "viability": {
+      "S": "Sí",
+      "N": "No",
+      "T": "Tal vez"
+    },
+    "moreChips": "+{{count}}",
+    "filter": {
+      "label": "Filtrar por campaña"
     }
+  },
+  "date": {
+    "status": {
+      "yes": "Sí",
+      "maybe": "Tal vez",
+      "no": "No",
+      "none": "Sin responder"
+    },
+    "dmBadge": "Máster"
   },
   "availability": {
     "title": "Mi disponibilidad",

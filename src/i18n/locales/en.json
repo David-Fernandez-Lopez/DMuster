@@ -27,7 +27,25 @@
       "yes": "Yes",
       "no": "No",
       "maybe": "Maybe"
+    },
+    "viability": {
+      "S": "Yes",
+      "N": "No",
+      "T": "Maybe"
+    },
+    "moreChips": "+{{count}}",
+    "filter": {
+      "label": "Filter by campaign"
     }
+  },
+  "date": {
+    "status": {
+      "yes": "Yes",
+      "maybe": "Maybe",
+      "no": "No",
+      "none": "No answer"
+    },
+    "dmBadge": "DM"
   },
   "availability": {
     "title": "My availability",
