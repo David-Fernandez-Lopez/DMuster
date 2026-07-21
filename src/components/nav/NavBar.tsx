@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { logout } from "@/app/(auth)/actions";
+import MobileNav from "@/components/nav/MobileNav";
 import NavLinks, { type NavLinkItem } from "@/components/nav/NavLinks";
 import { getServerTranslation } from "@/i18n/server";
 
@@ -8,8 +9,9 @@ import { getServerTranslation } from "@/i18n/server";
  * Shared top navigation bar rendered above every authenticated page by the
  * `(app)` route-group layout. Carries the brand mark, the primary destinations
  * (with active-route highlight, handled client-side by `NavLinks`) and a logout
- * control reusing the `logout` server action. Mobile-first: the links wrap to a
- * second row on narrow viewports.
+ * control reusing the `logout` server action. Responsive: from `lg` up the links
+ * and logout sit inline; below `lg` they collapse into `MobileNav`'s hamburger
+ * dropdown. Stays a server component — all interactivity lives in the children.
  *
  * @returns {Promise<JSX.Element>}
  */
@@ -45,16 +47,30 @@ export default async function NavBar() {
           </span>
         </Link>
 
-        <NavLinks items={items} />
+        {/* Desktop (lg+): inline links + logout. */}
+        <div className="ml-auto hidden items-center gap-x-4 lg:flex">
+          <NavLinks items={items} />
 
-        <form action={logout} className="ml-auto">
-          <button
-            type="submit"
-            className="flex min-h-[44px] items-center rounded-full px-4 text-sm font-semibold text-ink-muted transition-colors hover:text-ink"
-          >
-            {t("nav.logout")}
-          </button>
-        </form>
+          <form action={logout}>
+            <button
+              type="submit"
+              className="flex min-h-[44px] items-center rounded-full px-4 text-sm font-semibold text-ink-muted transition-colors hover:text-ink"
+            >
+              {t("nav.logout")}
+            </button>
+          </form>
+        </div>
+
+        {/* Mobile (<lg): everything folds into a hamburger dropdown. */}
+        <MobileNav
+          items={items}
+          logout={logout}
+          labels={{
+            open: t("nav.openMenu"),
+            close: t("nav.closeMenu"),
+            logout: t("nav.logout"),
+          }}
+        />
       </div>
     </header>
   );

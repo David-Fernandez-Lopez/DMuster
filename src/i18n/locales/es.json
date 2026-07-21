@@ -14,7 +14,9 @@
     "campaigns": "Campañas",
     "profile": "Perfil",
     "login": "Iniciar sesión",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú"
   },
   "calendar": {
     "title": "Calendario de sesiones",

@@ -38,31 +38,35 @@ export default function CampaignViabilityCard({
 
   return (
     <details className="group rounded-[var(--radius-card)] border border-border bg-bg">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-3 [&::-webkit-details-marker]:hidden">
-        <h3 className="min-w-0 truncate font-display text-base font-semibold text-ink">
-          <span className="text-ink-muted">{campaign.tag}</span> {campaign.name}
+      <summary className="flex cursor-pointer list-none items-center gap-2 p-3 [&::-webkit-details-marker]:hidden">
+        <span
+          aria-hidden="true"
+          className="flex h-7 w-7 shrink-0 items-center justify-center font-display text-sm font-semibold text-ink-muted"
+        >
+          {campaign.tag}
+        </span>
+        <h3 className="min-w-0 flex-1 truncate font-display text-base font-semibold text-ink">
+          {campaign.name}
         </h3>
-        <div className="flex shrink-0 items-center gap-2">
-          <span
-            className={`rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-semibold ${style.className}`}
-          >
-            {t(style.labelKey)}
-          </span>
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-            className="h-4 w-4 text-ink-muted transition-transform group-open:rotate-180"
-          >
-            <path
-              d="m6 9 6 6 6-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
+        <span
+          className={`shrink-0 rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-semibold ${style.className}`}
+        >
+          {t(style.labelKey)}
+        </span>
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className="h-4 w-4 shrink-0 text-ink-muted transition-transform group-open:rotate-180"
+        >
+          <path
+            d="m6 9 6 6 6-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </summary>
 
       <div className="divide-y divide-border px-3 pb-3">

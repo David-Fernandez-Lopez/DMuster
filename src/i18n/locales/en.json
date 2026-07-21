@@ -14,7 +14,9 @@
     "campaigns": "Campaigns",
     "profile": "Profile",
     "login": "Log in",
-    "logout": "Log out"
+    "logout": "Log out",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "calendar": {
     "title": "Session calendar",

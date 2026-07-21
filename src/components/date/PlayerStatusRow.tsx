@@ -64,6 +64,9 @@ export default function PlayerStatusRow({
       >
         {t(style.labelKey)}
       </span>
+      {/* Mirrors the card summary's chevron (h-4 w-4 + gap-2) so status pills
+          line up under the viability badge. */}
+      <span aria-hidden="true" className="h-4 w-4 shrink-0" />
     </div>
   );
 }

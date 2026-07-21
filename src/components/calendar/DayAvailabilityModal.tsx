@@ -106,7 +106,7 @@ export default function DayAvailabilityModal({
           aria-modal="false"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="w-[min(92vw,420px)] rounded-[var(--radius-card)] border border-border bg-bg-elevated text-ink outline-none md:w-[min(92vw,760px)]"
+          className="w-[min(92vw,420px)] rounded-[var(--radius-card)] border border-border bg-bg-elevated text-ink outline-none"
         >
           <div className="p-5">
             <div className="flex items-start justify-between gap-3">
@@ -143,7 +143,7 @@ export default function DayAvailabilityModal({
             </div>
 
             {detail.length > 0 ? (
-              <div className="mt-5 grid grid-cols-1 items-start gap-3 md:grid-cols-2">
+              <div className="mt-5 grid grid-cols-1 items-start gap-3">
                 {detail.map((campaign) => (
                   <CampaignViabilityCard
                     key={campaign.campaignId}
