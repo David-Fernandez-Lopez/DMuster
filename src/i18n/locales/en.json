@@ -4,7 +4,8 @@
     "loading": "Loading…",
     "save": "Save",
     "cancel": "Cancel",
-    "back": "Back"
+    "back": "Back",
+    "close": "Close"
   },
   "nav": {
     "home": "Home",
@@ -17,7 +18,7 @@
   },
   "calendar": {
     "title": "Session calendar",
-    "help": "Tap a day to see its details.",
+    "help": "Tap a day to respond.",
     "prevMonth": "Previous month",
     "nextMonth": "Next month",
     "today": "Today",
@@ -26,6 +27,25 @@
       "yes": "Yes",
       "no": "No",
       "maybe": "Maybe"
+    }
+  },
+  "availability": {
+    "title": "My availability",
+    "help": "Mark the weekends and holidays you can play. Your answer applies to all your campaigns.",
+    "filter": {
+      "pending": "Pending",
+      "all": "All"
+    },
+    "yes": "Yes",
+    "maybe": "Maybe",
+    "no": "No",
+    "affects": "Affects: {{tags}}",
+    "allDone": "All done! No pending days left.",
+    "errors": {
+      "invalidDate": "Enter a valid date.",
+      "notEligible": "This day is not playable.",
+      "unauthorized": "You must log in.",
+      "unknown": "Something went wrong. Please try again."
     }
   },
   "campaigns": {

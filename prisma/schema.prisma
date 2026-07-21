@@ -23,6 +23,7 @@ enum Locale {
 enum AvailabilityStatus {
   YES
   NO
+  MAYBE
 }
 
 model User {
@@ -92,8 +93,10 @@ model Holiday {
 
 // A player's global availability for a single calendar day. The response is
 // not scoped to a campaign: it applies to every campaign the player belongs
-// to. Only YES/NO is ever stored — the "MAYBE"/pending state is derived from
-// the absence of a row for a (date, user) pair, never persisted.
+// to. YES/NO/MAYBE are all stored ("Tal vez" is a real answer). Only the
+// pending state stays derived — the absence of a row for a (date, user) pair.
+// For viability (roadmap #17), the "T" tier is any stored MAYBE OR a missing
+// response; clearing an answer still deletes the row.
 model Availability {
   id        String             @id @default(cuid())
   date      DateTime           @db.Date

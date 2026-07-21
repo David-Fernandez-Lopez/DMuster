@@ -4,7 +4,8 @@
     "loading": "Cargando…",
     "save": "Guardar",
     "cancel": "Cancelar",
-    "back": "Volver"
+    "back": "Volver",
+    "close": "Cerrar"
   },
   "nav": {
     "home": "Inicio",
@@ -17,7 +18,7 @@
   },
   "calendar": {
     "title": "Calendario de sesiones",
-    "help": "Toca un día para ver el detalle.",
+    "help": "Toca un día para responder.",
     "prevMonth": "Mes anterior",
     "nextMonth": "Mes siguiente",
     "today": "Hoy",
@@ -26,6 +27,25 @@
       "yes": "Sí",
       "no": "No",
       "maybe": "Tal vez"
+    }
+  },
+  "availability": {
+    "title": "Mi disponibilidad",
+    "help": "Marca los fines de semana y festivos en los que puedes jugar. Tu respuesta se aplica a todas tus campañas.",
+    "filter": {
+      "pending": "Pendientes",
+      "all": "Todas"
+    },
+    "yes": "Sí",
+    "maybe": "Tal vez",
+    "no": "No",
+    "affects": "Afecta a: {{tags}}",
+    "allDone": "¡Todo respondido! No te quedan días pendientes.",
+    "errors": {
+      "invalidDate": "Introduce una fecha válida.",
+      "notEligible": "Este día no es elegible para jugar.",
+      "unauthorized": "Debes iniciar sesión.",
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo."
     }
   },
   "campaigns": {

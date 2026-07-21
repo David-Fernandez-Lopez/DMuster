@@ -7,9 +7,9 @@ export type NavLinkItem = { href: string; label: string };
 
 /**
  * Determines whether a nav destination should be highlighted for the current
- * path. The calendar item (`/`) also owns the date-detail routes under
- * `/calendar/*`; every other item matches its own path or any nested route
- * (e.g. `/campaigns/new` highlights Campañas).
+ * path. The calendar item (`/`) matches only the home path; every other item
+ * matches its own path or any nested route (e.g. `/campaigns/new` highlights
+ * Campañas).
  *
  * @param {string} href - The nav item's destination.
  * @param {string} pathname - The current pathname.
@@ -17,7 +17,7 @@ export type NavLinkItem = { href: string; label: string };
  */
 function isActive(href: string, pathname: string): boolean {
   if (href === "/") {
-    return pathname === "/" || pathname.startsWith("/calendar");
+    return pathname === "/";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

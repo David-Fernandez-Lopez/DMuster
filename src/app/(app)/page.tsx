@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import CalendarGrid from "@/components/calendar/CalendarGrid";
 import MonthNav from "@/components/calendar/MonthNav";
 import { getServerTranslation } from "@/i18n/server";
+import { getUserAvailability } from "@/lib/availabilityService";
 import { auth } from "@/lib/auth";
 import { isDmOfAnyCampaign } from "@/lib/authz";
+import { listCampaignsForUser } from "@/lib/campaignService";
 import { isValidIsoMonth, monthGridDays, todayIso } from "@/lib/date";
 import { listHolidays } from "@/lib/holidayService";
 
@@ -35,9 +37,16 @@ export default async function CalendarPage({
   const month = rawMonth && isValidIsoMonth(rawMonth) ? rawMonth : currentMonth;
 
   const { t, locale } = await getServerTranslation();
-  const canManageHolidays = await isDmOfAnyCampaign(session.user.id);
-  const holidays = new Set((await listHolidays()).map((h) => h.date));
   const days = monthGridDays(month);
+
+  const [canManageHolidays, holidays, campaigns, responses] = await Promise.all([
+    isDmOfAnyCampaign(session.user.id),
+    listHolidays(),
+    listCampaignsForUser(session.user.id),
+    getUserAvailability(session.user.id, days[0], days[days.length - 1]),
+  ]);
+  const holidayDates = holidays.map((holiday) => holiday.date);
+  const tags = campaigns.map((campaign) => campaign.tag);
 
   return (
     <main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6">
@@ -84,11 +93,14 @@ export default async function CalendarPage({
 
       <div className="mt-4">
         <CalendarGrid
+          key={month}
           month={month}
           days={days}
-          holidays={holidays}
+          holidays={holidayDates}
           today={todayIso()}
           locale={locale}
+          tags={tags}
+          initialResponses={responses}
         />
       </div>
 

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 type DayCellProps = {
@@ -10,16 +9,18 @@ type DayCellProps = {
   today: boolean;
   /** Whether the day belongs to an adjacent month (dimmed further). */
   outOfMonth: boolean;
+  /** Called with the day's ISO when an eligible cell is tapped (opens the modal). */
+  onSelect?: (iso: string) => void;
   /** Per-campaign viability chips injected by roadmap #18; absent for now. */
   indicators?: ReactNode;
 };
 
 /**
- * A single calendar day cell. Eligible days are elevated and link to the date
- * detail; non-eligible days are dimmed and inert. Out-of-month days are dimmed
- * further on top of either state, and today is marked with a brand ring. The
- * optional `indicators` slot lets a later step render viability chips without
- * touching this component.
+ * A single calendar day cell. Eligible days are elevated and, when tapped, open
+ * the day availability modal via `onSelect`; non-eligible days are dimmed and
+ * inert. Out-of-month days are dimmed further on top of either state, and today
+ * is marked with a brand ring. The optional `indicators` slot lets a later step
+ * render viability chips without touching this component.
  *
  * @param {DayCellProps} props
  * @returns {JSX.Element}
@@ -29,6 +30,7 @@ export default function DayCell({
   eligible,
   today,
   outOfMonth,
+  onSelect,
   indicators,
 }: DayCellProps) {
   const dayNumber = Number(iso.slice(8));
@@ -50,9 +52,14 @@ export default function DayCell({
 
   if (eligible) {
     return (
-      <Link href={`/calendar/${iso}`} className={`block cursor-pointer ${className}`}>
+      <button
+        type="button"
+        onClick={() => onSelect?.(iso)}
+        aria-haspopup="dialog"
+        className={`block w-full cursor-pointer text-left ${className}`}
+      >
         {content}
-      </Link>
+      </button>
     );
   }
 

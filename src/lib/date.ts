@@ -153,3 +153,47 @@ export function monthGridDays(month: string): string[] {
   }
   return days;
 }
+
+/**
+ * Shifts a "YYYY-MM-DD" calendar date by a whole number of days, forward or
+ * backward, carrying across month and year boundaries. All math is done in UTC
+ * to stay timezone-stable, matching the rest of this module.
+ *
+ * @param {string} iso - A valid "YYYY-MM-DD" calendar date.
+ * @param {number} delta - Number of days to add (may be negative).
+ * @returns {string} The resulting calendar day, "YYYY-MM-DD".
+ */
+export function addDays(iso: string, delta: number): string {
+  const date = toUtcDate(iso);
+  date.setUTCDate(date.getUTCDate() + delta);
+  return toIsoDate(date);
+}
+
+/**
+ * Collects the eligible (playable) calendar days within a forward window: it
+ * scans `windowDays` consecutive days starting at `startIso` (inclusive) and
+ * keeps those that are eligible — a weekend or a listed holiday (see
+ * `isEligible`) — stopping once `max` have been found. Used by the "Mi
+ * disponibilidad" screen to build its upcoming-days list (roadmap #16).
+ *
+ * @param {string} startIso - First day of the window, "YYYY-MM-DD" (inclusive).
+ * @param {number} windowDays - How many consecutive days to scan from the start.
+ * @param {number} max - Maximum number of eligible days to return.
+ * @param {Set<string>} holidays - Set of holiday dates as "YYYY-MM-DD" strings.
+ * @returns {string[]} Up to `max` eligible days, ascending.
+ */
+export function upcomingEligibleDays(
+  startIso: string,
+  windowDays: number,
+  max: number,
+  holidays: Set<string>,
+): string[] {
+  const days: string[] = [];
+  for (let offset = 0; offset < windowDays && days.length < max; offset += 1) {
+    const iso = addDays(startIso, offset);
+    if (isEligible(iso, holidays)) {
+      days.push(iso);
+    }
+  }
+  return days;
+}
