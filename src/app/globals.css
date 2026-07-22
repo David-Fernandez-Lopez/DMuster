@@ -6,10 +6,20 @@
  * shared, with light/dark variants. Each token uses `light-dark()` so a single
  * definition covers both palettes; `color-scheme` selects which side applies.
  *
- * Theme selection (step 11): without a manual override `color-scheme: light dark`
- * follows the OS preference. The profile screen sets a `theme` cookie which the
- * root layout stamps as `data-theme` on <html>, forcing one side and preventing
- * a flash on SSR.
+ * Theme selection: without a manual override `color-scheme: light dark` follows
+ * the OS preference. The `data-theme` attribute (stamped on <html> by the root
+ * layout from the `theme` cookie / persisted `User.theme`) forces one side by
+ * pinning `color-scheme`, which re-maps every `light-dark()` token live and
+ * flash-free. Verified against the served CSS: the current Tailwind v4 /
+ * Lightning CSS targets preserve `light-dark()` and the `:root[data-theme]`
+ * rules (they are NOT rewritten into a `@media (prefers-color-scheme)` block),
+ * so the manual override works.
+ *
+ * Caveat: if the browser targets ever shift so Lightning CSS starts polyfilling
+ * `light-dark()` into `@media` queries, it would drop these `data-theme`
+ * overrides and break the manual toggle — switch to an explicit dual-selector
+ * palette (light on `:root`; dark under both `@media (prefers-color-scheme: dark)
+ * :root:not([data-theme="light"])` and `:root[data-theme="dark"]`) if that happens.
  */
 :root {
   color-scheme: light dark;

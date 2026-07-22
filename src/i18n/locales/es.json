@@ -154,6 +154,7 @@
     },
     "errors": {
       "invalidLocale": "Idioma no válido.",
+      "invalidTheme": "Tema no válido.",
       "updateFailed": "No se ha podido guardar el cambio. Inténtalo de nuevo."
     }
   },

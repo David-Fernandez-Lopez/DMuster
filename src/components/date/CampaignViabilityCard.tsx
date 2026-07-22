@@ -45,7 +45,7 @@ export default function CampaignViabilityCard({
         >
           {campaign.tag}
         </span>
-        <h3 className="min-w-0 flex-1 truncate font-display text-base font-semibold text-ink">
+        <h3 className="min-w-0 flex-1 truncate font-display text-sm font-semibold text-ink">
           {campaign.name}
         </h3>
         <span

@@ -32,8 +32,6 @@ type CalendarGridProps = {
   today: string;
   /** Active locale for localized weekday headers. */
   locale: string;
-  /** Tags of the user's campaigns, shown in the day modal ("Afecta a"). */
-  tags: string[];
   /** The user's stored responses across the grid range, keyed by day. */
   initialResponses: Record<string, "YES" | "NO" | "MAYBE">;
   /** The user's campaigns, for the filter chips. */
@@ -78,7 +76,6 @@ export default function CalendarGrid({
   holidays,
   today,
   locale,
-  tags,
   initialResponses,
   campaigns,
   viabilityByDate,
@@ -214,7 +211,6 @@ export default function CalendarGrid({
       {selected !== null ? (
         <DayAvailabilityModal
           date={selected}
-          tags={tags}
           initialStatus={responses[selected] ?? null}
           detail={viabilityByDate[selected] ?? []}
           onPersisted={handlePersisted}

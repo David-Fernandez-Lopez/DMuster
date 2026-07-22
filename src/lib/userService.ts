@@ -4,6 +4,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { getLocale } from "@/i18n/server";
 import type { AppLocale } from "@/i18n/settings";
 import { prisma } from "@/lib/prisma";
+import type { Theme } from "@/lib/theme";
 import type { RegisterInput } from "@/lib/validation/auth";
 
 /** Bcrypt cost factor. Kept in sync with the seed script (prisma/seed.ts). */
@@ -84,6 +85,37 @@ export async function updateUserLocale(
     return { ok: true };
   } catch (error) {
     console.error("[PROFILE/UPDATE_LOCALE] Failed to update user locale:", error);
+    return { ok: false, error: "profile.errors.updateFailed" };
+  }
+}
+
+/** Result of a theme update. `error` holds an i18n key on failure. */
+export type UpdateThemeResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Persists a user's manual light/dark theme override to their profile so the
+ * choice survives logout/login on a fresh device. Failures are logged
+ * server-side and returned as a friendly i18n error key rather than thrown.
+ *
+ * @param {string} userId - Id of the user whose theme is being updated.
+ * @param {Theme} theme - New theme to persist (`light` or `dark`).
+ * @returns {Promise<UpdateThemeResult>} Success, or an error key
+ *   (`profile.errors.updateFailed`).
+ */
+export async function updateUserTheme(
+  userId: string,
+  theme: Theme,
+): Promise<UpdateThemeResult> {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { theme },
+      select: { id: true },
+    });
+
+    return { ok: true };
+  } catch (error) {
+    console.error("[PROFILE/UPDATE_THEME] Failed to update user theme:", error);
     return { ok: false, error: "profile.errors.updateFailed" };
   }
 }

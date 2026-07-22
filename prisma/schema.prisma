@@ -20,6 +20,11 @@ enum Locale {
   en
 }
 
+enum Theme {
+  light
+  dark
+}
+
 enum AvailabilityStatus {
   YES
   NO
@@ -34,6 +39,9 @@ model User {
   image         String?
   password      String
   locale        Locale    @default(es)
+  // Manual light/dark override. null = follow the OS preference
+  // (prefers-color-scheme). Mirrors `locale` for cross-device persistence.
+  theme         Theme?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

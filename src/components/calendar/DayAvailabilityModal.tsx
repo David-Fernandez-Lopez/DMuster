@@ -13,8 +13,6 @@ import { toUtcDate } from "@/lib/date";
 interface DayAvailabilityModalProps {
   /** The selected day, "YYYY-MM-DD". */
   date: string;
-  /** Tags of the user's campaigns (the "Afecta a" line). */
-  tags: string[];
   /** The user's current stored response for the day, or `null` when pending. */
   initialStatus: ResponseStatus;
   /** The user's campaigns' viability for the day (the per-campaign breakdown). */
@@ -39,13 +37,12 @@ interface DayAvailabilityModalProps {
  * reachable (no focus trap). Responding does not auto-close, so the player can
  * adjust their answer.
  *
- * @param {DayAvailabilityModalProps} props - The day, affected tags, current
- *   status, the per-campaign breakdown, and the persisted/close callbacks.
+ * @param {DayAvailabilityModalProps} props - The day, current status, the
+ *   per-campaign breakdown, and the persisted/close callbacks.
  * @returns {JSX.Element} The day availability modal.
  */
 export default function DayAvailabilityModal({
   date,
-  tags,
   initialStatus,
   detail,
   onPersisted,
@@ -106,13 +103,13 @@ export default function DayAvailabilityModal({
           aria-modal="false"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className="w-[min(92vw,420px)] rounded-[var(--radius-card)] border border-border bg-bg-elevated text-ink outline-none"
+          className="w-[min(92vw,420px)] rounded-[var(--radius-card)] border border-border bg-bg-elevated text-ink outline-none [font-variant:small-caps]"
         >
           <div className="p-5">
             <div className="flex items-start justify-between gap-3">
               <h2
                 id={titleId}
-                className="font-display text-xl font-semibold text-ink first-letter:uppercase"
+                className="font-display text-lg font-semibold text-ink first-letter:uppercase"
               >
                 {longDate}
               </h2>
@@ -127,12 +124,6 @@ export default function DayAvailabilityModal({
                 </span>
               </button>
             </div>
-
-            {tags.length > 0 ? (
-              <p className="mt-1 text-sm text-ink-muted">
-                {t("availability.affects", { tags: tags.join(", ") })}
-              </p>
-            ) : null}
 
             <div className="mt-4">
               <AvailabilityToggle

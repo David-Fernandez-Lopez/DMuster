@@ -79,6 +79,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name,
           email: user.email,
           locale: user.locale,
+          theme: user.theme,
         };
       },
     }),
@@ -99,7 +100,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
      * the *raw* session row spread with the full user record (including the
      * password hash and the opaque session token) and returns whatever this
      * callback yields verbatim — so a clean object is built here to avoid
-     * leaking those fields. Exposes only id, name, email, image and locale.
+     * leaking those fields. Exposes only id, name, email, image, locale and theme.
      */
     async session({ session, user }) {
       return {
@@ -110,6 +111,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           image: user.image,
           locale: user.locale,
+          theme: user.theme,
         },
       };
     },

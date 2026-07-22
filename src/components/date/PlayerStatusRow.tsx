@@ -53,7 +53,7 @@ export default function PlayerStatusRow({
       >
         {initial}
       </span>
-      <span className="min-w-0 flex-1 truncate text-sm text-ink">{name}</span>
+      <span className="min-w-0 flex-1 truncate text-xs text-ink">{name}</span>
       {isDm ? (
         <span className="shrink-0 rounded-[var(--radius-control)] bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">
           {t("date.dmBadge")}

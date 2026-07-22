@@ -154,6 +154,7 @@
     },
     "errors": {
       "invalidLocale": "Invalid language.",
+      "invalidTheme": "Invalid theme.",
       "updateFailed": "Could not save the change. Please try again."
     }
   },

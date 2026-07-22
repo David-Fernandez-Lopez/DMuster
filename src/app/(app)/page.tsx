@@ -54,7 +54,6 @@ export default async function CalendarPage({
     rangeEnd,
     new Set(holidayDates),
   );
-  const tags = campaigns.map((campaign) => campaign.tag);
 
   return (
     <main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6">
@@ -107,7 +106,6 @@ export default async function CalendarPage({
           holidays={holidayDates}
           today={todayIso()}
           locale={locale}
-          tags={tags}
           initialResponses={responses}
           campaigns={campaigns}
           viabilityByDate={byDate}

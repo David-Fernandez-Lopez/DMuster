@@ -22,3 +22,29 @@ export const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 export function isTheme(value: unknown): value is Theme {
   return typeof value === "string" && THEMES.includes(value as Theme);
 }
+
+/**
+ * Resolves the theme override to stamp on the document. The theme is
+ * device-specific, so the local cookie wins; the persisted `User.theme` only
+ * seeds a fresh browser where the cookie is still absent. Returning `undefined`
+ * leaves `data-theme` unset so the app follows the OS preference.
+ *
+ * Kept as a pure helper (no `next/headers`/`auth`) so this module stays safe to
+ * import from the client `ThemeSelector`; callers pass the already-read values.
+ *
+ * @param {unknown} cookieValue - Raw `theme` cookie value for this device.
+ * @param {unknown} sessionTheme - Persisted `User.theme` from the session, or null.
+ * @returns {Theme | undefined} Cookie theme, else session theme, else undefined.
+ */
+export function resolveTheme(
+  cookieValue: unknown,
+  sessionTheme: unknown,
+): Theme | undefined {
+  if (isTheme(cookieValue)) {
+    return cookieValue;
+  }
+  if (isTheme(sessionTheme)) {
+    return sessionTheme;
+  }
+  return undefined;
+}

@@ -5,7 +5,8 @@ import "./globals.css";
 
 import I18nProvider from "@/i18n/I18nProvider";
 import { getLocale } from "@/i18n/server";
-import { isTheme, THEME_COOKIE } from "@/lib/theme";
+import { auth } from "@/lib/auth";
+import { resolveTheme, THEME_COOKIE } from "@/lib/theme";
 
 // Display font for headings and the brand (subtle medieval serif); body/UI font.
 const cinzel = Cinzel({
@@ -28,8 +29,9 @@ export const metadata: Metadata = {
 /**
  * Root layout wrapping every page in the application.
  * Resolves the request locale (user profile → cookie → default) and sets it on
- * the html tag, stamps the manual theme override (`data-theme`) from the theme
- * cookie when present, and provides the client-side i18n context.
+ * the html tag, stamps the manual theme override (`data-theme`) resolving the
+ * device cookie first and falling back to the persisted `User.theme` (so a saved
+ * choice survives on a fresh browser), and provides the client-side i18n context.
  *
  * @param {{ children: React.ReactNode }} props
  * @returns {Promise<JSX.Element>}
@@ -41,8 +43,12 @@ export default async function RootLayout({
 }>) {
   const locale = await getLocale();
 
-  const themeValue = (await cookies()).get(THEME_COOKIE)?.value;
-  const theme = isTheme(themeValue) ? themeValue : undefined;
+  // Theme is device-specific, so the cookie wins; the persisted `User.theme`
+  // seeds a fresh browser where the cookie is absent. `auth()` is memoized per
+  // request (getLocale already called it), so this adds no extra query.
+  const cookieTheme = (await cookies()).get(THEME_COOKIE)?.value;
+  const session = await auth();
+  const theme = resolveTheme(cookieTheme, session?.user?.theme);
 
   return (
     <html

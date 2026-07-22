@@ -5,7 +5,7 @@ import LocaleSelector from "@/components/profile/LocaleSelector";
 import ThemeSelector from "@/components/profile/ThemeSelector";
 import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
-import { isTheme, THEME_COOKIE } from "@/lib/theme";
+import { resolveTheme, THEME_COOKIE } from "@/lib/theme";
 
 /**
  * Profile page. Shows the user's identity (avatar initial, name, email) and a
@@ -22,8 +22,10 @@ export default async function ProfilePage() {
 
   const { t } = await getServerTranslation();
 
-  const themeValue = (await cookies()).get(THEME_COOKIE)?.value;
-  const initialTheme = isTheme(themeValue) ? themeValue : null;
+  // Mirror the root layout: device cookie wins, else the persisted `User.theme`,
+  // so the segmented control reflects the saved choice on a fresh browser.
+  const cookieTheme = (await cookies()).get(THEME_COOKIE)?.value;
+  const initialTheme = resolveTheme(cookieTheme, session.user.theme) ?? null;
 
   const name = session.user.name ?? "";
   const initial = name.trim().charAt(0).toUpperCase() || "?";
