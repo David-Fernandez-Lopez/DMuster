@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { ResponseStatus } from "@/components/availability/AvailabilityToggle";
-import CampaignFilter from "@/components/calendar/CampaignFilter";
 import DayAvailabilityModal from "@/components/calendar/DayAvailabilityModal";
 import DayCell, { type DayIndicator } from "@/components/calendar/DayCell";
 import type {
@@ -38,6 +37,8 @@ type CalendarGridProps = {
   campaigns: CalendarCampaign[];
   /** Per eligible date, the viability of each of the user's campaigns. */
   viabilityByDate: Record<string, CampaignDayViability[]>;
+  /** Campaign tags currently active in the filter (owned by `CalendarBoard`). */
+  activeTags: Set<string>;
 };
 
 /**
@@ -53,19 +54,20 @@ function capitalize(value: string): string {
 
 /**
  * The 7-column monthly calendar grid: a Monday-first weekday header row over the
- * day cells, with per-campaign viability chips on eligible days and campaign
- * filter chips above it. Weekday names come from `Intl` (no i18n keys). Cells are
- * separated by 1px gaps over the border color for the sheet-style line effect.
+ * day cells, with per-campaign viability chips on eligible days. Weekday names
+ * come from `Intl` (no i18n keys). Cells are separated by 1px gaps over the
+ * border color for the sheet-style line effect.
  *
  * This is the calendar's client boundary. Tapping an eligible day opens the
  * availability modal (no navigation), which also shows that day's per-campaign
  * breakdown. It holds a live `responses` map so a day reopened after a change
  * shows the fresh own status without a refetch; after a response persists it
  * calls `router.refresh()` so the server-computed viability (cell chips and the
- * breakdown) reflects the new answer. Campaign filtering is client-side over the
- * already-fetched model — all chips active means "show all". The parent must
- * remount it per month (`key={month}`) so state does not carry across `?month=`
- * navigations.
+ * breakdown) reflects the new answer. Campaign filtering (`activeTags`) is owned
+ * by the parent `CalendarBoard`, which also renders the "Filtros" trigger and
+ * modal — this component only applies it. All chips active means "show all".
+ * The parent must remount it per month (`key={month}`) so state does not carry
+ * across `?month=` navigations.
  *
  * @param {CalendarGridProps} props
  * @returns {JSX.Element}
@@ -79,6 +81,7 @@ export default function CalendarGrid({
   initialResponses,
   campaigns,
   viabilityByDate,
+  activeTags,
 }: CalendarGridProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -86,9 +89,6 @@ export default function CalendarGrid({
   const [selected, setSelected] = useState<string | null>(null);
   const [responses, setResponses] =
     useState<Record<string, "YES" | "NO" | "MAYBE">>(initialResponses);
-  const [activeTags, setActiveTags] = useState<Set<string>>(
-    () => new Set(campaigns.map((campaign) => campaign.tag)),
-  );
 
   /**
    * Reconciles the live responses map after the modal persists a change, then
@@ -108,23 +108,6 @@ export default function CalendarGrid({
       return next;
     });
     router.refresh();
-  }
-
-  /**
-   * Toggles a campaign tag in the filter; all tags active means "no filter".
-   *
-   * @param {string} tag - The campaign tag toggled.
-   */
-  function toggleTag(tag: string) {
-    setActiveTags((current) => {
-      const next = new Set(current);
-      if (next.has(tag)) {
-        next.delete(tag);
-      } else {
-        next.add(tag);
-      }
-      return next;
-    });
   }
 
   const weekdayFormatter = new Intl.DateTimeFormat(locale, {
@@ -173,15 +156,6 @@ export default function CalendarGrid({
 
   return (
     <>
-      <div className="mb-4">
-        <CampaignFilter
-          campaigns={campaigns}
-          activeTags={activeTags}
-          onToggle={toggleTag}
-          label={t("calendar.filter.label")}
-        />
-      </div>
-
       <div className="grid grid-cols-7 gap-px border border-border bg-border">
         {weekdayHeaders.map((label, index) => (
           <div

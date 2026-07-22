@@ -21,8 +21,10 @@ type MonthNavProps = {
  * Month selector: `‹ Mes Año ›` with a shortcut back to the current month.
  * Navigation is via the `?month=YYYY-MM` search param (SSR, shareable). The
  * "today" shortcut links to `/` with no param so the page falls back to the
- * current month; it stays reserved (invisible) while already on that month so
- * the row does not shift.
+ * current month; it is simply omitted while already on that month. On mobile
+ * the arrows row spans the full width (matching the calendar grid) with the
+ * arrows hugging the edges and "Hoy" centered below; from `sm` up it collapses
+ * back into a single compact, centered row.
  *
  * @param {MonthNavProps} props
  * @returns {JSX.Element}
@@ -46,34 +48,34 @@ export default function MonthNav({
     "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-control)] border border-border text-ink transition-colors hover:bg-brand-soft";
 
   return (
-    <div className="flex items-center justify-center gap-3">
-      <Link
-        href={`/?month=${addMonths(month, -1)}`}
-        aria-label={prevLabel}
-        className={arrowClass}
-      >
-        ‹
-      </Link>
-      <span className="min-w-[10rem] text-center font-display text-lg font-semibold text-ink">
-        {capitalizedLabel}
-      </span>
-      <Link
-        href={`/?month=${addMonths(month, 1)}`}
-        aria-label={nextLabel}
-        className={arrowClass}
-      >
-        ›
-      </Link>
-      <Link
-        href="/"
-        className={`flex min-h-[44px] items-center rounded-[var(--radius-control)] border border-border px-3 text-sm font-semibold text-ink transition-colors hover:bg-brand-soft ${
-          month === currentMonth ? "invisible" : ""
-        }`}
-        aria-hidden={month === currentMonth}
-        tabIndex={month === currentMonth ? -1 : undefined}
-      >
-        {todayLabel}
-      </Link>
+    <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+      <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-center">
+        <Link
+          href={`/?month=${addMonths(month, -1)}`}
+          aria-label={prevLabel}
+          className={arrowClass}
+        >
+          ‹
+        </Link>
+        <span className="min-w-[10rem] text-center font-display text-lg font-semibold text-ink">
+          {capitalizedLabel}
+        </span>
+        <Link
+          href={`/?month=${addMonths(month, 1)}`}
+          aria-label={nextLabel}
+          className={arrowClass}
+        >
+          ›
+        </Link>
+      </div>
+      {month !== currentMonth ? (
+        <Link
+          href="/"
+          className="flex min-h-[44px] items-center rounded-[var(--radius-control)] border border-border px-3 text-sm font-semibold text-ink transition-colors hover:bg-brand-soft"
+        >
+          {todayLabel}
+        </Link>
+      ) : null}
     </div>
   );
 }

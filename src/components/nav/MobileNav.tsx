@@ -6,8 +6,12 @@ import MenuToggleIcon from "@/components/nav/MenuToggleIcon";
 import NavLinks, { type NavLinkItem } from "@/components/nav/NavLinks";
 
 interface MobileNavProps {
-  /** Nav destinations, already translated by the server `NavBar`. */
-  items: NavLinkItem[];
+  /** Primary destinations (Calendario, Disponibilidad, Campañas). Shown inline on
+   * desktop, so the panel only repeats them below the `lg` breakpoint. */
+  primaryItems: NavLinkItem[];
+  /** Account-type actions (Gestionar festivos, Perfil). Only ever shown in the
+   * panel — desktop users reach them through the hamburger too. */
+  menuItems: NavLinkItem[];
   /** The logout server action, reused inside the dropdown panel. */
   logout: () => void | Promise<void>;
   /** Translated labels for the toggle (`open`/`close`) and the logout button. */
@@ -15,17 +19,25 @@ interface MobileNavProps {
 }
 
 /**
- * Mobile navigation control shown below the `lg` breakpoint: a hamburger button
- * that toggles a dropdown panel holding the same destinations and logout action
- * as the desktop bar. Owns the open/close state so the server `NavBar` can stay
- * a server component. Closing is wired for Escape, an outside click, and tapping
- * any destination; focus moves into the panel on open and back to the button on
- * close. The toggle glyph animates (bars → spinning hexagon) via `MenuToggleIcon`.
+ * Always-visible hamburger control: a button that toggles a dropdown panel.
+ * Below `lg` the panel repeats the primary destinations plus the account-type
+ * actions and logout (everything folds in). From `lg` up the primary
+ * destinations sit inline in the bar instead, so the panel holds only the
+ * account-type actions and logout. Owns the open/close state so the server
+ * `NavBar` can stay a server component. Closing is wired for Escape, an outside
+ * click, and tapping any destination; focus moves into the panel on open and
+ * back to the button on close. The toggle glyph animates (bars → spinning
+ * hexagon) via `MenuToggleIcon`.
  *
  * @param {MobileNavProps} props - Destinations, the logout action, and labels.
- * @returns {JSX.Element} The mobile hamburger menu.
+ * @returns {JSX.Element} The hamburger menu.
  */
-export default function MobileNav({ items, logout, labels }: MobileNavProps) {
+export default function MobileNav({
+  primaryItems,
+  menuItems,
+  logout,
+  labels,
+}: MobileNavProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -58,14 +70,21 @@ export default function MobileNav({ items, logout, labels }: MobileNavProps) {
   }, [open]);
 
   // Move focus into the panel on open and restore it to the button on close.
+  // The primary-items group is `lg:hidden` on desktop, so skip links that
+  // aren't actually rendered (offsetParent is null while display: none).
   useEffect(() => {
     if (open) {
-      panelRef.current?.querySelector<HTMLElement>("a, button")?.focus();
+      const candidates =
+        panelRef.current?.querySelectorAll<HTMLElement>("a, button");
+      const firstVisible = candidates
+        ? Array.from(candidates).find((element) => element.offsetParent !== null)
+        : undefined;
+      firstVisible?.focus();
     }
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative ml-auto lg:hidden">
+    <div ref={rootRef} className="relative ml-auto">
       <button
         ref={buttonRef}
         type="button"
@@ -84,14 +103,27 @@ export default function MobileNav({ items, logout, labels }: MobileNavProps) {
           id={panelId}
           className="absolute right-0 top-full z-20 mt-2 w-56 origin-top-right rounded-[var(--radius-card)] border border-border bg-bg-elevated p-2 shadow-lg"
         >
-          <NavLinks
-            items={items}
-            orientation="vertical"
-            onNavigate={() => {
-              setOpen(false);
-              buttonRef.current?.focus();
-            }}
-          />
+          <div className="lg:hidden">
+            <NavLinks
+              items={primaryItems}
+              orientation="vertical"
+              onNavigate={() => {
+                setOpen(false);
+                buttonRef.current?.focus();
+              }}
+            />
+          </div>
+
+          <div className="mt-1 border-t border-border pt-1 lg:mt-0 lg:border-t-0 lg:pt-0">
+            <NavLinks
+              items={menuItems}
+              orientation="vertical"
+              onNavigate={() => {
+                setOpen(false);
+                buttonRef.current?.focus();
+              }}
+            />
+          </div>
 
           <form action={logout} className="mt-1 border-t border-border pt-1">
             <button

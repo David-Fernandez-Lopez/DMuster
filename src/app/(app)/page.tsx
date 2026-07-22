@@ -1,12 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import CalendarGrid from "@/components/calendar/CalendarGrid";
+import CalendarBoard from "@/components/calendar/CalendarBoard";
 import MonthNav from "@/components/calendar/MonthNav";
 import { getServerTranslation } from "@/i18n/server";
 import { getUserAvailability } from "@/lib/availabilityService";
 import { auth } from "@/lib/auth";
-import { isDmOfAnyCampaign } from "@/lib/authz";
 import { getCalendarViability } from "@/lib/calendarService";
 import { isValidIsoMonth, monthGridDays, todayIso } from "@/lib/date";
 import { listHolidays } from "@/lib/holidayService";
@@ -14,8 +12,7 @@ import { listHolidays } from "@/lib/holidayService";
 /**
  * Calendar home (`/`). Renders the monthly grid with eligibility styling and
  * month navigation via the `?month=YYYY-MM` search param (SSR, shareable). An
- * invalid or missing param falls back silently to the current month. DMs of any
- * campaign also get a "Gestionar festivos" entry point in the header. Requires
+ * invalid or missing param falls back silently to the current month. Requires
  * an authenticated session (verified here; the proxy also gates anonymous
  * users). Per-campaign viability chips are computed server-side via
  * `getCalendarViability` and rendered on each eligible day.
@@ -42,8 +39,7 @@ export default async function CalendarPage({
 
   const rangeStart = days[0];
   const rangeEnd = days[days.length - 1];
-  const [canManageHolidays, holidays, responses] = await Promise.all([
-    isDmOfAnyCampaign(session.user.id),
+  const [holidays, responses] = await Promise.all([
     listHolidays(),
     getUserAvailability(session.user.id, rangeStart, rangeEnd),
   ]);
@@ -57,19 +53,9 @@ export default async function CalendarPage({
 
   return (
     <main className="mx-auto w-full max-w-[1100px] flex-1 px-4 py-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="font-display text-3xl font-semibold text-ink">
-          {t("calendar.title")}
-        </h1>
-        {canManageHolidays ? (
-          <Link
-            href="/holidays"
-            className="shrink-0 text-sm font-semibold text-brand hover:underline"
-          >
-            {t("holidays.manage")}
-          </Link>
-        ) : null}
-      </div>
+      <h1 className="text-center font-display text-3xl font-semibold text-ink">
+        {t("calendar.title")}
+      </h1>
 
       <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-ink-muted">
         <span className="flex items-center gap-1.5">
@@ -87,7 +73,17 @@ export default async function CalendarPage({
         <span className="italic">{t("calendar.legend.note")}</span>
       </div>
 
-      <div className="mt-6">
+      <CalendarBoard
+        key={month}
+        month={month}
+        days={days}
+        holidays={holidayDates}
+        today={todayIso()}
+        locale={locale}
+        initialResponses={responses}
+        campaigns={campaigns}
+        viabilityByDate={byDate}
+      >
         <MonthNav
           month={month}
           currentMonth={currentMonth}
@@ -96,21 +92,7 @@ export default async function CalendarPage({
           nextLabel={t("calendar.nextMonth")}
           todayLabel={t("calendar.today")}
         />
-      </div>
-
-      <div className="mt-4">
-        <CalendarGrid
-          key={month}
-          month={month}
-          days={days}
-          holidays={holidayDates}
-          today={todayIso()}
-          locale={locale}
-          initialResponses={responses}
-          campaigns={campaigns}
-          viabilityByDate={byDate}
-        />
-      </div>
+      </CalendarBoard>
 
       <p className="mt-4 text-center text-sm text-ink-muted md:hidden">
         {t("calendar.help")}

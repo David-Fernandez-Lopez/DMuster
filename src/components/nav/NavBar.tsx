@@ -4,24 +4,37 @@ import { logout } from "@/app/(auth)/actions";
 import MobileNav from "@/components/nav/MobileNav";
 import NavLinks, { type NavLinkItem } from "@/components/nav/NavLinks";
 import { getServerTranslation } from "@/i18n/server";
+import { auth } from "@/lib/auth";
+import { isDmOfAnyCampaign } from "@/lib/authz";
 
 /**
  * Shared top navigation bar rendered above every authenticated page by the
  * `(app)` route-group layout. Carries the brand mark, the primary destinations
- * (with active-route highlight, handled client-side by `NavLinks`) and a logout
- * control reusing the `logout` server action. Responsive: from `lg` up the links
- * and logout sit inline; below `lg` they collapse into `MobileNav`'s hamburger
- * dropdown. Stays a server component — all interactivity lives in the children.
+ * (with active-route highlight, handled client-side by `NavLinks`) inline from
+ * `lg` up, and an always-visible hamburger (`MobileNav`) holding the
+ * account-type actions (Gestionar festivos, Perfil, Cerrar sesión) on desktop
+ * and every destination on mobile. Stays a server component — all
+ * interactivity lives in the children.
  *
  * @returns {Promise<JSX.Element>}
  */
 export default async function NavBar() {
   const { t } = await getServerTranslation();
+  const session = await auth();
+  const canManageHolidays = session?.user
+    ? await isDmOfAnyCampaign(session.user.id)
+    : false;
 
-  const items: NavLinkItem[] = [
+  const primaryItems: NavLinkItem[] = [
     { href: "/", label: t("nav.calendar") },
     { href: "/availability", label: t("nav.availability") },
     { href: "/campaigns", label: t("nav.campaigns") },
+  ];
+
+  const menuItems: NavLinkItem[] = [
+    ...(canManageHolidays
+      ? [{ href: "/holidays", label: t("holidays.manage") }]
+      : []),
     { href: "/profile", label: t("nav.profile") },
   ];
 
@@ -47,23 +60,15 @@ export default async function NavBar() {
           </span>
         </Link>
 
-        {/* Desktop (lg+): inline links + logout. */}
+        {/* Desktop (lg+): primary links inline; account actions stay in the hamburger. */}
         <div className="ml-auto hidden items-center gap-x-4 lg:flex">
-          <NavLinks items={items} />
-
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex min-h-[44px] items-center rounded-full px-4 text-sm font-semibold text-ink-muted transition-colors hover:text-ink"
-            >
-              {t("nav.logout")}
-            </button>
-          </form>
+          <NavLinks items={primaryItems} />
         </div>
 
-        {/* Mobile (<lg): everything folds into a hamburger dropdown. */}
+        {/* Always-visible hamburger: account actions on desktop, everything on mobile. */}
         <MobileNav
-          items={items}
+          primaryItems={primaryItems}
+          menuItems={menuItems}
           logout={logout}
           labels={{
             open: t("nav.openMenu"),

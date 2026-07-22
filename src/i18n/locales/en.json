@@ -37,7 +37,8 @@
     },
     "moreChips": "+{{count}}",
     "filter": {
-      "label": "Filter by campaign"
+      "label": "Filter by campaign",
+      "button": "Filters"
     }
   },
   "date": {
