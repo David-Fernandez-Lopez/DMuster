@@ -56,7 +56,7 @@ export default async function RootLayout({
       data-theme={theme}
       className={`h-full ${cinzel.variable} ${manrope.variable}`}
     >
-      <body className="min-h-full flex flex-col antialiased">
+      <body className="papyrus-bg min-h-full flex flex-col antialiased">
         <I18nProvider locale={locale}>{children}</I18nProvider>
       </body>
     </html>
