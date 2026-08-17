@@ -37,8 +37,17 @@
     },
     "moreChips": "+{{count}}",
     "filter": {
-      "label": "Filtrar por campaña",
-      "button": "Filtros"
+      "button": "Filtros",
+      "title": "Filtros",
+      "campaigns": "Campañas",
+      "masters": "Máster",
+      "availability": "Disponibilidad",
+      "clear": "Limpiar filtros",
+      "search": "Buscar",
+      "selectAll": "Seleccionar todo",
+      "selectNone": "Quitar todo",
+      "noResults": "Sin resultados",
+      "remove": "Quitar"
     }
   },
   "date": {

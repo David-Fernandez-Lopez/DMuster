@@ -45,7 +45,7 @@ export default function MonthNav({
   const capitalizedLabel = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
   const arrowClass =
-    "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-[var(--radius-control)] border border-border text-ink transition-colors hover:bg-brand-soft";
+    "btn btn-secondary min-h-[44px] min-w-[44px] text-ink";
 
   return (
     <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
@@ -71,7 +71,7 @@ export default function MonthNav({
       {month !== currentMonth ? (
         <Link
           href="/"
-          className="flex min-h-[44px] items-center rounded-[var(--radius-control)] border border-border px-3 text-sm font-semibold text-ink transition-colors hover:bg-brand-soft"
+          className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold"
         >
           {todayLabel}
         </Link>

@@ -37,8 +37,17 @@
     },
     "moreChips": "+{{count}}",
     "filter": {
-      "label": "Filter by campaign",
-      "button": "Filters"
+      "button": "Filters",
+      "title": "Filters",
+      "campaigns": "Campaigns",
+      "masters": "DM",
+      "availability": "Availability",
+      "clear": "Clear filters",
+      "search": "Search",
+      "selectAll": "Select all",
+      "selectNone": "Clear all",
+      "noResults": "No results",
+      "remove": "Remove"
     }
   },
   "date": {

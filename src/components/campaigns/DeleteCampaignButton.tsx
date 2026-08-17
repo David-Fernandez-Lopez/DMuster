@@ -58,7 +58,7 @@ export default function DeleteCampaignButton({
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="min-h-[44px] rounded-[var(--radius-control)] border border-border px-3 text-sm font-semibold text-n transition-colors hover:bg-n-soft"
+        className="btn btn-no min-h-[44px] px-3 text-sm font-semibold"
       >
         {t("campaigns.actions.delete")}
       </button>
@@ -73,7 +73,7 @@ export default function DeleteCampaignButton({
           type="button"
           onClick={handleDelete}
           disabled={isPending}
-          className="min-h-[44px] rounded-[var(--radius-control)] bg-n px-3 text-sm font-semibold text-bg-elevated transition-opacity disabled:opacity-60"
+          className="btn btn-no btn-filled min-h-[44px] px-3 text-sm font-semibold disabled:opacity-60"
         >
           {isPending ? t("common.loading") : t("campaigns.actions.confirmYes")}
         </button>
@@ -81,7 +81,7 @@ export default function DeleteCampaignButton({
           type="button"
           onClick={() => setConfirming(false)}
           disabled={isPending}
-          className="min-h-[44px] rounded-[var(--radius-control)] border border-border px-3 text-sm font-semibold text-ink transition-colors hover:bg-brand-soft disabled:opacity-60"
+          className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold disabled:opacity-60"
         >
           {t("common.cancel")}
         </button>

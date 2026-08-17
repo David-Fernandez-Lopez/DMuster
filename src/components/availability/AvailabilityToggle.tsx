@@ -13,27 +13,12 @@ type AnswerChoice = Exclude<ResponseStatus, null>;
 const OPTIONS: ReadonlyArray<{
   value: AnswerChoice;
   labelKey: string;
-  activeClass: string;
-  idleHoverClass: string;
+  /** Vellum status-chip variant; the active fill is driven by `aria-pressed`. */
+  chipClass: string;
 }> = [
-  {
-    value: "YES",
-    labelKey: "availability.yes",
-    activeClass: "border-s bg-s text-white",
-    idleHoverClass: "hover:bg-s-soft",
-  },
-  {
-    value: "MAYBE",
-    labelKey: "availability.maybe",
-    activeClass: "border-t bg-t text-white",
-    idleHoverClass: "hover:bg-t-soft",
-  },
-  {
-    value: "NO",
-    labelKey: "availability.no",
-    activeClass: "border-n bg-n text-white",
-    idleHoverClass: "hover:bg-n-soft",
-  },
+  { value: "YES", labelKey: "availability.yes", chipClass: "btn-yes" },
+  { value: "MAYBE", labelKey: "availability.maybe", chipClass: "btn-maybe" },
+  { value: "NO", labelKey: "availability.no", chipClass: "btn-no" },
 ];
 
 interface AvailabilityToggleProps {
@@ -113,25 +98,18 @@ export default function AvailabilityToggle({
   return (
     <div>
       <div className="flex gap-2">
-        {OPTIONS.map((option) => {
-          const isActive = status === option.value;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => handleSelect(option.value)}
-              disabled={isPending}
-              aria-pressed={isActive}
-              className={`min-h-[44px] flex-1 rounded-[var(--radius-control)] border text-sm font-semibold transition-colors disabled:opacity-60 ${
-                isActive
-                  ? option.activeClass
-                  : `border-border bg-bg text-ink ${option.idleHoverClass}`
-              }`}
-            >
-              {t(option.labelKey)}
-            </button>
-          );
-        })}
+        {OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => handleSelect(option.value)}
+            disabled={isPending}
+            aria-pressed={status === option.value}
+            className={`btn ${option.chipClass} min-h-[44px] flex-1 text-sm font-semibold disabled:opacity-60`}
+          >
+            {t(option.labelKey)}
+          </button>
+        ))}
       </div>
       {errorKey ? (
         <p className="mt-2 text-sm text-n" role="alert">

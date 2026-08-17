@@ -48,13 +48,13 @@ export default function CampaignCard({ campaign, t }: CampaignCardProps) {
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <Link
             href={`/campaigns/${campaign.id}/players`}
-            className="flex min-h-[44px] items-center rounded-[var(--radius-control)] border border-border px-3 text-sm font-semibold text-ink transition-colors hover:bg-brand-soft"
+            className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold"
           >
             {t("campaigns.actions.players")}
           </Link>
           <Link
             href={`/campaigns/${campaign.id}/edit`}
-            className="flex min-h-[44px] items-center rounded-[var(--radius-control)] border border-border px-3 text-sm font-semibold text-ink transition-colors hover:bg-brand-soft"
+            className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold"
           >
             {t("campaigns.actions.edit")}
           </Link>

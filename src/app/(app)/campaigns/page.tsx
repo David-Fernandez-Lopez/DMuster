@@ -70,7 +70,7 @@ export default async function CampaignsPage() {
         </h1>
         <Link
           href="/campaigns/new"
-          className="flex min-h-[44px] shrink-0 items-center rounded-[var(--radius-control)] bg-brand px-4 text-sm font-semibold text-bg-elevated transition-opacity hover:opacity-90"
+          className="btn btn-primary min-h-[44px] shrink-0 px-4 text-sm font-semibold"
         >
           {t("campaigns.new")}
         </Link>

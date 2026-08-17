@@ -9,6 +9,7 @@ import DayAvailabilityModal from "@/components/calendar/DayAvailabilityModal";
 import DayCell, { type DayIndicator } from "@/components/calendar/DayCell";
 import type {
   CalendarCampaign,
+  CalendarMaster,
   CampaignDayViability,
 } from "@/lib/calendarService";
 import { isEligible, toUtcDate } from "@/lib/date";
@@ -33,12 +34,18 @@ type CalendarGridProps = {
   locale: string;
   /** The user's stored responses across the grid range, keyed by day. */
   initialResponses: Record<string, "YES" | "NO" | "MAYBE">;
-  /** The user's campaigns, for the filter chips. */
+  /** The user's campaigns, for the campaign filter. */
   campaigns: CalendarCampaign[];
+  /** The distinct DMs across those campaigns, for the master filter. */
+  masters: CalendarMaster[];
   /** Per eligible date, the viability of each of the user's campaigns. */
   viabilityByDate: Record<string, CampaignDayViability[]>;
-  /** Campaign tags currently active in the filter (owned by `CalendarBoard`). */
-  activeTags: Set<string>;
+  /** Selected campaign ids (owned by `CalendarBoard`; all selected = no filter). */
+  activeCampaignIds: Set<string>;
+  /** Selected master userIds (all selected = no filter). */
+  activeMasterIds: Set<string>;
+  /** Selected viability tiers (all selected = no filter). */
+  activeViabilities: Set<Viability>;
 };
 
 /**
@@ -63,11 +70,11 @@ function capitalize(value: string): string {
  * breakdown. It holds a live `responses` map so a day reopened after a change
  * shows the fresh own status without a refetch; after a response persists it
  * calls `router.refresh()` so the server-computed viability (cell chips and the
- * breakdown) reflects the new answer. Campaign filtering (`activeTags`) is owned
- * by the parent `CalendarBoard`, which also renders the "Filtros" trigger and
- * modal — this component only applies it. All chips active means "show all".
- * The parent must remount it per month (`key={month}`) so state does not carry
- * across `?month=` navigations.
+ * breakdown) reflects the new answer. Filtering (campaigns, masters and
+ * viability tiers) is owned by the parent `CalendarBoard`, which renders the
+ * "Filtros" trigger and modal — this component only applies the three active
+ * sets (all selected in a dimension means that dimension shows all). The parent
+ * remounts it per month (`key={month}`).
  *
  * @param {CalendarGridProps} props
  * @returns {JSX.Element}
@@ -80,8 +87,11 @@ export default function CalendarGrid({
   locale,
   initialResponses,
   campaigns,
+  masters,
   viabilityByDate,
-  activeTags,
+  activeCampaignIds,
+  activeMasterIds,
+  activeViabilities,
 }: CalendarGridProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -120,11 +130,14 @@ export default function CalendarGrid({
     .slice(0, 7)
     .map((iso) => capitalize(weekdayFormatter.format(toUtcDate(iso))));
 
-  const allActive = activeTags.size === campaigns.length;
+  const campaignsAll = activeCampaignIds.size === campaigns.length;
+  const mastersAll = activeMasterIds.size === masters.length;
+  const viabilitiesAll = activeViabilities.size === 3;
 
   /**
-   * Builds a cell's viability chips after applying the active-campaign filter,
-   * ordered by viability (available → maybe → unavailable) so the most useful
+   * Builds a cell's viability chips after applying the active filters
+   * (campaigns, masters, viability tiers, combined with AND), ordered by
+   * viability (available → maybe → unavailable) so the most useful
    * ones lead and never fall into the mobile overflow. The sort is stable, so
    * campaigns keep their name order within each tier. Also returns the mobile
    * "+N" overflow label (desktop shows every chip).
@@ -137,9 +150,23 @@ export default function CalendarGrid({
     moreLabel: string | null;
   } {
     const dayCampaigns = viabilityByDate[iso] ?? [];
-    const shown = allActive
-      ? dayCampaigns
-      : dayCampaigns.filter((campaign) => activeTags.has(campaign.tag));
+    const shown = dayCampaigns.filter((campaign) => {
+      if (!campaignsAll && !activeCampaignIds.has(campaign.campaignId)) {
+        return false;
+      }
+      if (
+        !mastersAll &&
+        !campaign.players.some(
+          (player) => player.isDm && activeMasterIds.has(player.userId),
+        )
+      ) {
+        return false;
+      }
+      if (!viabilitiesAll && !activeViabilities.has(campaign.viability)) {
+        return false;
+      }
+      return true;
+    });
     const indicators = shown
       .map((campaign) => ({
         tag: campaign.tag,

@@ -78,6 +78,106 @@ body {
 }
 
 /*
+ * "Vitela clara" button treatment. A satiny cream-paper surface (the existing
+ * elevated background) carrying a barely-perceptible fibre texture, ink text,
+ * and the signature double engraved fillet: a 1px border plus a 1px outline set
+ * 2px out. Reuses the project's color tokens only — no new hues. The fillet
+ * variants recolor just the fillet (and, for status chips, the text); the
+ * active/filled state floods the surface with the solid state color and switches
+ * to white text.
+ *
+ * Applied through the shared `.btn` classes on action buttons and status chips
+ * so the look propagates app-wide. Callers keep only their own size / spacing /
+ * typography utilities (min-h, px, font-*, flex, w-full…); the surface utilities
+ * (bg-*, border*, rounded-*, hover:bg-*) live here, not on the element.
+ */
+@layer components {
+  .btn {
+    --btn-fillet: var(--color-border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--btn-fillet);
+    border-radius: 9px;
+    outline: 1px solid var(--btn-fillet);
+    outline-offset: 2px;
+    background-color: var(--color-bg-elevated);
+    /* Barely-there paper fibre: a single low-opacity ink striation, ~apenas perceptible. */
+    background-image: repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--color-ink) 4%, transparent) 0 1px,
+      transparent 1px 5px
+    );
+    color: var(--color-ink);
+    box-shadow: 0 1px 2px color-mix(in oklab, var(--color-ink) 7%, transparent);
+    transition:
+      background-color 0.15s ease,
+      box-shadow 0.15s ease,
+      outline-color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .btn:hover:not(:disabled) {
+    background-color: color-mix(
+      in oklab,
+      var(--color-bg-elevated) 92%,
+      var(--color-ink)
+    );
+  }
+
+  /* Keep the double fillet on focus, but promote the outer line to the brand
+     color so keyboard focus stays visible. */
+  .btn:focus-visible {
+    outline-color: var(--color-brand);
+    outline-width: 2px;
+  }
+
+  .btn:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Fillet-color variants (text stays ink). */
+  .btn-primary {
+    --btn-fillet: var(--color-brand);
+  }
+  .btn-secondary {
+    --btn-fillet: var(--color-border);
+  }
+
+  /* Status chips: fillet and text take the existing S/T/N state colors. */
+  .btn-yes {
+    --btn-fillet: var(--color-s);
+    color: var(--color-s);
+  }
+  .btn-maybe {
+    --btn-fillet: var(--color-t);
+    color: var(--color-t);
+  }
+  .btn-no {
+    --btn-fillet: var(--color-n);
+    color: var(--color-n);
+  }
+
+  /* Active/filled state: solid state color, white text, no paper texture.
+     Triggered by aria-pressed (toggle chips) or the explicit .btn-filled modifier. */
+  .btn-yes[aria-pressed="true"],
+  .btn-maybe[aria-pressed="true"],
+  .btn-no[aria-pressed="true"],
+  .btn-filled {
+    background-color: var(--btn-fillet);
+    background-image: none;
+    color: #fff;
+  }
+
+  .btn-yes[aria-pressed="true"]:hover:not(:disabled),
+  .btn-maybe[aria-pressed="true"]:hover:not(:disabled),
+  .btn-no[aria-pressed="true"]:hover:not(:disabled),
+  .btn-filled:hover:not(:disabled) {
+    background-color: color-mix(in oklab, var(--btn-fillet) 88%, black);
+  }
+}
+
+/*
  * Continuous rotation for the mobile menu toggle's hexagon
  * (components/nav/MenuToggleIcon.tsx), applied there via the Tailwind arbitrary
  * utility `animate-[spin-hex_3s_linear_infinite]`. Defined by hand because

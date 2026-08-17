@@ -44,7 +44,7 @@ export default async function CalendarPage({
     getUserAvailability(session.user.id, rangeStart, rangeEnd),
   ]);
   const holidayDates = holidays.map((holiday) => holiday.date);
-  const { campaigns, byDate } = await getCalendarViability(
+  const { campaigns, masters, byDate } = await getCalendarViability(
     session.user.id,
     rangeStart,
     rangeEnd,
@@ -82,6 +82,7 @@ export default async function CalendarPage({
         locale={locale}
         initialResponses={responses}
         campaigns={campaigns}
+        masters={masters}
         viabilityByDate={byDate}
       >
         <MonthNav

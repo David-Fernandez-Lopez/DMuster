@@ -59,7 +59,7 @@ export default function RemoveHolidayButton({
         type="button"
         onClick={handleRemove}
         disabled={isPending}
-        className="min-h-[44px] rounded-[var(--radius-control)] border border-border px-3 text-sm font-semibold text-n transition-colors hover:bg-n-soft disabled:opacity-60"
+        className="btn btn-no min-h-[44px] px-3 text-sm font-semibold disabled:opacity-60"
       >
         {isPending ? t("common.loading") : t("holidays.remove")}
       </button>

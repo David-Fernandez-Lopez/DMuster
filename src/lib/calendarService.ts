@@ -33,10 +33,15 @@ export type CampaignDayViability = {
 /** A campaign the user belongs to, for the calendar filter chips. */
 export type CalendarCampaign = { id: string; name: string; tag: string };
 
+/** A DM of one of the user's campaigns, for the calendar's master filter. */
+export type CalendarMaster = { userId: string; name: string };
+
 /** The calendar's viability model for a visible range (serializable to the client). */
 export type CalendarViability = {
   /** The user's campaigns, sorted by name — the filter chips. */
   campaigns: CalendarCampaign[];
+  /** The distinct DMs across the user's campaigns, sorted by name — master filter options. */
+  masters: CalendarMaster[];
   /** Per eligible date, the viability of each of the user's campaigns. */
   byDate: Record<string, CampaignDayViability[]>;
 };
@@ -57,8 +62,8 @@ export type CalendarViability = {
  * @param {string} startIso - Range start, "YYYY-MM-DD" (inclusive).
  * @param {string} endIso - Range end, "YYYY-MM-DD" (inclusive).
  * @param {Set<string>} holidays - Holiday dates ("YYYY-MM-DD") for eligibility.
- * @returns {Promise<CalendarViability>} The user's campaigns and the per-date,
- *   per-campaign viability map.
+ * @returns {Promise<CalendarViability>} The user's campaigns, the distinct DMs
+ *   across them, and the per-date, per-campaign viability map.
  */
 export async function getCalendarViability(
   userId: string,
@@ -137,8 +142,24 @@ export async function getCalendarViability(
     });
   }
 
+  // The distinct DMs across the user's campaigns, deduped by userId and sorted
+  // by name — the options for the calendar's master filter. Built from the
+  // members already fetched above, so it adds no query.
+  const mastersByUser = new Map<string, string>();
+  for (const campaign of campaigns) {
+    for (const player of campaign.players) {
+      if (player.role === CampaignRole.DM) {
+        mastersByUser.set(player.userId, player.user.name);
+      }
+    }
+  }
+  const masters: CalendarMaster[] = [...mastersByUser]
+    .map(([userId, name]) => ({ userId, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   return {
     campaigns: campaigns.map((c) => ({ id: c.id, name: c.name, tag: c.tag })),
+    masters,
     byDate,
   };
 }

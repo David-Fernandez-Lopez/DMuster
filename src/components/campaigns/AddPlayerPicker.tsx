@@ -15,7 +15,7 @@ interface AddPlayerPickerProps {
 /**
  * DM control for adding players to a campaign. Collapsed to a single button; once
  * open it lists every registered user not already in the campaign as a
- * dashed-border chip. Tapping one adds it as a player and refreshes the
+ * vellum chip. Tapping one adds it as a player and refreshes the
  * server-rendered roster (which also drops it from this picker). A failed add
  * surfaces a translated error.
  *
@@ -68,7 +68,7 @@ export default function AddPlayerPicker({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="mt-4 flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-control)] border border-dashed border-border px-4 text-sm font-semibold text-brand transition-colors hover:bg-brand-soft"
+        className="btn btn-primary mt-4 min-h-[44px] w-full px-4 text-sm font-semibold"
       >
         + {t("campaigns.players.add")}
       </button>
@@ -89,7 +89,7 @@ export default function AddPlayerPicker({
               type="button"
               onClick={() => handleAdd(user.id)}
               disabled={pendingUserId !== null}
-              className="min-h-[44px] rounded-[var(--radius-control)] border border-dashed border-border px-3 text-sm font-semibold text-ink transition-colors hover:bg-brand-soft disabled:opacity-60"
+              className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold disabled:opacity-60"
             >
               {pendingUserId === user.id ? t("common.loading") : user.name}
             </button>

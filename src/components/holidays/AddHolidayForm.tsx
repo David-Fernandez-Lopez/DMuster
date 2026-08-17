@@ -76,7 +76,7 @@ export default function AddHolidayForm() {
         <button
           type="submit"
           disabled={isPending || date === ""}
-          className="min-h-[44px] shrink-0 rounded-[var(--radius-control)] bg-brand px-4 text-sm font-semibold text-bg-elevated transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="btn btn-primary min-h-[44px] shrink-0 px-4 text-sm font-semibold disabled:opacity-60"
         >
           {isPending ? t("common.loading") : t("holidays.add")}
         </button>
