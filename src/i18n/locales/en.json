@@ -12,6 +12,7 @@
     "calendar": "Calendar",
     "availability": "My availability",
     "campaigns": "Campaigns",
+    "sessions": "Upcoming sessions",
     "profile": "Profile",
     "login": "Log in",
     "logout": "Log out",
@@ -146,6 +147,40 @@
       "duplicate": "This holiday already exists.",
       "notFound": "Holiday not found.",
       "forbidden": "Only a DM can manage holidays.",
+      "unauthorized": "You must log in.",
+      "unknown": "Something went wrong. Please try again."
+    }
+  },
+  "sessions": {
+    "title": "Upcoming sessions",
+    "empty": "No sessions confirmed yet.",
+    "players": "Players",
+    "confirm": "Confirm session",
+    "confirmed": "Session confirmed",
+    "cancel": "Cancel session",
+    "cancelConfirmPrompt": "Cancel this session?",
+    "cancelYes": "Yes, cancel",
+    "editTime": "Edit time",
+    "startTime": "Start time",
+    "duration": "Duration",
+    "durationUnit": "min",
+    "allDay": "All day",
+    "notViable": "Every player must answer Yes before this can be confirmed.",
+    "warning": {
+      "noLongerViable": "Not everyone has confirmed anymore: {{players}}."
+    },
+    "errors": {
+      "validation": "Check the session details.",
+      "invalidDate": "Enter a valid date.",
+      "invalidTime": "Enter a valid time.",
+      "invalidDuration": "Duration must be between 1 and 1440 minutes.",
+      "durationWithoutTime": "Set a start time to also set a duration.",
+      "notEligible": "This day is not playable.",
+      "notViable": "This day is not viable: not every player answered Yes.",
+      "alreadyConfirmed": "This campaign already has a confirmed session that day.",
+      "playerConflict": "They already have a session that day with {{campaign}}: {{players}}.",
+      "notFound": "Session not found.",
+      "forbidden": "Only a DM of this campaign can do that.",
       "unauthorized": "You must log in.",
       "unknown": "Something went wrong. Please try again."
     }

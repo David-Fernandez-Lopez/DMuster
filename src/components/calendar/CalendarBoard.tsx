@@ -40,6 +40,8 @@ type CalendarBoardProps = {
   masters: CalendarMaster[];
   /** Per eligible date, the viability of each of the user's campaigns. */
   viabilityByDate: Record<string, CampaignDayViability[]>;
+  /** The logged-in user's id, threaded down to the day modal for DM checks. */
+  currentUserId: string;
   /** The server-rendered month selector, placed between the "Filtros" trigger and the grid. */
   children: React.ReactNode;
 };
@@ -72,6 +74,7 @@ export default function CalendarBoard({
   campaigns,
   masters,
   viabilityByDate,
+  currentUserId,
   children,
 }: CalendarBoardProps) {
   const { t } = useTranslation();
@@ -179,6 +182,7 @@ export default function CalendarBoard({
           activeCampaignIds={activeCampaignIds}
           activeMasterIds={activeMasterIds}
           activeViabilities={activeViabilities}
+          currentUserId={currentUserId}
         />
       </div>
 

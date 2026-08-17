@@ -17,6 +17,8 @@ interface DayAvailabilityModalProps {
   initialStatus: ResponseStatus;
   /** The user's campaigns' viability for the day (the per-campaign breakdown). */
   detail: CampaignDayViability[];
+  /** The logged-in user's id, so each campaign card can tell if they're a DM. */
+  currentUserId: string;
   /** Forwarded to the toggle; keeps the calendar's live map in sync. */
   onPersisted: (date: string, status: ResponseStatus) => void;
   /** Called on any close path (Escape, backdrop click, or close button). */
@@ -45,6 +47,7 @@ export default function DayAvailabilityModal({
   date,
   initialStatus,
   detail,
+  currentUserId,
   onPersisted,
   onClose,
 }: DayAvailabilityModalProps) {
@@ -138,7 +141,9 @@ export default function DayAvailabilityModal({
                 {detail.map((campaign) => (
                   <CampaignViabilityCard
                     key={campaign.campaignId}
+                    date={date}
                     campaign={campaign}
+                    currentUserId={currentUserId}
                   />
                 ))}
               </div>

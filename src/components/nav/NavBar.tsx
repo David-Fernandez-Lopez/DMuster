@@ -27,6 +27,7 @@ export default async function NavBar() {
 
   const primaryItems: NavLinkItem[] = [
     { href: "/", label: t("nav.calendar") },
+    { href: "/sessions", label: t("nav.sessions") },
     { href: "/availability", label: t("nav.availability") },
     { href: "/campaigns", label: t("nav.campaigns") },
   ];

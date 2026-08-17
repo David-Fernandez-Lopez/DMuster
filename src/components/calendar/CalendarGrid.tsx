@@ -46,6 +46,8 @@ type CalendarGridProps = {
   activeMasterIds: Set<string>;
   /** Selected viability tiers (all selected = no filter). */
   activeViabilities: Set<Viability>;
+  /** The logged-in user's id, threaded to the day modal for DM checks. */
+  currentUserId: string;
 };
 
 /**
@@ -92,6 +94,7 @@ export default function CalendarGrid({
   activeCampaignIds,
   activeMasterIds,
   activeViabilities,
+  currentUserId,
 }: CalendarGridProps) {
   const router = useRouter();
   const { t } = useTranslation();
@@ -136,11 +139,12 @@ export default function CalendarGrid({
 
   /**
    * Builds a cell's viability chips after applying the active filters
-   * (campaigns, masters, viability tiers, combined with AND), ordered by
-   * viability (available → maybe → unavailable) so the most useful
-   * ones lead and never fall into the mobile overflow. The sort is stable, so
-   * campaigns keep their name order within each tier. Also returns the mobile
-   * "+N" overflow label (desktop shows every chip).
+   * (campaigns, masters, viability tiers, combined with AND), ordered
+   * confirmed-first, then by viability (available → maybe → unavailable) so
+   * the most useful ones lead and never fall into the mobile overflow. Both
+   * comparisons are stable, so campaigns keep their name order within each
+   * group. Also returns the mobile "+N" overflow label (desktop shows every
+   * chip).
    *
    * @param {string} iso - The day, "YYYY-MM-DD".
    * @returns {{ indicators: DayIndicator[]; moreLabel: string | null }}
@@ -169,10 +173,18 @@ export default function CalendarGrid({
     });
     const indicators = shown
       .map((campaign) => ({
+        campaignId: campaign.campaignId,
         tag: campaign.tag,
+        name: campaign.name,
         viability: campaign.viability,
+        confirmed: campaign.confirmedSession !== null,
       }))
-      .sort((a, b) => VIABILITY_ORDER[a.viability] - VIABILITY_ORDER[b.viability]);
+      .sort((a, b) => {
+        if (a.confirmed !== b.confirmed) {
+          return a.confirmed ? -1 : 1;
+        }
+        return VIABILITY_ORDER[a.viability] - VIABILITY_ORDER[b.viability];
+      });
     const overflow = indicators.length - MOBILE_MAX_CHIPS;
     return {
       indicators,
@@ -214,6 +226,7 @@ export default function CalendarGrid({
           date={selected}
           initialStatus={responses[selected] ?? null}
           detail={viabilityByDate[selected] ?? []}
+          currentUserId={currentUserId}
           onPersisted={handlePersisted}
           onClose={() => setSelected(null)}
         />

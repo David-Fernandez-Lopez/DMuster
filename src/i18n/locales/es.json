@@ -12,6 +12,7 @@
     "calendar": "Calendario",
     "availability": "Mi disponibilidad",
     "campaigns": "Campañas",
+    "sessions": "Próximas partidas",
     "profile": "Perfil",
     "login": "Iniciar sesión",
     "logout": "Cerrar sesión",
@@ -146,6 +147,40 @@
       "duplicate": "Este festivo ya existe.",
       "notFound": "Festivo no encontrado.",
       "forbidden": "Solo un máster puede gestionar los festivos.",
+      "unauthorized": "Debes iniciar sesión.",
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo."
+    }
+  },
+  "sessions": {
+    "title": "Próximas partidas",
+    "empty": "No hay partidas confirmadas próximamente.",
+    "players": "Jugadores",
+    "confirm": "Confirmar partida",
+    "confirmed": "Partida confirmada",
+    "cancel": "Cancelar partida",
+    "cancelConfirmPrompt": "¿Cancelar esta partida?",
+    "cancelYes": "Sí, cancelar",
+    "editTime": "Editar hora",
+    "startTime": "Hora de inicio",
+    "duration": "Duración",
+    "durationUnit": "min",
+    "allDay": "Todo el día",
+    "notViable": "Todos los jugadores deben responder Sí para poder confirmar.",
+    "warning": {
+      "noLongerViable": "Ya no todos han confirmado: {{players}}."
+    },
+    "errors": {
+      "validation": "Revisa los datos de la partida.",
+      "invalidDate": "Introduce una fecha válida.",
+      "invalidTime": "Introduce una hora válida.",
+      "invalidDuration": "La duración debe ser de entre 1 y 1440 minutos.",
+      "durationWithoutTime": "Indica una hora de inicio para fijar la duración.",
+      "notEligible": "Este día no es elegible para jugar.",
+      "notViable": "Este día no es viable: no todos los jugadores han respondido Sí.",
+      "alreadyConfirmed": "Ya hay una partida confirmada para esta campaña ese día.",
+      "playerConflict": "Ese día ya juegan con {{campaign}}: {{players}}.",
+      "notFound": "Partida no encontrada.",
+      "forbidden": "Solo un máster de esta campaña puede hacer esto.",
       "unauthorized": "Debes iniciar sesión.",
       "unknown": "Algo ha ido mal. Inténtalo de nuevo."
     }

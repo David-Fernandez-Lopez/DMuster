@@ -1,7 +1,14 @@
 import type { Viability } from "@/lib/viability";
 
 /** A per-campaign viability chip for a day cell. */
-export type DayIndicator = { tag: string; viability: Viability };
+export type DayIndicator = {
+  campaignId: string;
+  tag: string;
+  name: string;
+  viability: Viability;
+  /** Whether this campaign has an active confirmed session on this day (roadmap #21). */
+  confirmed: boolean;
+};
 
 /** Dot color per viability tier (S→green, N→red, T→amber). */
 const DOT_CLASS: Record<Viability, string> = {
@@ -12,6 +19,28 @@ const DOT_CLASS: Record<Viability, string> = {
 
 /** Chips shown on mobile before the rest collapse into the "+N" chip. */
 const MOBILE_MAX_CHIPS = 6;
+
+/**
+ * Small checkmark badge marking a confirmed session's chip, shared by the
+ * mobile (tag + icon) and desktop (full name + icon) confirmed renderings.
+ *
+ * @param {{ className?: string }} props
+ * @returns {JSX.Element}
+ */
+function ConfirmedIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path
+        d="M5 13l4 4L19 7"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 type DayCellProps = {
   /** The cell's calendar day, "YYYY-MM-DD". */
@@ -45,6 +74,12 @@ type DayCellProps = {
  * with a "+N" overflow chip (`moreLabel`), and a **desktop** grid showing every
  * campaign as a dot + tag chip in up to 3 columns.
  *
+ * A campaign with an active confirmed session (roadmap #21) renders
+ * differently: on mobile it swaps the bare dot for the 2-letter tag plus a
+ * checkmark icon; on desktop it spans the full row width to show the
+ * checkmark plus the **full campaign name** (truncated) instead of the dot +
+ * tag chip. Confirmed chips are already sorted first by the grid.
+ *
  * @param {DayCellProps} props
  * @returns {JSX.Element}
  */
@@ -72,35 +107,57 @@ export default function DayCell({
       <span className="text-sm font-semibold text-ink">{dayNumber}</span>
       {indicators && indicators.length > 0 ? (
         <>
-          {/* Mobile: dots only, capped at MOBILE_MAX_CHIPS with a "+N" overflow. */}
+          {/* Mobile: dots only (confirmed campaigns get tag + icon instead),
+              capped at MOBILE_MAX_CHIPS with a "+N" overflow. */}
           <div className="mt-1 grid grid-cols-2 gap-x-1.5 gap-y-1 md:hidden">
-            {indicators.slice(0, MOBILE_MAX_CHIPS).map((indicator) => (
-              <span
-                key={indicator.tag}
-                aria-hidden="true"
-                className={`h-2 w-2 rounded-full ${DOT_CLASS[indicator.viability]}`}
-              />
-            ))}
+            {indicators.slice(0, MOBILE_MAX_CHIPS).map((indicator) =>
+              indicator.confirmed ? (
+                <span
+                  key={indicator.campaignId}
+                  className="flex items-center gap-0.5 text-[9px] font-semibold leading-none text-ink"
+                >
+                  <ConfirmedIcon className="h-2 w-2 shrink-0 text-brand" />
+                  {indicator.tag}
+                </span>
+              ) : (
+                <span
+                  key={indicator.campaignId}
+                  aria-hidden="true"
+                  className={`h-2 w-2 rounded-full ${DOT_CLASS[indicator.viability]}`}
+                />
+              ),
+            )}
             {moreLabel ? (
               <span className="text-[10px] font-semibold leading-none text-ink-muted">
                 {moreLabel}
               </span>
             ) : null}
           </div>
-          {/* Desktop: every campaign as a dot + tag chip, in up to 3 columns. */}
+          {/* Desktop: every campaign as a dot + tag chip in up to 3 columns;
+              a confirmed campaign spans the full row with its full name. */}
           <div className="mt-1 hidden grid-cols-3 gap-x-1.5 gap-y-0.5 md:grid">
-            {indicators.map((indicator) => (
-              <span
-                key={indicator.tag}
-                className="flex items-center gap-1 text-[10px] font-semibold leading-tight text-ink-muted"
-              >
+            {indicators.map((indicator) =>
+              indicator.confirmed ? (
                 <span
-                  aria-hidden="true"
-                  className={`h-2 w-2 shrink-0 rounded-full ${DOT_CLASS[indicator.viability]}`}
-                />
-                {indicator.tag}
-              </span>
-            ))}
+                  key={indicator.campaignId}
+                  className="col-span-3 flex min-w-0 items-center gap-1 text-[10px] font-semibold leading-tight text-ink"
+                >
+                  <ConfirmedIcon className="h-2.5 w-2.5 shrink-0 text-brand" />
+                  <span className="truncate">{indicator.name}</span>
+                </span>
+              ) : (
+                <span
+                  key={indicator.campaignId}
+                  className="flex items-center gap-1 text-[10px] font-semibold leading-tight text-ink-muted"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`h-2 w-2 shrink-0 rounded-full ${DOT_CLASS[indicator.viability]}`}
+                  />
+                  {indicator.tag}
+                </span>
+              ),
+            )}
           </div>
         </>
       ) : null}

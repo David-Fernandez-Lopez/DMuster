@@ -58,9 +58,10 @@ export type CalendarViability = {
  * breakdown feeding the day modal. Scoped to the user's own campaigns only, per
  * the locked calendar-scope decision.
  *
- * All the data is fetched in **two batched queries** (the user's campaigns with
- * their members, then every relevant member's availability rows in range) and
- * combined in memory — no per-day or per-campaign query, so there is no N+1.
+ * All the data is fetched in **three batched queries** (the user's campaigns
+ * with their members, every relevant member's availability rows in range, and
+ * every active confirmed session for those campaigns in range) and combined in
+ * memory — no per-day or per-campaign query, so there is no N+1.
  * `undefined`/missing responses collapse to the pending "T" tier via
  * `computeViability`.
  *
@@ -110,6 +111,12 @@ export async function getCalendarViability(
           select: { userId: true, date: true, status: true },
         });
 
+  const confirmedSessionsByKey = await listConfirmedSessionsForCampaigns(
+    campaigns.map((campaign) => campaign.id),
+    startIso,
+    endIso,
+  );
+
   // date -> (userId -> stored status), for O(1) lookup while combining.
   const statusByDate = new Map<string, Map<string, PlayerStatusValue>>();
   for (const row of rows) {
@@ -144,6 +151,8 @@ export async function getCalendarViability(
         tag: campaign.tag,
         viability: computeViability(players.map((p) => p.status ?? undefined)),
         players,
+        confirmedSession:
+          confirmedSessionsByKey.get(`${campaign.id}|${iso}`) ?? null,
       };
     });
   }

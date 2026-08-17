@@ -84,6 +84,7 @@ export default async function CalendarPage({
         campaigns={campaigns}
         masters={masters}
         viabilityByDate={byDate}
+        currentUserId={session.user.id}
       >
         <MonthNav
           month={month}
