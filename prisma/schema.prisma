@@ -52,6 +52,11 @@ model User {
   createdHolidays  Holiday[]        @relation("HolidayCreatedBy")
   availabilities   Availability[]
 
+  confirmedSessions     ConfirmedSession[]         @relation("SessionConfirmedBy")
+  cancelledSessions     ConfirmedSession[]         @relation("SessionCancelledBy")
+  sessionAttendances    ConfirmedSessionAttendee[] @relation("SessionAttendee")
+  addedSessionAttendees ConfirmedSessionAttendee[] @relation("SessionAttendeeAddedBy")
+
   @@map("users")
 }
 
@@ -69,6 +74,8 @@ model Campaign {
 
   createdBy User             @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   players   CampaignPlayer[]
+
+  confirmedSessions ConfirmedSession[]
 
   @@map("campaigns")
 }
@@ -117,6 +124,61 @@ model Availability {
 
   @@unique([date, userId])
   @@map("availabilities")
+}
+
+// A DM's confirmation that a campaign is playing on a given eligible day. Soft
+// delete only: cancelling a session stamps `cancelledAt`/`cancelledById` and
+// never removes the row, so cancelled attempts stay available for the Phase 2
+// statistics view and for #23's Google Calendar cleanup. Named `ConfirmedSession`
+// (not `Session`) to avoid colliding with the Auth.js session table.
+model ConfirmedSession {
+  id         String   @id @default(cuid())
+  campaignId String
+  date       DateTime @db.Date
+  // Mirrors `date` while the session is active, and is set to null on cancel.
+  // Exists solely to back @@unique([campaignId, activeDate]): MySQL treats NULLs
+  // as distinct, so any number of cancelled rows can coexist while at most one
+  // ACTIVE row per (campaign, date) is possible. Never read for business logic.
+  activeDate DateTime? @db.Date
+  // "HH:MM", local wall time — no timezone math lives in the DB.
+  startTime       String? @db.VarChar(5)
+  // Only meaningful together with startTime. No startTime means an all-day session.
+  durationMinutes Int?
+
+  confirmedById String
+  cancelledAt   DateTime?
+  cancelledById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaign    Campaign                   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  confirmedBy User                       @relation("SessionConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
+  cancelledBy User?                      @relation("SessionCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+  attendees   ConfirmedSessionAttendee[]
+
+  @@unique([campaignId, activeDate])
+  @@index([campaignId, date])
+  @@map("confirmed_sessions")
+}
+
+// Who actually plays a given confirmed session. In roadmap #21 this always
+// mirrors the campaign's full membership (confirming a viable day means
+// everyone plays); #22 makes the set vary via DM overrides and self-joins.
+model ConfirmedSessionAttendee {
+  sessionId String
+  userId    String
+  // Audit: the DM who added them, or null for the implicit whole-campaign set
+  // written at confirmation (and later, a player's own self-join in #22).
+  addedById String?
+  createdAt DateTime @default(now())
+
+  session ConfirmedSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User             @relation("SessionAttendee", fields: [userId], references: [id], onDelete: Cascade)
+  addedBy User?            @relation("SessionAttendeeAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
+
+  @@id([sessionId, userId])
+  @@map("confirmed_session_attendees")
 }
 
 // ─── Auth.js v5 adapter tables ───────────────────────────────────────────────

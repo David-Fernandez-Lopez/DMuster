@@ -1,4 +1,8 @@
 import { CampaignRole } from "@/generated/prisma/enums";
+import {
+  type ConfirmedSessionDto,
+  listConfirmedSessionsForCampaigns,
+} from "@/lib/confirmedSessionService";
 import { addDays, isEligible, toIsoDate, toUtcDate } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 import { computeViability, type Viability } from "@/lib/viability";
@@ -28,6 +32,8 @@ export type CampaignDayViability = {
   viability: Viability;
   /** Every member of the campaign, sorted by name. */
   players: PlayerDayStatus[];
+  /** The active confirmed session for this campaign on this day, if any (roadmap #21). */
+  confirmedSession: ConfirmedSessionDto | null;
 };
 
 /** A campaign the user belongs to, for the calendar filter chips. */
