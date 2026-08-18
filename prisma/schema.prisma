@@ -144,6 +144,10 @@ model ConfirmedSession {
   startTime       String? @db.VarChar(5)
   // Only meaningful together with startTime. No startTime means an all-day session.
   durationMinutes Int?
+  // True when the campaign's viability on `date` was not S at confirmation time (a DM
+  // override, roadmap #22). Internal only — statistics/history — a forced session looks
+  // identical in the UI.
+  forced          Boolean  @default(false)
 
   confirmedById String
   cancelledAt   DateTime?
