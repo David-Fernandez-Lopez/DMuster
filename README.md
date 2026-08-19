@@ -51,6 +51,9 @@ cp .env.example .env   # fill in your values
 docker compose up
 ```
 
+Google Calendar sync is optional — see the `GOOGLE_*` variables in `.env.example`. Leave them
+unset to run without it; the app boots normally and `/profile` simply hides the integration.
+
 The app will be available at `http://localhost:3000`.
 
 To run database migrations and seed reference data:

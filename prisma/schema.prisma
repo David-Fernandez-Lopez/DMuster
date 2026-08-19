@@ -31,19 +31,45 @@ enum AvailabilityStatus {
   MAYBE
 }
 
+// Lifecycle of one (session, user) row's Google Calendar event. PENDING/FAILED
+// are actionable by `processPending` (roadmap #23); SYNCED and DELETED are
+// terminal until the next `enqueue*` call flips them back to PENDING.
+enum SyncStatus {
+  PENDING
+  SYNCED
+  FAILED
+  DELETED
+}
+
+// What `processPending` should do with a PENDING/FAILED row. Kept separate
+// from `SyncStatus` because a failed deletion must stay distinguishable from
+// a failed creation/update on retry — a single enum couldn't carry both without
+// losing which operation to resume.
+enum SyncOperation {
+  UPSERT
+  DELETE
+}
+
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String
-  locale        Locale    @default(es)
+  id                 String    @id @default(cuid())
+  name               String
+  email              String    @unique
+  emailVerified      DateTime?
+  image              String?
+  password           String
+  locale             Locale    @default(es)
   // Manual light/dark override. null = follow the OS preference
   // (prefers-color-scheme). Mirrors `locale` for cross-device persistence.
-  theme         Theme?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  theme              Theme?
+  // Opt-in for Google Calendar sync (roadmap #23), independent of having a
+  // Google `Account` row — lets a user pause sync without disconnecting.
+  googleSyncEnabled  Boolean   @default(false)
+  // Set when Google reports the OAuth consent as revoked/expired
+  // (`invalid_grant` on refresh). Surfaces a "reconnect" prompt in /profile;
+  // cleared on a fresh, successful connect.
+  googleSyncBrokenAt DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   accounts         Account[]
   sessions         Session[]
@@ -56,6 +82,7 @@ model User {
   cancelledSessions     ConfirmedSession[]         @relation("SessionCancelledBy")
   sessionAttendances    ConfirmedSessionAttendee[] @relation("SessionAttendee")
   addedSessionAttendees ConfirmedSessionAttendee[] @relation("SessionAttendeeAddedBy")
+  calendarEvents        SessionCalendarEvent[]
 
   @@map("users")
 }
@@ -132,22 +159,22 @@ model Availability {
 // statistics view and for #23's Google Calendar cleanup. Named `ConfirmedSession`
 // (not `Session`) to avoid colliding with the Auth.js session table.
 model ConfirmedSession {
-  id         String   @id @default(cuid())
-  campaignId String
-  date       DateTime @db.Date
+  id              String    @id @default(cuid())
+  campaignId      String
+  date            DateTime  @db.Date
   // Mirrors `date` while the session is active, and is set to null on cancel.
   // Exists solely to back @@unique([campaignId, activeDate]): MySQL treats NULLs
   // as distinct, so any number of cancelled rows can coexist while at most one
   // ACTIVE row per (campaign, date) is possible. Never read for business logic.
-  activeDate DateTime? @db.Date
+  activeDate      DateTime? @db.Date
   // "HH:MM", local wall time — no timezone math lives in the DB.
-  startTime       String? @db.VarChar(5)
+  startTime       String?   @db.VarChar(5)
   // Only meaningful together with startTime. No startTime means an all-day session.
   durationMinutes Int?
   // True when the campaign's viability on `date` was not S at confirmation time (a DM
   // override, roadmap #22). Internal only — statistics/history — a forced session looks
   // identical in the UI.
-  forced          Boolean  @default(false)
+  forced          Boolean   @default(false)
 
   confirmedById String
   cancelledAt   DateTime?
@@ -156,10 +183,11 @@ model ConfirmedSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  campaign    Campaign                   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  confirmedBy User                       @relation("SessionConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
-  cancelledBy User?                      @relation("SessionCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
-  attendees   ConfirmedSessionAttendee[]
+  campaign       Campaign                   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  confirmedBy    User                       @relation("SessionConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
+  cancelledBy    User?                      @relation("SessionCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+  attendees      ConfirmedSessionAttendee[]
+  calendarEvents SessionCalendarEvent[]
 
   @@unique([campaignId, activeDate])
   @@index([campaignId, date])
@@ -183,6 +211,41 @@ model ConfirmedSessionAttendee {
 
   @@id([sessionId, userId])
   @@map("confirmed_session_attendees")
+}
+
+// Retry ledger and delivery record for one attendee's Google Calendar event of
+// one confirmed session (roadmap #23). `enqueue*` helpers in
+// calendarSyncService.ts write PENDING/FAILED rows here; `processPending` is
+// the only code that calls Google and advances `status`. Kept as its own table
+// (not columns on ConfirmedSessionAttendee) because a cancelled/removed
+// attendee still needs a row to track deleting their event.
+//
+// `@@unique([sessionId, userId])` is what makes every `enqueue*` call an
+// idempotent upsert instead of risking duplicate rows (and duplicate Google
+// events) for the same person.
+model SessionCalendarEvent {
+  id            String        @id @default(cuid())
+  sessionId     String
+  userId        String
+  // Google's event id, set once `status` first reaches SYNCED. Needed to
+  // PATCH/DELETE the right event later; null before the first successful sync.
+  googleEventId String?
+  status        SyncStatus    @default(PENDING)
+  operation     SyncOperation @default(UPSERT)
+  attempts      Int           @default(0)
+  lastError     String?       @db.Text
+  lastAttemptAt DateTime?
+  syncedAt      DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  session ConfirmedSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  // Serves processPending's "oldest due PENDING/FAILED row first" query.
+  @@index([status, lastAttemptAt])
+  @@map("session_calendar_events")
 }
 
 // ─── Auth.js v5 adapter tables ───────────────────────────────────────────────

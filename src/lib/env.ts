@@ -7,6 +7,19 @@ const envSchema = z
     AUTH_SECRET: z.string().min(1),
     AUTH_URL: z.url().optional(),
     DEFAULT_LOCALE: z.enum(["es", "en"]).default("es"),
+    // Google Calendar sync (roadmap #23) — optional. Unset means the app boots
+    // normally and the profile hides the integration entirely; see
+    // `isGoogleSyncConfigured` below.
+    GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+    GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+    GOOGLE_OAUTH_REDIRECT_URI: z.url().optional(),
+    // Wall-clock timezone confirmed sessions are stored in (IANA name). Sent to
+    // the Google Calendar API alongside each event's local time so Google
+    // resolves the instant, avoiding any DST math in the app.
+    APP_TIMEZONE: z.string().min(1).default("Europe/Madrid"),
+    // Shared secret for the optional POST /api/cron/calendar-sync sweeper.
+    // Unset disables that route entirely (404).
+    CRON_SECRET: z.string().min(1).optional(),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === "production" && !value.AUTH_URL) {
@@ -47,3 +60,15 @@ function loadEnv(): Env {
 }
 
 export const env = loadEnv();
+
+/**
+ * True when every variable required to run the Google OAuth consent flow is
+ * present. Gates the `/profile` integration UI and the
+ * `/api/integrations/google/*` routes (404 when false) so a deployment that
+ * never set up Google Cloud credentials is entirely unaffected.
+ *
+ * @returns {boolean} Whether Google Calendar sync can be offered.
+ */
+export const isGoogleSyncConfigured: boolean = Boolean(
+  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_OAUTH_REDIRECT_URI
+);
