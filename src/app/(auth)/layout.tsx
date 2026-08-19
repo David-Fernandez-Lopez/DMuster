@@ -1,8 +1,8 @@
 import { getServerTranslation } from "@/i18n/server";
 
 /**
- * Layout for the authentication pages (login, register). Centers a branded
- * card on the parchment background, mobile-first.
+ * Layout for the authentication pages (login, invitation accept). Centers a
+ * branded card on the parchment background, mobile-first.
  *
  * @param {{ children: React.ReactNode }} props
  * @returns {Promise<JSX.Element>}

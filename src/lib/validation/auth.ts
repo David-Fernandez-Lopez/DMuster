@@ -3,10 +3,18 @@ import { z } from "zod";
 // Validation error messages are i18n keys, not user-facing text: the client
 // resolves them through `t(...)` so no copy is ever hardcoded here.
 
-/** Minimum password length enforced on registration. */
+/**
+ * Minimum password length enforced when a user sets a password. Public
+ * registration no longer exists (roadmap #24) — the only path that sets one
+ * today is `acceptInvitationSchema` (src/lib/validation/invitation.ts), which
+ * reuses this constant.
+ */
 export const PASSWORD_MIN_LENGTH = 8;
 
-/** Maximum length accepted for a user's display name. */
+/**
+ * Maximum length accepted for a user's display name. Reused by
+ * `acceptInvitationSchema` for the same reason as `PASSWORD_MIN_LENGTH`.
+ */
 export const NAME_MAX_LENGTH = 100;
 
 /** Login form payload: an email and a non-empty password. */
@@ -16,30 +24,6 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
-
-/**
- * Registration form payload. Password and its confirmation must match; the
- * mismatch is reported on the `confirmPassword` field.
- */
-export const registerSchema = z
-  .object({
-    name: z
-      .string()
-      .trim()
-      .min(1, { error: "auth.errors.nameRequired" })
-      .max(NAME_MAX_LENGTH, { error: "auth.errors.nameTooLong" }),
-    email: z.email({ error: "auth.errors.invalidEmail" }),
-    password: z
-      .string()
-      .min(PASSWORD_MIN_LENGTH, { error: "auth.errors.passwordTooShort" }),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    error: "auth.errors.passwordMismatch",
-    path: ["confirmPassword"],
-  });
-
-export type RegisterInput = z.infer<typeof registerSchema>;
 
 /**
  * State returned by the auth server actions to `useActionState`. `error` is a

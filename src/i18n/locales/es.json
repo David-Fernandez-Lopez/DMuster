@@ -257,21 +257,9 @@
       "email": "Correo electrónico",
       "password": "Contraseña",
       "submit": "Entrar",
-      "noAccount": "¿No tienes cuenta?",
-      "registerLink": "Regístrate",
       "errors": {
         "invalidCredentials": "Correo o contraseña incorrectos."
       }
-    },
-    "register": {
-      "title": "Crear cuenta",
-      "name": "Nombre",
-      "email": "Correo electrónico",
-      "password": "Contraseña",
-      "confirmPassword": "Repite la contraseña",
-      "submit": "Registrarme",
-      "haveAccount": "¿Ya tienes cuenta?",
-      "loginLink": "Inicia sesión"
     },
     "errors": {
       "required": "Este campo es obligatorio.",
@@ -281,6 +269,57 @@
       "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
       "passwordMismatch": "Las contraseñas no coinciden.",
       "emailTaken": "Ya existe una cuenta con este correo.",
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo."
+    }
+  },
+  "invitations": {
+    "title": "Invitaciones",
+    "help": "Invita a alguien nuevo con un enlace de un solo uso, válido 7 días. Solo puedes invitar a quien todavía no tiene cuenta.",
+    "emailLabel": "Correo electrónico",
+    "campaignLabel": "Campaña",
+    "roleLabel": "Rol",
+    "noCampaign": "Sin campaña (solo cuenta)",
+    "create": "Crear invitación",
+    "showOnce": "Copia este enlace ahora: no volverá a mostrarse.",
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "copyManual": "No se pudo copiar automáticamente. Selecciona el texto y cópialo con Ctrl/Cmd+C.",
+    "regenerate": "Regenerar enlace",
+    "revoke": "Revocar",
+    "revokePrompt": "¿Revocar esta invitación?",
+    "empty": "Aún no has enviado ninguna invitación.",
+    "expiresIn": "Caduca en {{count}} días",
+    "status": {
+      "pending": "Pendiente",
+      "accepted": "Aceptada",
+      "revoked": "Revocada",
+      "expired": "Caducada"
+    },
+    "accept": {
+      "title": "Aceptar invitación",
+      "subtitle": "Crea tu contraseña para completar tu cuenta en DMuster.",
+      "joiningCampaign": "Te unirás a la campaña {{campaign}}.",
+      "emailLabel": "Correo electrónico",
+      "nameLabel": "Nombre",
+      "passwordLabel": "Contraseña",
+      "confirmPasswordLabel": "Repite la contraseña",
+      "submit": "Crear cuenta",
+      "signedIn": "Has iniciado sesión como {{name}}.",
+      "signOut": "Cerrar sesión para aceptar",
+      "backToLogin": "Volver a iniciar sesión"
+    },
+    "errors": {
+      "unauthorized": "Debes iniciar sesión.",
+      "forbidden": "Solo un máster puede enviar invitaciones.",
+      "validation": "Revisa los datos de la invitación.",
+      "roleWithoutCampaign": "Elige una campaña antes de asignar un rol.",
+      "emailTaken": "Ya existe una cuenta con este correo.",
+      "alreadyInvited": "Ya hay una invitación pendiente para este correo.",
+      "notFound": "Invitación no encontrada.",
+      "alreadyAccepted": "Esta invitación ya se ha utilizado.",
+      "invalid": "Este enlace de invitación no es válido.",
+      "expired": "Este enlace de invitación ha caducado.",
+      "revoked": "Este enlace de invitación ha sido revocado.",
       "unknown": "Algo ha ido mal. Inténtalo de nuevo."
     }
   }

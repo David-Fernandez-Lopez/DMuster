@@ -13,8 +13,8 @@ import type { ProfileActionState } from "@/lib/validation/profile";
 /**
  * Persists the current user's preferred locale. Writes it to `User.locale`
  * (so it survives logout/login) and to the `NEXT_LOCALE` cookie (so anonymous
- * pages like login/register stay in the chosen language), then revalidates the
- * whole layout so the UI language flips in the same roundtrip.
+ * pages like login/invite-accept stay in the chosen language), then
+ * revalidates the whole layout so the UI language flips in the same roundtrip.
  *
  * @param {ProfileActionState} _prevState - Previous action state (unused).
  * @param {FormData} formData - Submitted form carrying the `locale` value.

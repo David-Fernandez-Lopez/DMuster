@@ -32,7 +32,7 @@ export const getLocale = cache(async (): Promise<AppLocale> => {
     return session.user.locale;
   }
 
-  // Anonymous visitors (login/register) fall back to the cookie, then default.
+  // Anonymous visitors (login/invite-accept) fall back to the cookie, then default.
   const cookieStore = await cookies();
   const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
 

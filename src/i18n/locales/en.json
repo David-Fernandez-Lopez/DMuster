@@ -257,21 +257,9 @@
       "email": "Email",
       "password": "Password",
       "submit": "Sign in",
-      "noAccount": "Don't have an account?",
-      "registerLink": "Sign up",
       "errors": {
         "invalidCredentials": "Incorrect email or password."
       }
-    },
-    "register": {
-      "title": "Create account",
-      "name": "Name",
-      "email": "Email",
-      "password": "Password",
-      "confirmPassword": "Repeat password",
-      "submit": "Sign up",
-      "haveAccount": "Already have an account?",
-      "loginLink": "Log in"
     },
     "errors": {
       "required": "This field is required.",
@@ -281,6 +269,57 @@
       "passwordTooShort": "Password must be at least 8 characters.",
       "passwordMismatch": "Passwords do not match.",
       "emailTaken": "An account with this email already exists.",
+      "unknown": "Something went wrong. Please try again."
+    }
+  },
+  "invitations": {
+    "title": "Invitations",
+    "help": "Invite someone new with a single-use link, valid for 7 days. You can only invite someone who doesn't have an account yet.",
+    "emailLabel": "Email",
+    "campaignLabel": "Campaign",
+    "roleLabel": "Role",
+    "noCampaign": "No campaign (account only)",
+    "create": "Create invitation",
+    "showOnce": "Copy this link now: it won't be shown again.",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "copyManual": "Couldn't copy automatically. Select the text and copy it with Ctrl/Cmd+C.",
+    "regenerate": "Regenerate link",
+    "revoke": "Revoke",
+    "revokePrompt": "Revoke this invitation?",
+    "empty": "You haven't sent any invitations yet.",
+    "expiresIn": "Expires in {{count}} days",
+    "status": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "revoked": "Revoked",
+      "expired": "Expired"
+    },
+    "accept": {
+      "title": "Accept invitation",
+      "subtitle": "Set a password to finish creating your DMuster account.",
+      "joiningCampaign": "You'll join the {{campaign}} campaign.",
+      "emailLabel": "Email",
+      "nameLabel": "Name",
+      "passwordLabel": "Password",
+      "confirmPasswordLabel": "Repeat password",
+      "submit": "Create account",
+      "signedIn": "You're signed in as {{name}}.",
+      "signOut": "Sign out to accept",
+      "backToLogin": "Back to login"
+    },
+    "errors": {
+      "unauthorized": "You must log in.",
+      "forbidden": "Only a DM can send invitations.",
+      "validation": "Check the invitation details.",
+      "roleWithoutCampaign": "Choose a campaign before assigning a role.",
+      "emailTaken": "An account with this email already exists.",
+      "alreadyInvited": "There is already a pending invitation for this email.",
+      "notFound": "Invitation not found.",
+      "alreadyAccepted": "This invitation has already been used.",
+      "invalid": "This invitation link is not valid.",
+      "expired": "This invitation link has expired.",
+      "revoked": "This invitation link has been revoked.",
       "unknown": "Something went wrong. Please try again."
     }
   }

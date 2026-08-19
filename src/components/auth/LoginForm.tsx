@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -53,13 +52,6 @@ export default function LoginForm() {
         pendingLabel={t("common.loading")}
         isPending={isPending}
       />
-
-      <p className="text-center text-sm text-ink-muted">
-        {t("auth.login.noAccount")}{" "}
-        <Link href="/register" className="font-semibold text-brand hover:underline">
-          {t("auth.login.registerLink")}
-        </Link>
-      </p>
     </form>
   );
 }
