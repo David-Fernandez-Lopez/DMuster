@@ -6,7 +6,10 @@ import { useTranslation } from "react-i18next";
 
 import type { ResponseStatus } from "@/components/availability/AvailabilityToggle";
 import DayAvailabilityModal from "@/components/calendar/DayAvailabilityModal";
-import DayCell, { type DayIndicator } from "@/components/calendar/DayCell";
+import DayCell, {
+  MOBILE_MAX_CHIPS,
+  type DayIndicator,
+} from "@/components/calendar/DayCell";
 import type {
   CalendarCampaign,
   CalendarMaster,
@@ -14,9 +17,6 @@ import type {
 } from "@/lib/calendarService";
 import { isEligible, toUtcDate } from "@/lib/date";
 import type { Viability } from "@/lib/viability";
-
-/** How many chips a cell shows on mobile before collapsing the rest into "+N". */
-const MOBILE_MAX_CHIPS = 6;
 
 /** Chip ordering priority: available first, then maybe, then unavailable. */
 const VIABILITY_ORDER: Record<Viability, number> = { S: 0, T: 1, N: 2 };
@@ -141,10 +141,12 @@ export default function CalendarGrid({
    * Builds a cell's viability chips after applying the active filters
    * (campaigns, masters, viability tiers, combined with AND), ordered
    * confirmed-first, then by viability (available → maybe → unavailable) so
-   * the most useful ones lead and never fall into the mobile overflow. Both
+   * pending chips read most-useful-first within their own group. Both
    * comparisons are stable, so campaigns keep their name order within each
-   * group. Also returns the mobile "+N" overflow label (desktop shows every
-   * chip).
+   * group. Also returns the mobile "+N" overflow label, counting only the
+   * pending (non-confirmed) chips — a confirmed session always renders in
+   * full on every viewport and never falls into the overflow (desktop shows
+   * every chip regardless).
    *
    * @param {string} iso - The day, "YYYY-MM-DD".
    * @returns {{ indicators: DayIndicator[]; moreLabel: string | null }}
@@ -185,7 +187,8 @@ export default function CalendarGrid({
         }
         return VIABILITY_ORDER[a.viability] - VIABILITY_ORDER[b.viability];
       });
-    const overflow = indicators.length - MOBILE_MAX_CHIPS;
+    const pendingCount = indicators.filter((indicator) => !indicator.confirmed).length;
+    const overflow = pendingCount - MOBILE_MAX_CHIPS;
     return {
       indicators,
       moreLabel:

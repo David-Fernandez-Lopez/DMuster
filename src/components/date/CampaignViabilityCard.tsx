@@ -77,17 +77,19 @@ function ConfirmedBadgeIcon() {
 /**
  * A collapsible card for one of the user's campaigns inside the day modal. The
  * summary (always visible) shows the campaign name with its viability badge (Sí /
- * No / Tal vez), a checkmark when a session is confirmed, and a chevron;
- * expanding it reveals the alphabetically ordered member rows with each
- * member's response, followed by the session block: a confirmed session shows
- * its time summary, its attendee list with add/remove controls for a DM
- * (`AttendeeControls`, roadmap #22), and then either a DM's edit-time/cancel
- * controls (roadmap #21) or — for a non-attending member who answered Sí —
- * "Sumarme a la partida" (`SelfJoinButton`, roadmap #22), with the blocked
- * case explained inline instead of a disabled button; an unconfirmed viable
- * (`S`) day offers a DM the confirm action; an unconfirmed non-viable day
- * offers a DM the master override, "Forzar partida" (roadmap #22,
- * `ForceSessionForm`). Built on native `<details>/<summary>` so it is
+ * No / Tal vez), a checkmark when a session is confirmed, and a chevron.
+ * Expanding an **unconfirmed** day reveals the alphabetically ordered member
+ * rows with each member's response (`PlayerStatusRow`), followed by either a
+ * DM's confirm action (viable `S` day) or the master override, "Forzar
+ * partida" (non-viable day, roadmap #22, `ForceSessionForm`). Expanding a
+ * **confirmed** day skips that member list — it would just duplicate the
+ * attendee list below — and shows the session block directly: its time
+ * summary, the attendee list with add/remove controls for a DM
+ * (`AttendeeControls`, roadmap #22, itself showing every member's answer), and
+ * then either a DM's edit-time/cancel controls (roadmap #21) or — for a
+ * non-attending member who answered Sí — "Sumarme a la partida"
+ * (`SelfJoinButton`, roadmap #22), with the blocked case explained inline
+ * instead of a disabled button. Built on native `<details>/<summary>` so it is
  * collapsed by default, accessible and keyboard-operable with no state. The
  * per-member ordering is decided upstream in `getCalendarViability`.
  *
@@ -115,7 +117,9 @@ export default function CampaignViabilityCard({
   }));
 
   return (
-    <details className="group rounded-[var(--radius-card)] border border-border bg-bg">
+    <details
+      className={`group rounded-[var(--radius-card)] border border-border ${confirmedSession ? "bg-brand-soft" : "bg-bg"}`}
+    >
       <summary className="flex cursor-pointer list-none items-center gap-2 p-3 [&::-webkit-details-marker]:hidden">
         <span
           aria-hidden="true"
@@ -149,19 +153,21 @@ export default function CampaignViabilityCard({
       </summary>
 
       <div className="flex flex-col gap-3 px-3 pb-3">
-        <div className="divide-y divide-border">
-          {campaign.players.map((player) => (
-            <PlayerStatusRow
-              key={player.userId}
-              name={player.name}
-              isDm={player.isDm}
-              status={player.status}
-            />
-          ))}
-        </div>
+        {!confirmedSession ? (
+          <div className="divide-y divide-border">
+            {campaign.players.map((player) => (
+              <PlayerStatusRow
+                key={player.userId}
+                name={player.name}
+                isDm={player.isDm}
+                status={player.status}
+              />
+            ))}
+          </div>
+        ) : null}
 
         {confirmedSession ? (
-          <div className="flex flex-col gap-2 rounded-[var(--radius-card)] bg-brand-soft p-3">
+          <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold text-brand">
               {t("sessions.confirmed")}
               {" — "}

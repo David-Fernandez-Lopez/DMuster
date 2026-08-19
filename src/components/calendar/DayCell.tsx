@@ -17,8 +17,14 @@ const DOT_CLASS: Record<Viability, string> = {
   T: "bg-t",
 };
 
-/** Chips shown on mobile before the rest collapse into the "+N" chip. */
-const MOBILE_MAX_CHIPS = 6;
+/**
+ * Non-confirmed chips shown on mobile before the rest collapse into the "+N"
+ * chip. Confirmed sessions are exempt from this cap — they always render in
+ * full, each on its own row — so it only ever counts pending indicators.
+ * Exported so `CalendarGrid` computes the matching "+N" count from the same
+ * number instead of redeclaring it.
+ */
+export const MOBILE_MAX_CHIPS = 6;
 
 /**
  * Small checkmark badge marking a confirmed session's chip, shared by the
@@ -63,7 +69,11 @@ type DayCellProps = {
  * A single calendar day cell. Eligible days are elevated and, when tapped, open
  * the day availability modal via `onSelect`; non-eligible days are dimmed and
  * inert. Out-of-month days are dimmed further on top of either state, and today
- * is marked with a brand ring.
+ * is marked with a brand ring. An eligible day with at least one active
+ * confirmed session (roadmap #21) tints the **whole cell** `bg-brand-soft`
+ * instead of the plain `bg-bg-elevated` — the same "confirmed" token used by
+ * the day modal's confirmed-session card — so a confirmed day is obvious at a
+ * glance across the month, not just from its own chip.
  *
  * On eligible days it renders the per-campaign viability chips (a colored dot
  * plus the 2-letter tag) in a compact column grid — up to 3 columns on desktop
@@ -75,10 +85,14 @@ type DayCellProps = {
  * campaign as a dot + tag chip in up to 3 columns.
  *
  * A campaign with an active confirmed session (roadmap #21) renders
- * differently: on mobile it swaps the bare dot for the 2-letter tag plus a
- * checkmark icon; on desktop it spans the full row width to show the
- * checkmark plus the **full campaign name** (truncated) instead of the dot +
- * tag chip. Confirmed chips are already sorted first by the grid.
+ * differently and always in full, exempt from the mobile cap and the "+N"
+ * count (never hidden behind an overflow): the day number's own size and
+ * weight (`text-sm font-bold`), so it reads at a glance over the dimmer
+ * viability dots. On mobile it spans the full row (`col-span-2`) showing the
+ * 2-letter tag plus a checkmark icon; on desktop it spans the full row
+ * (`col-span-3`) showing the checkmark plus the **full campaign name**
+ * (truncated). Confirmed chips are sorted first by the grid and rendered
+ * ahead of the (capped) pending ones in both layouts.
  *
  * @param {DayCellProps} props
  * @returns {JSX.Element}
@@ -94,9 +108,15 @@ export default function DayCell({
 }: DayCellProps) {
   const dayNumber = Number(iso.slice(8));
 
+  const confirmed = indicators?.filter((indicator) => indicator.confirmed) ?? [];
+  const pending = indicators?.filter((indicator) => !indicator.confirmed) ?? [];
+  const hasConfirmedSession = confirmed.length > 0;
+
   const base = "min-h-[56px] p-1 md:min-h-[110px] md:p-2";
   const state = eligible
-    ? "bg-bg-elevated"
+    ? hasConfirmedSession
+      ? "bg-brand-soft"
+      : "bg-bg-elevated"
     : "bg-bg opacity-45 pointer-events-none";
   const dimmed = outOfMonth ? "opacity-30" : "";
   const ring = today ? "border-2 border-brand" : "";
@@ -107,57 +127,58 @@ export default function DayCell({
       <span className="text-sm font-semibold text-ink">{dayNumber}</span>
       {indicators && indicators.length > 0 ? (
         <>
-          {/* Mobile: dots only (confirmed campaigns get tag + icon instead),
-              capped at MOBILE_MAX_CHIPS with a "+N" overflow. */}
+          {/* Mobile: every confirmed session first, each spanning its own full
+              row so no other campaign's dot shares its height; then the
+              pending campaigns as dots only, capped at MOBILE_MAX_CHIPS with
+              a "+N" overflow (confirmed sessions never count toward it). */}
           <div className="mt-1 grid grid-cols-2 gap-x-1.5 gap-y-1 md:hidden">
-            {indicators.slice(0, MOBILE_MAX_CHIPS).map((indicator) =>
-              indicator.confirmed ? (
-                <span
-                  key={indicator.campaignId}
-                  className="flex items-center gap-0.5 text-[9px] font-semibold leading-none text-ink"
-                >
-                  <ConfirmedIcon className="h-2 w-2 shrink-0 text-brand" />
-                  {indicator.tag}
-                </span>
-              ) : (
-                <span
-                  key={indicator.campaignId}
-                  aria-hidden="true"
-                  className={`h-2 w-2 rounded-full ${DOT_CLASS[indicator.viability]}`}
-                />
-              ),
-            )}
+            {confirmed.map((indicator) => (
+              <span
+                key={indicator.campaignId}
+                className="col-span-2 flex items-center gap-1 text-sm font-bold leading-none text-ink"
+              >
+                <ConfirmedIcon className="h-3.5 w-3.5 shrink-0 text-brand" />
+                {indicator.tag}
+              </span>
+            ))}
+            {pending.slice(0, MOBILE_MAX_CHIPS).map((indicator) => (
+              <span
+                key={indicator.campaignId}
+                aria-hidden="true"
+                className={`h-2 w-2 rounded-full ${DOT_CLASS[indicator.viability]}`}
+              />
+            ))}
             {moreLabel ? (
               <span className="text-[10px] font-semibold leading-none text-ink-muted">
                 {moreLabel}
               </span>
             ) : null}
           </div>
-          {/* Desktop: every campaign as a dot + tag chip in up to 3 columns;
-              a confirmed campaign spans the full row with its full name. */}
+          {/* Desktop: every confirmed session spans the full row with its
+              full name, at the day number's own size and weight; every
+              pending campaign is a dot + tag chip in up to 3 columns. */}
           <div className="mt-1 hidden grid-cols-3 gap-x-1.5 gap-y-0.5 md:grid">
-            {indicators.map((indicator) =>
-              indicator.confirmed ? (
+            {confirmed.map((indicator) => (
+              <span
+                key={indicator.campaignId}
+                className="col-span-3 flex min-w-0 items-center gap-1 text-sm font-bold leading-tight text-ink"
+              >
+                <ConfirmedIcon className="h-3.5 w-3.5 shrink-0 text-brand" />
+                <span className="truncate">{indicator.name}</span>
+              </span>
+            ))}
+            {pending.map((indicator) => (
+              <span
+                key={indicator.campaignId}
+                className="flex items-center gap-1 text-[10px] font-semibold leading-tight text-ink-muted"
+              >
                 <span
-                  key={indicator.campaignId}
-                  className="col-span-3 flex min-w-0 items-center gap-1 text-[10px] font-semibold leading-tight text-ink"
-                >
-                  <ConfirmedIcon className="h-2.5 w-2.5 shrink-0 text-brand" />
-                  <span className="truncate">{indicator.name}</span>
-                </span>
-              ) : (
-                <span
-                  key={indicator.campaignId}
-                  className="flex items-center gap-1 text-[10px] font-semibold leading-tight text-ink-muted"
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`h-2 w-2 shrink-0 rounded-full ${DOT_CLASS[indicator.viability]}`}
-                  />
-                  {indicator.tag}
-                </span>
-              ),
-            )}
+                  aria-hidden="true"
+                  className={`h-2 w-2 shrink-0 rounded-full ${DOT_CLASS[indicator.viability]}`}
+                />
+                {indicator.tag}
+              </span>
+            ))}
           </div>
         </>
       ) : null}
