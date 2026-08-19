@@ -119,6 +119,53 @@ export function addMonths(month: string, delta: number): string {
 }
 
 /**
+ * Returns a "YYYY-MM" month's last calendar day. Day 0 of the following month
+ * is the last day of this one — the same UTC trick `monthGridDays` uses for
+ * its own last-day lookup.
+ *
+ * @param {string} month - A valid "YYYY-MM" month.
+ * @returns {string} The month's last day, "YYYY-MM-DD".
+ */
+export function lastDayOfMonth(month: string): string {
+  const year = Number(month.slice(0, 4));
+  const monthIndex = Number(month.slice(5, 7)) - 1; // 0-based
+  return toIsoDate(new Date(Date.UTC(year, monthIndex + 1, 0)));
+}
+
+/**
+ * Lists every calendar day of a "YYYY-MM" month, in order — unlike
+ * `monthGridDays`, this has no leading/trailing padding into neighboring
+ * months, so its length is always the month's real day count (28-31).
+ *
+ * @param {string} month - A valid "YYYY-MM" month.
+ * @returns {string[]} Every day of the month, "YYYY-MM-DD", ascending.
+ */
+export function monthDays(month: string): string[] {
+  const year = Number(month.slice(0, 4));
+  const monthIndex = Number(month.slice(5, 7)) - 1; // 0-based
+  const dayCount = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+
+  const days: string[] = [];
+  for (let day = 1; day <= dayCount; day += 1) {
+    days.push(toIsoDate(new Date(Date.UTC(year, monthIndex, day))));
+  }
+  return days;
+}
+
+/**
+ * Lists the eligible (playable) days of a "YYYY-MM" month — every weekend or
+ * listed holiday in it. Used by the monthly availability reminder (roadmap
+ * #23.4) to decide whether next month is fully answered.
+ *
+ * @param {string} month - A valid "YYYY-MM" month.
+ * @param {Set<string>} holidays - Set of holiday dates as "YYYY-MM-DD" strings.
+ * @returns {string[]} The month's eligible days, "YYYY-MM-DD", ascending.
+ */
+export function eligibleDaysOfMonth(month: string, holidays: Set<string>): string[] {
+  return monthDays(month).filter((iso) => isEligible(iso, holidays));
+}
+
+/**
  * Builds the Monday-first calendar grid for a "YYYY-MM" month: every day, as a
  * "YYYY-MM-DD" string, from the Monday on or before the 1st through the Sunday
  * on or after the last day of the month. The result is a whole number of weeks

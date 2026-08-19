@@ -238,6 +238,8 @@
       "broken": "La conexión con Google se ha interrumpido.",
       "reconnect": "Reconectar",
       "eventDescription": "Juegan: {{players}}",
+      "reminderTitle": "REVISAR CALENDARIO ROL",
+      "reminderDescription": "Tienes días sin responder en {{month}}. Entra en DMuster y completa tu disponibilidad.",
       "errors": {
         "unauthorized": "Debes iniciar sesión.",
         "notConfigured": "Esta integración no está disponible.",

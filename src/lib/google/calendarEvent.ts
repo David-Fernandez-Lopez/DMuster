@@ -39,10 +39,11 @@ export type GoogleCalendarEventBody = {
   description: string;
   start: GoogleCalendarEventBoundary;
   end: GoogleCalendarEventBoundary;
+  // Loosened to a string map (not just `{ dmusterSessionId }`) so
+  // `reminderEvent.ts` can reuse this same body type with its own
+  // `dmusterReminderMonth` tracing key instead of duplicating it.
   extendedProperties: {
-    private: {
-      dmusterSessionId: string;
-    };
+    private: Record<string, string>;
   };
 };
 

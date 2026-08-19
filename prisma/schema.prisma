@@ -120,6 +120,7 @@ model User {
   addedSessionAttendees ConfirmedSessionAttendee[] @relation("SessionAttendeeAddedBy")
   calendarEvents        SessionCalendarEvent[]
   calendarEventLogs     CalendarEventLog[]
+  reminderEvents        AvailabilityReminderEvent[]
 
   @@map("users")
 }
@@ -283,6 +284,38 @@ model SessionCalendarEvent {
   // Serves processPending's "oldest due PENDING/FAILED row first" query.
   @@index([status, lastAttemptAt])
   @@map("session_calendar_events")
+}
+
+// Retry ledger and delivery record for one user's monthly "REVISAR CALENDARIO
+// ROL" reminder (roadmap #23.4): a Google Calendar all-day event placed on the
+// last day of the current month when NEXT month still has unanswered eligible
+// days. Mirrors `SessionCalendarEvent`'s PENDING/SYNCED/FAILED/DELETED
+// lifecycle and UPSERT/DELETE operation, but keyed on (user, month) instead of
+// (session, user) — `reminderSyncService.reconcileReminders` is what decides
+// whether a user needs one, `processPendingReminders` is the only code that
+// calls Google.
+model AvailabilityReminderEvent {
+  id     String @id @default(cuid())
+  userId String
+  // The month being checked for completeness, "YYYY-MM". The reminder event
+  // itself sits on the last day of the month BEFORE this one, so the row
+  // describes itself without needing a separate date column.
+  month         String        @db.VarChar(7)
+  googleEventId String?
+  status        SyncStatus    @default(PENDING)
+  operation     SyncOperation @default(UPSERT)
+  attempts      Int           @default(0)
+  lastError     String?       @db.Text
+  lastAttemptAt DateTime?
+  syncedAt      DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month])
+  @@index([status, lastAttemptAt])
+  @@map("availability_reminder_events")
 }
 
 // Append-only audit trail of every REAL call to the Google Calendar API

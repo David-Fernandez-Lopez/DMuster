@@ -238,6 +238,8 @@
       "broken": "The connection with Google was interrupted.",
       "reconnect": "Reconnect",
       "eventDescription": "Playing: {{players}}",
+      "reminderTitle": "REVIEW RPG CALENDAR",
+      "reminderDescription": "You have unanswered days in {{month}}. Open DMuster and fill in your availability.",
       "errors": {
         "unauthorized": "You must log in.",
         "notConfigured": "This integration is not available.",
