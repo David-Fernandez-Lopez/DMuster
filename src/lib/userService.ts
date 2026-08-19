@@ -5,7 +5,6 @@ import { getLocale } from "@/i18n/server";
 import type { AppLocale } from "@/i18n/settings";
 import { prisma } from "@/lib/prisma";
 import type { Theme } from "@/lib/theme";
-import type { RegisterInput } from "@/lib/validation/auth";
 
 /** Bcrypt cost factor. Kept in sync with the seed script (prisma/seed.ts). */
 const BCRYPT_COST = 10;
@@ -13,29 +12,42 @@ const BCRYPT_COST = 10;
 /** Prisma error code raised on a unique-constraint violation. */
 const UNIQUE_VIOLATION = "P2002";
 
+/** Payload to create a new user account. */
+export type CreateUserInput = { name: string; email: string; password: string };
+
 /** Result of a registration attempt. `error` holds an i18n key on failure. */
 export type RegisterResult =
   | { ok: true; userId: string }
   | { ok: false; error: string };
 
 /**
- * Creates a new user from validated registration input. The password is
- * hashed with bcrypt and the new user's locale is taken from the current
- * request locale. A duplicate email surfaces as a friendly i18n error key
- * rather than throwing.
+ * Creates a new user account. The password is hashed with bcrypt and the new
+ * user's locale is taken from the current request locale. A duplicate email
+ * surfaces as a friendly i18n error key rather than throwing.
  *
- * @param {RegisterInput} input - Already Zod-validated registration payload.
+ * Internal path only — not reachable from any public route since roadmap #24
+ * removed public registration. Its only caller is
+ * `invitationService.acceptInvitation`, which passes its transaction client so
+ * the new user and the invitation are consumed atomically.
+ *
+ * @param {CreateUserInput} input - Name, email and plaintext password.
+ * @param {Prisma.TransactionClient | typeof prisma} [client] - Prisma client to
+ *   run the write against; pass a `$transaction` callback's `tx` to make the
+ *   write participate in a larger transaction. Defaults to the module client.
  * @returns {Promise<RegisterResult>} Success with the new user id, or an
  *   error key (`auth.errors.emailTaken` / `auth.errors.unknown`).
  */
-export async function registerUser(input: RegisterInput): Promise<RegisterResult> {
+export async function registerUser(
+  input: CreateUserInput,
+  client: Prisma.TransactionClient | typeof prisma = prisma,
+): Promise<RegisterResult> {
   const email = input.email.trim().toLowerCase();
 
   try {
     const locale = await getLocale();
     const passwordHash = await bcrypt.hash(input.password, BCRYPT_COST);
 
-    const user = await prisma.user.create({
+    const user = await client.user.create({
       data: {
         name: input.name.trim(),
         email,
