@@ -26,6 +26,10 @@ The app automatically computes a **viability result** per campaign for each prop
 - Role-based access: **DM** manages campaigns; **Players** set their own availability
 - A user can be DM of some campaigns and player in others simultaneously
 - Multi-campaign support from a single account
+- **Invitation-only access:** there is no public sign-up. A DM of any campaign sends a
+  single-use, email-bound link (valid 7 days) from `/profile`, optionally pre-joining the
+  invitee to one of their campaigns with a role; the recipient sets their name and password on
+  the link to create the account
 - Mobile-first responsive design
 - Available in Spanish and English (i18n)
 
@@ -60,6 +64,12 @@ docker compose exec app npx prisma migrate deploy
 docker compose exec app npx prisma db seed
 ```
 
+> **Bootstrap warning:** there is no public sign-up (see *Features*) — creating an account
+> requires an invitation, and sending one requires already being a DM of a campaign. On a
+> **fresh deployment with an empty database, nobody can invite anyone yet.** The seed command
+> above is what creates the first accounts (and their campaigns/DM roles); log in with one of
+> the seeded users to send the first real invitation. There is no separate bootstrap script.
+
 ## Environment
 
 Every variable is documented with comments in `.env.example`. Most deployments only need the
@@ -92,21 +102,48 @@ To set it up, in [Google Cloud Console](https://console.cloud.google.com):
 
 ### Cron sweeper (optional)
 
-`POST /api/cron/calendar-sync` retries failed Google Calendar syncs on a schedule, for when no
-one has used the app recently to trigger the normal post-action sync. Leave `CRON_SECRET` unset
-to disable the route (404) — manual retry from `/profile` works without it. When set, schedule a
-periodic `POST` to that path with an `x-cron-secret` header matching its value.
+Two routes, both authorized by the same `CRON_SECRET` shared-secret header (not a user session)
+and both entirely inert (404) when it is unset:
+
+- `POST /api/cron/calendar-sync` retries failed Google Calendar session syncs on a schedule, for
+  when no one has used the app recently to trigger the normal post-action sync. Manual retry
+  from `/profile` works without it.
+- `POST /api/cron/availability-reminders` runs once a day: for every user with Google Calendar
+  sync enabled, it checks whether *next* month still has an eligible day they have not answered
+  and creates an all-day "REVISAR CALENDARIO ROL" event on the last day of the *current* month if
+  so — clearing it again once they finish answering. Only affects users who both have Google
+  connected and belong to at least one campaign.
 
 A `cron` service is already wired into `docker-compose.yml` (`docker/cron/entrypoint.sh`,
-Alpine's `crond`) that calls the route every 15 minutes over the compose network — no external
-scheduler needed for local/self-hosted use. Set `CRON_SECRET` in `.env`
-(`openssl rand -base64 32`, same recipe as `AUTH_SECRET`) and recreate the containers
-(`docker compose up -d`) so both `app` and `cron` pick it up. Leaving it unset keeps the `cron`
-service running but idle (it just sleeps — see the entrypoint script).
+Alpine's `crond`) that calls `calendar-sync` every 15 minutes and `availability-reminders` once a
+day, both over the compose network — no external scheduler needed for local/self-hosted use. Set
+`CRON_SECRET` in `.env` (`openssl rand -base64 32`, same recipe as `AUTH_SECRET`) and recreate the
+containers (`docker compose up -d`) so both `app` and `cron` pick it up. Leaving it unset keeps
+the `cron` service running but idle (it just sleeps — see the entrypoint script).
 
 For a hosted deployment with its own scheduler (Vercel Cron, a scheduled GitHub Action, a cloud
-provider's Cloud Scheduler, …), point it at the same route with the same header instead of
+provider's Cloud Scheduler, …), point it at the same routes with the same header instead of
 relying on the compose sidecar.
+
+### Sync audit logs
+
+Every real write to the Google Calendar API and every cron execution is recorded for
+troubleshooting — there is no admin screen for these, they are meant to be queried directly:
+
+```sql
+-- Recent cron executions, with duration and per-job details.
+SELECT job, status, startedAt, finishedAt, durationMs, processed, failed, details
+  FROM cron_runs ORDER BY startedAt DESC LIMIT 10;
+
+-- Recent Google Calendar writes (converted to a local timezone for reading).
+SELECT kind, action, trigger, success, googleEventId,
+       CONVERT_TZ(executedAt, '+00:00', '+02:00') AS executedLocal
+  FROM calendar_event_logs ORDER BY executedAt DESC LIMIT 10;
+```
+
+`calendar_event_logs` only gains a row per real Google API call (insert/patch/delete) and is kept
+indefinitely; `cron_runs` gains a row on every sweep tick (as often as every 15 minutes) and is
+pruned after 90 days.
 
 ## License
 
