@@ -50,6 +50,42 @@ enum SyncOperation {
   DELETE
 }
 
+// What kind of Google Calendar event a `CalendarEventLog` row is about.
+enum CalendarEventKind {
+  SESSION
+  REMINDER
+}
+
+// What actually happened to the Google event: insert, patch, or delete.
+enum CalendarEventAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+// Who triggered the Google API call being logged — lets the audit trail
+// separate cron-driven traffic from the traffic normal app usage generates.
+enum SyncTrigger {
+  AFTER_RESPONSE
+  MANUAL_RETRY
+  CRON
+}
+
+// Which scheduled sweep a `CronRun` row is for.
+enum CronJob {
+  CALENDAR_SYNC
+  AVAILABILITY_REMINDERS
+}
+
+// Lifecycle of one cron execution: opened as RUNNING, closed as SUCCESS or
+// FAILED. A row stuck in RUNNING with no `finishedAt` means the process died
+// mid-run instead of vanishing without a trace.
+enum CronRunStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
 model User {
   id                 String    @id @default(cuid())
   name               String
@@ -83,6 +119,7 @@ model User {
   sessionAttendances    ConfirmedSessionAttendee[] @relation("SessionAttendee")
   addedSessionAttendees ConfirmedSessionAttendee[] @relation("SessionAttendeeAddedBy")
   calendarEvents        SessionCalendarEvent[]
+  calendarEventLogs     CalendarEventLog[]
 
   @@map("users")
 }
@@ -246,6 +283,60 @@ model SessionCalendarEvent {
   // Serves processPending's "oldest due PENDING/FAILED row first" query.
   @@index([status, lastAttemptAt])
   @@map("session_calendar_events")
+}
+
+// Append-only audit trail of every REAL call to the Google Calendar API
+// (insert/patch/delete), for both session events and reminder events —
+// unlike `SessionCalendarEvent`/`AvailabilityReminderEvent`, which are ledgers
+// of current state (one row per subject, overwritten in place), this is a
+// history of what actually happened, and nothing ever updates or deletes a
+// row here. `subjectId` is a loose scalar (no FK) on purpose: a log entry
+// must outlive the campaign/session it was about.
+model CalendarEventLog {
+  id            String              @id @default(cuid())
+  userId        String
+  kind          CalendarEventKind
+  action        CalendarEventAction
+  trigger       SyncTrigger
+  // What the write was about: a ConfirmedSession id for SESSION rows, or a
+  // "YYYY-MM" month for REMINDER rows. No FK (see above).
+  subjectId     String?
+  googleEventId String?
+  success       Boolean
+  error         String?             @db.Text
+  // The CronRun that triggered this write, when there was one (null for the
+  // opportunistic post-response sweep or the manual "Reintentar" button).
+  cronRunId     String?
+  // When the Google API call actually happened (UTC, like the rest of the app).
+  executedAt    DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, executedAt])
+  @@index([executedAt])
+  @@map("calendar_event_logs")
+}
+
+// One row per execution of a scheduled sweep (roadmap #23.2/#23.4). Opened in
+// RUNNING when the run starts and closed with SUCCESS/FAILED when it ends, so
+// a run that crashed mid-way stays visible as a stale RUNNING row instead of
+// leaving no trace at all.
+model CronRun {
+  id         String        @id @default(cuid())
+  job        CronJob
+  status     CronRunStatus @default(RUNNING)
+  startedAt  DateTime      @default(now())
+  finishedAt DateTime?
+  durationMs Int?
+  processed  Int           @default(0)
+  failed     Int           @default(0)
+  // Job-specific counters (e.g. the reminder sweep's evaluated/enqueued/cleared).
+  // Deliberately schemaless — each job shapes its own summary.
+  details    Json?
+  error      String?       @db.Text
+
+  @@index([job, startedAt])
+  @@map("cron_runs")
 }
 
 // ─── Auth.js v5 adapter tables ───────────────────────────────────────────────

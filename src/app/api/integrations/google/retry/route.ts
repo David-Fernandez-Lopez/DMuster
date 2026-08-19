@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { SyncStatus } from "@/generated/prisma/enums";
+import { SyncStatus, SyncTrigger } from "@/generated/prisma/enums";
 import { auth } from "@/lib/auth";
 import { isGoogleSyncConfigured } from "@/lib/env";
 import { processPending } from "@/lib/google/calendarSyncService";
@@ -36,7 +36,7 @@ export async function POST(): Promise<NextResponse> {
     data: { attempts: 0 },
   });
 
-  const result = await processPending({ userId: session.user.id });
+  const result = await processPending({ userId: session.user.id, trigger: SyncTrigger.MANUAL_RETRY });
 
   return NextResponse.json({ data: result });
 }

@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(docker exec *)"
+      "Bash(docker exec *)",
+      "Bash(docker exec dmuster-db-1 mysql -uroot -pchange_me_root dmuster -e ' *)"
     ]
   }
 }

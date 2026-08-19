@@ -14,10 +14,17 @@ import { after } from "next/server";
 import { DEFAULT_LOCALE } from "@/i18n/settings";
 import { toIsoDate, toUtcDate, todayIso } from "@/lib/date";
 import { env } from "@/lib/env";
-import { SyncOperation, SyncStatus } from "@/generated/prisma/enums";
+import {
+  CalendarEventAction,
+  CalendarEventKind,
+  SyncOperation,
+  SyncStatus,
+  SyncTrigger,
+} from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 
 import { buildCalendarEvent } from "./calendarEvent";
+import { logCalendarEvent } from "./calendarEventLog";
 import { deleteEvent, insertEvent, patchEvent, type MutateEventResult } from "./calendarClient";
 import { getAccessToken } from "./oauth";
 import { isDueForRetry, MAX_SYNC_ATTEMPTS } from "./syncBackoff";
@@ -362,17 +369,56 @@ async function handleGoogleFailure(
 }
 
 /**
+ * Records a `CalendarEventLog` row for a session event write — every
+ * `processRow` branch that actually reaches Google logs through here, whether
+ * the call succeeded or failed. Never covers rows resolved without a Google
+ * call (a DELETE with no `googleEventId`, or a revoked token).
+ *
+ * @param {PendingSyncRow} row - The ledger row that was just processed.
+ * @param {CalendarEventAction} action - CREATE, UPDATE or DELETE.
+ * @param {MutateEventResult | { ok: true; eventId: string } | GoogleApiFailureLike} result - The Google API call's outcome.
+ * @param {string | null} googleEventId - The event id involved (new for CREATE, existing otherwise).
+ * @param {SyncTrigger} trigger - What caused this sweep to run.
+ * @param {string | null} cronRunId - The triggering `CronRun`, when `trigger` is CRON.
+ * @returns {Promise<void>}
+ */
+async function logSessionEvent(
+  row: PendingSyncRow,
+  action: CalendarEventAction,
+  result: { ok: true } | { ok: false; errorMessage: string },
+  googleEventId: string | null,
+  trigger: SyncTrigger,
+  cronRunId: string | null,
+): Promise<void> {
+  await logCalendarEvent({
+    userId: row.userId,
+    kind: CalendarEventKind.SESSION,
+    action,
+    trigger,
+    subjectId: row.sessionId,
+    googleEventId,
+    success: result.ok,
+    error: result.ok ? null : result.errorMessage,
+    cronRunId,
+  });
+}
+
+/**
  * Drives a single sync row to completion: resolves a fresh access token,
  * dispatches to insert/patch/delete based on `operation` and whether a
  * `googleEventId` already exists, and writes back the outcome.
  *
  * @param {PendingSyncRow} row - The ledger row to process.
  * @param {SessionSyncData | null} sessionData - Preloaded session data for an UPSERT row (unused for DELETE); null when the session no longer exists.
+ * @param {SyncTrigger} trigger - What caused this sweep to run (logged with every real Google call).
+ * @param {string | null} cronRunId - The triggering `CronRun`, when `trigger` is CRON.
  * @returns {Promise<"processed" | "failed">} The outcome, for the caller's tally.
  */
 async function processRow(
   row: PendingSyncRow,
   sessionData: SessionSyncData | null,
+  trigger: SyncTrigger,
+  cronRunId: string | null,
 ): Promise<"processed" | "failed"> {
   const tokenResult = await getAccessToken(row.userId);
   if (!tokenResult.ok) {
@@ -393,6 +439,7 @@ async function processRow(
       return "processed";
     }
     const result: MutateEventResult = await deleteEvent(accessToken, row.googleEventId);
+    await logSessionEvent(row, CalendarEventAction.DELETE, result, row.googleEventId, trigger, cronRunId);
     if (!result.ok) {
       return handleGoogleFailure(row, result);
     }
@@ -425,6 +472,7 @@ async function processRow(
 
   if (row.googleEventId) {
     const result = await patchEvent(accessToken, row.googleEventId, eventBody);
+    await logSessionEvent(row, CalendarEventAction.UPDATE, result, row.googleEventId, trigger, cronRunId);
     if (!result.ok) {
       return handleGoogleFailure(row, result);
     }
@@ -433,6 +481,14 @@ async function processRow(
   }
 
   const result = await insertEvent(accessToken, eventBody);
+  await logSessionEvent(
+    row,
+    CalendarEventAction.CREATE,
+    result,
+    result.ok ? result.eventId : null,
+    trigger,
+    cronRunId,
+  );
   if (!result.ok) {
     return handleGoogleFailure(row, result);
   }
@@ -456,12 +512,16 @@ export type ProcessPendingResult = { processed: number; failed: number };
  * @param {object} [options]
  * @param {string} [options.userId] - Restrict to one user's rows (manual retry); omitted processes across all users.
  * @param {number} [options.limit] - Maximum rows to process in this call.
+ * @param {SyncTrigger} [options.trigger] - What caused this sweep to run, recorded on every `CalendarEventLog` row it writes. Defaults to AFTER_RESPONSE (the opportunistic post-mutation sweep).
+ * @param {string} [options.cronRunId] - The triggering `CronRun`'s id, when `trigger` is CRON.
  * @returns {Promise<ProcessPendingResult>} How many rows synced vs. failed.
  */
 export async function processPending(
-  options: { userId?: string; limit?: number } = {},
+  options: { userId?: string; limit?: number; trigger?: SyncTrigger; cronRunId?: string } = {},
 ): Promise<ProcessPendingResult> {
   const limit = options.limit ?? DEFAULT_PROCESS_LIMIT;
+  const trigger: SyncTrigger = options.trigger ?? SyncTrigger.AFTER_RESPONSE;
+  const cronRunId = options.cronRunId ?? null;
 
   try {
     const candidates: PendingSyncRow[] = await prisma.sessionCalendarEvent.findMany({
@@ -506,7 +566,7 @@ export async function processPending(
       const sessionData = needsSessionData ? await loadSessionSyncData(sessionId) : null;
 
       for (const row of rows) {
-        const outcome = await processRow(row, sessionData);
+        const outcome = await processRow(row, sessionData, trigger, cronRunId);
         if (outcome === "processed") {
           processed += 1;
         } else {
