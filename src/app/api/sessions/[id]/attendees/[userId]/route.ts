@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { removeAttendee } from "@/lib/confirmedSessionService";
+import { scheduleSyncSweep } from "@/lib/google/calendarSyncService";
 
 type RouteContext = { params: Promise<{ id: string; userId: string }> };
 
@@ -65,6 +66,8 @@ export async function DELETE(
       { status: attendeeMutationStatus(result.error) },
     );
   }
+
+  scheduleSyncSweep();
 
   return NextResponse.json({ data: { userId: result.userId } });
 }

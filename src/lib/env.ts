@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+/**
+ * Treats an empty string the same as an unset variable before the inner
+ * schema sees it. A blank ".env" line (`KEY=`, exactly what `.env.example`
+ * shows for every optional Google/cron var) is parsed as `""`, not
+ * `undefined` — without this, leaving one blank would fail validation
+ * instead of just leaving the feature it gates disabled.
+ *
+ * @param {unknown} value - The raw value read from `process.env`.
+ * @returns {unknown} `undefined` when the value is an empty string, else the value unchanged.
+ */
+function emptyToUndefined(value: unknown): unknown {
+  return value === "" ? undefined : value;
+}
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
@@ -10,16 +24,16 @@ const envSchema = z
     // Google Calendar sync (roadmap #23) — optional. Unset means the app boots
     // normally and the profile hides the integration entirely; see
     // `isGoogleSyncConfigured` below.
-    GOOGLE_CLIENT_ID: z.string().min(1).optional(),
-    GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
-    GOOGLE_OAUTH_REDIRECT_URI: z.url().optional(),
+    GOOGLE_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    GOOGLE_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    GOOGLE_OAUTH_REDIRECT_URI: z.preprocess(emptyToUndefined, z.url().optional()),
     // Wall-clock timezone confirmed sessions are stored in (IANA name). Sent to
     // the Google Calendar API alongside each event's local time so Google
     // resolves the instant, avoiding any DST math in the app.
     APP_TIMEZONE: z.string().min(1).default("Europe/Madrid"),
     // Shared secret for the optional POST /api/cron/calendar-sync sweeper.
     // Unset disables that route entirely (404).
-    CRON_SECRET: z.string().min(1).optional(),
+    CRON_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV === "production" && !value.AUTH_URL) {

@@ -3,6 +3,11 @@ import { CampaignRole } from "@/generated/prisma/enums";
 import { getCampaignRole } from "@/lib/authz";
 import type { PlayerStatusValue } from "@/lib/calendarService";
 import { isEligible, toIsoDate, toUtcDate, todayIso } from "@/lib/date";
+import {
+  enqueueDeletion,
+  enqueueForSession,
+  enqueueUpdateForSession,
+} from "@/lib/google/calendarSyncService";
 import { listHolidays } from "@/lib/holidayService";
 import { prisma } from "@/lib/prisma";
 import {
@@ -502,6 +507,12 @@ export async function confirmSession({
       return session;
     });
 
+    try {
+      await enqueueForSession(created.id, attendees);
+    } catch (syncError) {
+      console.error("[GOOGLE-SYNC/CONFIRM] Failed to enqueue calendar sync:", syncError);
+    }
+
     return {
       ok: true,
       session: {
@@ -600,6 +611,12 @@ export async function updateSession(
       select: { date: true, startTime: true, durationMinutes: true },
     });
 
+    try {
+      await enqueueUpdateForSession(id);
+    } catch (syncError) {
+      console.error("[GOOGLE-SYNC/UPDATE] Failed to enqueue calendar sync:", syncError);
+    }
+
     return {
       ok: true,
       session: {
@@ -649,6 +666,12 @@ export async function cancelSession(
 
   if (result.count === 0) {
     return { ok: false, error: "sessions.errors.notFound" };
+  }
+
+  try {
+    await enqueueDeletion(id);
+  } catch (syncError) {
+    console.error("[GOOGLE-SYNC/CANCEL] Failed to enqueue calendar sync:", syncError);
   }
 
   return { ok: true, id };
@@ -749,6 +772,12 @@ export async function addAttendee(
     return { ok: false, error: "sessions.errors.unknown" };
   }
 
+  try {
+    await enqueueForSession(sessionId, [targetUserId]);
+  } catch (syncError) {
+    console.error("[GOOGLE-SYNC/ADD_ATTENDEE] Failed to enqueue calendar sync:", syncError);
+  }
+
   return { ok: true, sessionId, userId: targetUserId };
 }
 
@@ -817,6 +846,12 @@ export async function removeAttendee(
 
     console.error("[SESSIONS/REMOVE_ATTENDEE] Failed to remove attendee:", error);
     return { ok: false, error: "sessions.errors.unknown" };
+  }
+
+  try {
+    await enqueueDeletion(sessionId, targetUserId);
+  } catch (syncError) {
+    console.error("[GOOGLE-SYNC/REMOVE_ATTENDEE] Failed to enqueue calendar sync:", syncError);
   }
 
   return { ok: true, sessionId, userId: targetUserId };

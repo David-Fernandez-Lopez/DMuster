@@ -24,6 +24,13 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set in .env}
       AUTH_URL: ${AUTH_URL:-http://localhost:3000}
       DEFAULT_LOCALE: ${DEFAULT_LOCALE:-es}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Madrid}
+      # Optional Google Calendar sync (roadmap #23) — blank is fine, src/lib/env.ts
+      # treats an empty value the same as unset and hides the integration.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-}
+      CRON_SECRET: ${CRON_SECRET:-}
     depends_on:
       db:
         condition: service_healthy

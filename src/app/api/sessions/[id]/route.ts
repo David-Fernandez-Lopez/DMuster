@@ -7,6 +7,7 @@ import {
   cancelSession,
   updateSession,
 } from "@/lib/confirmedSessionService";
+import { scheduleSyncSweep } from "@/lib/google/calendarSyncService";
 import { firstFieldErrors } from "@/lib/validation/auth";
 import { updateSessionSchema } from "@/lib/validation/confirmedSession";
 
@@ -84,6 +85,8 @@ export async function PUT(
     return NextResponse.json({ error: result.error }, { status });
   }
 
+  scheduleSyncSweep();
+
   return NextResponse.json({ data: result.session });
 }
 
@@ -118,6 +121,8 @@ export async function DELETE(
       { status: authorizationStatus(result.error) },
     );
   }
+
+  scheduleSyncSweep();
 
   return NextResponse.json({ data: { id: result.id } });
 }
