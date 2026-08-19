@@ -218,6 +218,11 @@
       "updateFailed": "Could not save the change. Please try again."
     }
   },
+  "integrations": {
+    "google": {
+      "eventDescription": "Playing: {{players}}"
+    }
+  },
   "auth": {
     "login": {
       "title": "Log in",

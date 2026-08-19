@@ -218,6 +218,11 @@
       "updateFailed": "No se ha podido guardar el cambio. Inténtalo de nuevo."
     }
   },
+  "integrations": {
+    "google": {
+      "eventDescription": "Juegan: {{players}}"
+    }
+  },
   "auth": {
     "login": {
       "title": "Iniciar sesión",
