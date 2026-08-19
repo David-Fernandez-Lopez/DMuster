@@ -17,6 +17,8 @@ interface AuthFieldProps {
   inputClassName?: string;
   /** i18n key of the field-level error, if any. */
   errorKey?: string;
+  /** Renders the input non-editable (e.g. the fixed email on the invite accept form). */
+  readOnly?: boolean;
 }
 
 /**
@@ -37,6 +39,7 @@ export default function AuthField({
   maxLength,
   inputClassName,
   errorKey,
+  readOnly,
 }: AuthFieldProps) {
   const { t } = useTranslation();
 
@@ -53,10 +56,12 @@ export default function AuthField({
         required={required}
         defaultValue={defaultValue}
         maxLength={maxLength}
+        readOnly={readOnly}
         aria-invalid={errorKey ? true : undefined}
-        className={`min-h-[44px] rounded-[var(--radius-control)] border border-border bg-bg px-3 text-ink outline-none focus:border-brand${
-          inputClassName ? ` ${inputClassName}` : ""
-        }`}
+        aria-readonly={readOnly ? true : undefined}
+        className={`min-h-[44px] rounded-[var(--radius-control)] border border-border px-3 text-ink outline-none focus:border-brand${
+          readOnly ? " bg-bg-elevated text-ink-muted" : " bg-bg"
+        }${inputClassName ? ` ${inputClassName}` : ""}`}
       />
       {errorKey ? (
         <p className="text-sm text-n" role="alert">
