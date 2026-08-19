@@ -182,7 +182,14 @@
       "notFound": "Session not found.",
       "forbidden": "Only a DM of this campaign can do that.",
       "unauthorized": "You must log in.",
-      "unknown": "Something went wrong. Please try again."
+      "unknown": "Something went wrong. Please try again.",
+      "notMember": "That person isn't a member of this campaign.",
+      "dmMustAttend": "The confirming DM must be among the players.",
+      "attendeesRequired": "Choose who plays to force this session.",
+      "alreadyAttending": "Already in the session.",
+      "requiresYes": "You can only join if you answered Yes that day.",
+      "attendeeConflict": "Already playing {{campaign}} that day.",
+      "lastAttendee": "A session can't be left with no players."
     }
   },
   "profile": {

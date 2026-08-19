@@ -16,8 +16,9 @@ const FORBIDDEN_ERRORS = new Set(["sessions.errors.forbidden"]);
  * Maps a failed session mutation to its HTTP status: unknown/missing campaign
  * is 404, a member-but-not-DM is 403, an unexpected failure is 500, and every
  * other key (validation and business-rule errors — invalid date/time,
- * ineligible day, non-`S` viability, a double-submit, a shared-attendee
- * conflict) is 400.
+ * ineligible day, non-`S` viability without an explicit attendee list, a
+ * double-submit, a shared-attendee conflict, and the DM-override checks
+ * `notMember`/`dmMustAttend`/`attendeesRequired`, roadmap #22) is 400.
  *
  * @param {string} error - The i18n error key returned by the service.
  * @returns {number} The HTTP status to respond with.
@@ -41,9 +42,11 @@ function mutationErrorStatus(error: string): number {
  * the URL), so it must be parsed before authorization can even be checked —
  * the ladder is therefore 401 → body validation (400) → 404 (campaign/DM
  * lookup, bundled in `confirmSession`) → 403 → 400 (business rules: not
- * eligible, not viable, already confirmed, shared-attendee conflict). A
- * `playerConflict` failure carries `params` for the translated message
- * (`{{campaign}}`, `{{players}}`).
+ * eligible, not viable without `attendeeIds`, a non-member in `attendeeIds`,
+ * the confirming DM missing from `attendeeIds`, already confirmed, or a
+ * shared-attendee conflict). An explicit `attendeeIds` list (roadmap #22)
+ * lifts the viability requirement — a DM override. A `playerConflict` failure
+ * carries `params` for the translated message (`{{campaign}}`, `{{players}}`).
  *
  * @param {Request} request - The incoming request with the JSON body.
  * @returns {Promise<NextResponse>} 201, 400, 401, 403, 404, or 500.
@@ -68,6 +71,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           fieldErrors.startTime ??
           fieldErrors.durationMinutes ??
           fieldErrors.campaignId ??
+          fieldErrors.attendeeIds ??
           "sessions.errors.validation",
         fieldErrors,
       },
@@ -81,6 +85,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     startTime: parsed.data.startTime ?? null,
     durationMinutes: parsed.data.durationMinutes ?? null,
     userId: session.user.id,
+    attendeeIds: parsed.data.attendeeIds,
   });
 
   if (!result.ok) {

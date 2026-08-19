@@ -24,9 +24,20 @@ const durationMinutesField = z
   .nullish();
 
 /**
+ * Explicit attendee set for a DM override (roadmap #22) — omitted for the
+ * #21 frictionless path, where the whole campaign membership attends.
+ */
+const attendeeIdsField = z
+  .array(z.string().trim().min(1, { error: "sessions.errors.validation" }))
+  .nonempty({ error: "sessions.errors.validation" })
+  .optional();
+
+/**
  * Payload for confirming a session: which campaign, which day, and an
  * optional start time + duration. A duration only makes sense together with a
  * start time (no time ⇒ an all-day session), so the pair is refined together.
+ * `attendeeIds`, when present, selects a DM override (roadmap #22) instead of
+ * the default whole-campaign attendance.
  */
 export const confirmSessionSchema = z
   .object({
@@ -37,6 +48,7 @@ export const confirmSessionSchema = z
       .refine(isValidIsoDate, { error: "sessions.errors.invalidDate" }),
     startTime: startTimeField,
     durationMinutes: durationMinutesField,
+    attendeeIds: attendeeIdsField,
   })
   .refine((data) => data.durationMinutes == null || data.startTime != null, {
     error: "sessions.errors.durationWithoutTime",
@@ -44,6 +56,16 @@ export const confirmSessionSchema = z
   });
 
 export type ConfirmSessionInput = z.infer<typeof confirmSessionSchema>;
+
+/**
+ * Payload for adding an attendee to a session. An omitted `userId` means a
+ * self-join; a present one means a DM is adding a specific member.
+ */
+export const addAttendeeSchema = z.object({
+  userId: z.string().trim().min(1, { error: "sessions.errors.validation" }).optional(),
+});
+
+export type AddAttendeeInput = z.infer<typeof addAttendeeSchema>;
 
 /**
  * Payload for editing an existing session's time. A full replace of both

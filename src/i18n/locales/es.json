@@ -182,7 +182,14 @@
       "notFound": "Partida no encontrada.",
       "forbidden": "Solo un máster de esta campaña puede hacer esto.",
       "unauthorized": "Debes iniciar sesión.",
-      "unknown": "Algo ha ido mal. Inténtalo de nuevo."
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo.",
+      "notMember": "Esa persona no pertenece a la campaña.",
+      "dmMustAttend": "El máster que confirma debe estar entre los jugadores.",
+      "attendeesRequired": "Elige quién juega para forzar la partida.",
+      "alreadyAttending": "Ya está en la partida.",
+      "requiresYes": "Solo puedes sumarte si has respondido Sí ese día.",
+      "attendeeConflict": "Ya juega ese día con {{campaign}}.",
+      "lastAttendee": "La partida no puede quedarse sin jugadores."
     }
   },
   "profile": {
