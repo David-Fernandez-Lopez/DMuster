@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { isGoogleSyncConfigured } from "@/lib/env";
+import { backfillForUser, scheduleSyncSweep } from "@/lib/google/calendarSyncService";
 import {
   exchangeCodeAndConnect,
   GOOGLE_OAUTH_NONCE_COOKIE,
@@ -67,6 +68,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const outcome = result.error === "integrations.google.errors.alreadyLinked" ? "already_linked" : "error";
     return redirectToProfile(request, outcome);
   }
+
+  // Backfill so connecting does not leave already-confirmed future sessions
+  // invisible in the calendar; the actual Google calls run in the deferred
+  // sweep so this redirect is not held up by however many there are.
+  try {
+    await backfillForUser(verifiedUserId);
+  } catch (error) {
+    console.error("[GOOGLE-SYNC/CALLBACK] Failed to backfill after connecting:", error);
+  }
+  scheduleSyncSweep();
 
   return redirectToProfile(request, "connected");
 }

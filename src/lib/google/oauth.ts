@@ -79,7 +79,7 @@ function requireGoogleConfig(): {
  * @returns {{ sub: string; email: string | null } | null} The Google account
  *   id and email, or null if the token is malformed.
  */
-function decodeIdTokenPayload(idToken: string): { sub: string; email: string | null } | null {
+export function decodeIdTokenPayload(idToken: string): { sub: string; email: string | null } | null {
   const segments = idToken.split(".");
   if (segments.length !== 3) {
     return null;

@@ -220,6 +220,23 @@
   },
   "integrations": {
     "google": {
+      "title": "Google Calendar",
+      "description": "Conecta tu cuenta de Google para que tus partidas confirmadas aparezcan automáticamente en tu calendario principal. Se crea un evento por cada partida en la que juegas; puedes pausarlo o desconectarlo cuando quieras.",
+      "connect": "Conectar Google Calendar",
+      "connectedNotice": "Cuenta de Google conectada correctamente.",
+      "connectedAs": "Conectado como {{email}}",
+      "enable": "Activada",
+      "paused": "Pausada",
+      "lastSync": "Última sincronización: {{date}}",
+      "neverSynced": "Todavía no se ha sincronizado ninguna partida.",
+      "pendingSummary": "Pendientes de sincronizar: {{count}}",
+      "failedSummary": "Con error de sincronización: {{count}}",
+      "retry": "Reintentar",
+      "disconnect": "Desconectar",
+      "disconnectPrompt": "¿Desconectar Google Calendar? Se eliminarán de tu calendario los eventos de tus próximas partidas.",
+      "disconnectYes": "Sí, desconectar",
+      "broken": "La conexión con Google se ha interrumpido.",
+      "reconnect": "Reconectar",
       "eventDescription": "Juegan: {{players}}",
       "errors": {
         "unauthorized": "Debes iniciar sesión.",

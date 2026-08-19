@@ -220,6 +220,23 @@
   },
   "integrations": {
     "google": {
+      "title": "Google Calendar",
+      "description": "Connect your Google account so your confirmed sessions automatically show up on your primary calendar. One event is created per session you play; pause or disconnect it whenever you want.",
+      "connect": "Connect Google Calendar",
+      "connectedNotice": "Google account connected successfully.",
+      "connectedAs": "Connected as {{email}}",
+      "enable": "Enabled",
+      "paused": "Paused",
+      "lastSync": "Last synced: {{date}}",
+      "neverSynced": "No session has synced yet.",
+      "pendingSummary": "Pending sync: {{count}}",
+      "failedSummary": "Sync errors: {{count}}",
+      "retry": "Retry",
+      "disconnect": "Disconnect",
+      "disconnectPrompt": "Disconnect Google Calendar? The events for your upcoming sessions will be removed from your calendar.",
+      "disconnectYes": "Yes, disconnect",
+      "broken": "The connection with Google was interrupted.",
+      "reconnect": "Reconnect",
       "eventDescription": "Playing: {{players}}",
       "errors": {
         "unauthorized": "You must log in.",

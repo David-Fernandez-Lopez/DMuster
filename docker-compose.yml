@@ -36,6 +36,20 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Fires the CRON_SECRET-protected /api/cron/* sweep routes on a schedule.
+  # Entirely inert (just sleeps) when CRON_SECRET is unset — see
+  # docker/cron/entrypoint.sh — so no deployment is forced to configure it.
+  cron:
+    image: alpine:3.22
+    environment:
+      CRON_SECRET: ${CRON_SECRET:-}
+    volumes:
+      - ./docker/cron/entrypoint.sh:/entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      - app
+    restart: unless-stopped
+
   db:
     image: mysql:8.4
     ports:
