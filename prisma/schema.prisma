@@ -114,13 +114,15 @@ model User {
   createdHolidays  Holiday[]        @relation("HolidayCreatedBy")
   availabilities   Availability[]
 
-  confirmedSessions     ConfirmedSession[]         @relation("SessionConfirmedBy")
-  cancelledSessions     ConfirmedSession[]         @relation("SessionCancelledBy")
-  sessionAttendances    ConfirmedSessionAttendee[] @relation("SessionAttendee")
-  addedSessionAttendees ConfirmedSessionAttendee[] @relation("SessionAttendeeAddedBy")
+  confirmedSessions     ConfirmedSession[]          @relation("SessionConfirmedBy")
+  cancelledSessions     ConfirmedSession[]          @relation("SessionCancelledBy")
+  sessionAttendances    ConfirmedSessionAttendee[]  @relation("SessionAttendee")
+  addedSessionAttendees ConfirmedSessionAttendee[]  @relation("SessionAttendeeAddedBy")
   calendarEvents        SessionCalendarEvent[]
   calendarEventLogs     CalendarEventLog[]
   reminderEvents        AvailabilityReminderEvent[]
+  sentInvitations       Invitation[]                @relation("InvitationInvitedBy")
+  acceptedInvitations   Invitation[]                @relation("InvitationAcceptedBy")
 
   @@map("users")
 }
@@ -141,6 +143,7 @@ model Campaign {
   players   CampaignPlayer[]
 
   confirmedSessions ConfirmedSession[]
+  invitations       Invitation[]
 
   @@map("campaigns")
 }
@@ -295,8 +298,8 @@ model SessionCalendarEvent {
 // whether a user needs one, `processPendingReminders` is the only code that
 // calls Google.
 model AvailabilityReminderEvent {
-  id     String @id @default(cuid())
-  userId String
+  id            String        @id @default(cuid())
+  userId        String
   // The month being checked for completeness, "YYYY-MM". The reminder event
   // itself sits on the last day of the month BEFORE this one, so the row
   // describes itself without needing a separate date column.
@@ -370,6 +373,38 @@ model CronRun {
 
   @@index([job, startedAt])
   @@map("cron_runs")
+}
+
+// A single-use, email-bound sign-up link (roadmap #24). Public registration is
+// gone: the only way to create an account is accepting one of these. Only the
+// SHA-256 hash of the raw token is ever stored — the raw value exists exactly
+// once, in the HTTP response returned when the invitation is created, and is
+// never persisted anywhere. `email` is always the account's email: the accept
+// form never lets it be edited, so a forwarded link cannot be redirected to a
+// different address.
+model Invitation {
+  id         String        @id @default(cuid())
+  email      String
+  tokenHash  String        @unique
+  campaignId String?
+  // Only meaningful together with campaignId — accepting then also creates the
+  // CampaignPlayer row with this role. Validated as a pair (see
+  // src/lib/validation/invitation.ts); not a DB-level CHECK, MySQL has none.
+  role       CampaignRole?
+
+  invitedById  String
+  expiresAt    DateTime
+  acceptedAt   DateTime?
+  acceptedById String?
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  invitedBy  User      @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
+  acceptedBy User?     @relation("InvitationAcceptedBy", fields: [acceptedById], references: [id], onDelete: Restrict)
+
+  @@index([email])
+  @@map("invitations")
 }
 
 // ─── Auth.js v5 adapter tables ───────────────────────────────────────────────
