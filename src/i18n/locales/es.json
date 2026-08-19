@@ -9,13 +9,11 @@
     "close": "Cerrar"
   },
   "nav": {
-    "home": "Inicio",
     "calendar": "Calendario",
     "availability": "Mi disponibilidad",
     "campaigns": "Campañas",
     "sessions": "Próximas partidas",
     "profile": "Perfil",
-    "login": "Iniciar sesión",
     "logout": "Cerrar sesión",
     "openMenu": "Abrir menú",
     "closeMenu": "Cerrar menú"
@@ -165,7 +163,7 @@
     "duration": "Duración",
     "durationUnit": "min",
     "allDay": "Todo el día",
-    "notViable": "Todos los jugadores deben responder Sí para poder confirmar.",
+    "notViable": "No todos han respondido Sí. Puedes forzar la partida y elegir quién juega.",
     "force": "Forzar partida",
     "forceWarning": "Han respondido que no: {{players}}.",
     "forceWarningPending": "No han respondido: {{players}}.",
@@ -178,7 +176,7 @@
     "addAttendee": "Añadir",
     "removeAttendee": "Quitar",
     "warning": {
-      "noLongerViable": "Ya no todos han confirmado: {{players}}."
+      "noLongerViable": "No todos han confirmado: {{players}}."
     },
     "errors": {
       "validation": "Revisa los datos de la partida.",
@@ -187,7 +185,6 @@
       "invalidDuration": "La duración debe ser de entre 1 y 1440 minutos.",
       "durationWithoutTime": "Indica una hora de inicio para fijar la duración.",
       "notEligible": "Este día no es elegible para jugar.",
-      "notViable": "Este día no es viable: no todos los jugadores han respondido Sí.",
       "alreadyConfirmed": "Ya hay una partida confirmada para esta campaña ese día.",
       "playerConflict": "Ese día ya juegan con {{campaign}}: {{players}}.",
       "notFound": "Partida no encontrada.",
@@ -199,7 +196,7 @@
       "attendeesRequired": "Elige quién juega para forzar la partida.",
       "alreadyAttending": "Ya está en la partida.",
       "requiresYes": "Solo puedes sumarte si has respondido Sí ese día.",
-      "attendeeConflict": "Ya juega ese día con {{campaign}}.",
+      "attendeeConflict": "Ya hay partida ese día con {{campaign}}.",
       "lastAttendee": "La partida no puede quedarse sin jugadores."
     }
   },
@@ -230,8 +227,7 @@
       "noAccount": "¿No tienes cuenta?",
       "registerLink": "Regístrate",
       "errors": {
-        "invalidCredentials": "Correo o contraseña incorrectos.",
-        "required": "Este campo es obligatorio."
+        "invalidCredentials": "Correo o contraseña incorrectos."
       }
     },
     "register": {
