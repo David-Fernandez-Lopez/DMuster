@@ -5,6 +5,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "back": "Back",
+    "continue": "Continue",
     "close": "Close"
   },
   "nav": {
@@ -166,6 +167,10 @@
     "durationUnit": "min",
     "allDay": "All day",
     "notViable": "Every player must answer Yes before this can be confirmed.",
+    "force": "Force session",
+    "forceWarning": "Answered No: {{players}}.",
+    "forceWarningPending": "Haven't answered: {{players}}.",
+    "selectAttendees": "Choose who plays",
     "warning": {
       "noLongerViable": "Not everyone has confirmed anymore: {{players}}."
     },

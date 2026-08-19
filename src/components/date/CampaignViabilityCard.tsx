@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import PlayerStatusRow from "@/components/date/PlayerStatusRow";
 import CancelSessionButton from "@/components/sessions/CancelSessionButton";
 import ConfirmSessionForm from "@/components/sessions/ConfirmSessionForm";
+import ForceSessionForm from "@/components/sessions/ForceSessionForm";
 import type { CampaignDayViability } from "@/lib/calendarService";
 import type { Viability } from "@/lib/viability";
 
@@ -74,12 +75,12 @@ function ConfirmedBadgeIcon() {
  * summary (always visible) shows the campaign name with its viability badge (Sí /
  * No / Tal vez), a checkmark when a session is confirmed, and a chevron;
  * expanding it reveals the alphabetically ordered member rows with each
- * member's response, followed by the session block (roadmap #21): a confirmed
- * session shows its time summary plus, for a DM of the campaign, controls to
- * edit the time or cancel; an unconfirmed viable (`S`) day offers a DM the
- * confirm action; an unconfirmed non-viable day shows a disabled placeholder
- * (superseded by the master override in #22). Built on native
- * `<details>/<summary>` so it is collapsed by default, accessible and
+ * member's response, followed by the session block: a confirmed session shows
+ * its time summary plus, for a DM of the campaign, controls to edit the time
+ * or cancel (roadmap #21); an unconfirmed viable (`S`) day offers a DM the
+ * confirm action; an unconfirmed non-viable day offers a DM the master
+ * override, "Forzar partida" (roadmap #22, `ForceSessionForm`). Built on
+ * native `<details>/<summary>` so it is collapsed by default, accessible and
  * keyboard-operable with no state. The per-member ordering is decided
  * upstream in `getCalendarViability`.
  *
@@ -182,16 +183,12 @@ export default function CampaignViabilityCard({
           campaign.viability === "S" ? (
             <ConfirmSessionForm campaignId={campaign.campaignId} date={date} />
           ) : (
-            <div className="flex flex-col gap-1">
-              <button
-                type="button"
-                disabled
-                className="btn btn-secondary min-h-[44px] w-full text-sm font-semibold opacity-60"
-              >
-                {t("sessions.confirm")}
-              </button>
-              <p className="text-xs text-ink-muted">{t("sessions.notViable")}</p>
-            </div>
+            <ForceSessionForm
+              campaignId={campaign.campaignId}
+              date={date}
+              players={campaign.players}
+              currentUserId={currentUserId}
+            />
           )
         ) : null}
       </div>

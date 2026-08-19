@@ -5,6 +5,7 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "back": "Volver",
+    "continue": "Continuar",
     "close": "Cerrar"
   },
   "nav": {
@@ -166,6 +167,10 @@
     "durationUnit": "min",
     "allDay": "Todo el día",
     "notViable": "Todos los jugadores deben responder Sí para poder confirmar.",
+    "force": "Forzar partida",
+    "forceWarning": "Han respondido que no: {{players}}.",
+    "forceWarningPending": "No han respondido: {{players}}.",
+    "selectAttendees": "Selecciona quién juega",
     "warning": {
       "noLongerViable": "Ya no todos han confirmado: {{players}}."
     },
