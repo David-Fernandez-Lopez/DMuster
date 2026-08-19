@@ -144,4 +144,22 @@ describe("findConflictingSessions", () => {
 
     expect(conflicts).toHaveLength(2);
   });
+
+  it("frees a player excluded from a forced session's attendee set for another campaign the same day", () => {
+    // Roadmap #22: the lock follows attendees, not membership — a member left
+    // out of one campaign's session is free to play a different one that day.
+    const conflicts = findConflictingSessions(
+      ["carol"],
+      [
+        attendance({
+          sessionId: "session-a",
+          campaignName: "Orden del Alba",
+          attendeeIds: ["alice", "bob"], // carol was deliberately left out
+          attendeeNames: { alice: "Alice", bob: "Bob" },
+        }),
+      ],
+    );
+
+    expect(conflicts).toEqual([]);
+  });
 });
