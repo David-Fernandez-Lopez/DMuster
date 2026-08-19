@@ -1,10 +1,11 @@
 import { CampaignRole } from "@/generated/prisma/enums";
 import {
-  type ConfirmedSessionDto,
+  type ConfirmedSessionDetailDto,
   listConfirmedSessionsForCampaigns,
 } from "@/lib/confirmedSessionService";
-import { addDays, isEligible, toIsoDate, toUtcDate } from "@/lib/date";
+import { addDays, isEligible, toIsoDate, todayIso, toUtcDate } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
+import { canSelfJoin } from "@/lib/sessionRules";
 import { computeViability, type Viability } from "@/lib/viability";
 
 /**
@@ -32,8 +33,12 @@ export type CampaignDayViability = {
   viability: Viability;
   /** Every member of the campaign, sorted by name. */
   players: PlayerDayStatus[];
-  /** The active confirmed session for this campaign on this day, if any (roadmap #21). */
-  confirmedSession: ConfirmedSessionDto | null;
+  /**
+   * The active confirmed session for this campaign on this day, if any
+   * (roadmap #21), enriched with its attendee list and the viewer's
+   * self-join affordance (roadmap #22).
+   */
+  confirmedSession: ConfirmedSessionDetailDto | null;
 };
 
 /** A campaign the user belongs to, for the calendar filter chips. */
@@ -130,12 +135,20 @@ export async function getCalendarViability(
   }
 
   const byDate: Record<string, CampaignDayViability[]> = {};
+  const today = todayIso();
   for (let iso = startIso; iso <= endIso; iso = addDays(iso, 1)) {
     if (!isEligible(iso, holidays)) {
       continue;
     }
     const dayStatuses = statusByDate.get(iso);
-    byDate[iso] = campaigns.map((campaign) => {
+
+    // Tracks, for this day, the name of the campaign the viewer already
+    // attends (the shared-attendee conflict rule guarantees at most one), so
+    // a second pass below can block self-join on every OTHER campaign's
+    // session the same day.
+    let viewerAttendsCampaign: string | null = null;
+
+    const dayCampaigns = campaigns.map((campaign) => {
       const players = campaign.players
         .map((player) => ({
           userId: player.userId,
@@ -145,16 +158,63 @@ export async function getCalendarViability(
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
 
+      const sessionRecord = confirmedSessionsByKey.get(`${campaign.id}|${iso}`) ?? null;
+      let confirmedSession: ConfirmedSessionDetailDto | null = null;
+      if (sessionRecord) {
+        const attendeeIdSet = new Set(sessionRecord.attendeeIds);
+        const attendees = players.filter((player) => attendeeIdSet.has(player.userId));
+        const isViewerAttendee = attendeeIdSet.has(userId);
+        if (isViewerAttendee) {
+          viewerAttendsCampaign = campaign.name;
+        }
+
+        const viewerRow = players.find((player) => player.userId === userId);
+        const viewerCanSelfJoin = canSelfJoin({
+          isMember: viewerRow !== undefined,
+          isAttendee: isViewerAttendee,
+          status: viewerRow?.status ?? null,
+          sessionActive: true,
+          isPast: iso < today,
+        });
+
+        confirmedSession = {
+          id: sessionRecord.id,
+          campaignId: sessionRecord.campaignId,
+          campaignName: sessionRecord.campaignName,
+          campaignTag: sessionRecord.campaignTag,
+          date: sessionRecord.date,
+          startTime: sessionRecord.startTime,
+          durationMinutes: sessionRecord.durationMinutes,
+          attendees,
+          viewerCanSelfJoin,
+          viewerSelfJoinBlockedBy: null,
+        };
+      }
+
       return {
         campaignId: campaign.id,
         name: campaign.name,
         tag: campaign.tag,
         viability: computeViability(players.map((p) => p.status ?? undefined)),
         players,
-        confirmedSession:
-          confirmedSessionsByKey.get(`${campaign.id}|${iso}`) ?? null,
+        confirmedSession,
       };
     });
+
+    // Now that every campaign's session for this day is known, block
+    // self-join wherever the viewer already attends a different campaign's
+    // session the same day, naming the blocking campaign inline.
+    if (viewerAttendsCampaign) {
+      for (const dayCampaign of dayCampaigns) {
+        const { confirmedSession } = dayCampaign;
+        if (confirmedSession?.viewerCanSelfJoin) {
+          confirmedSession.viewerCanSelfJoin = false;
+          confirmedSession.viewerSelfJoinBlockedBy = viewerAttendsCampaign;
+        }
+      }
+    }
+
+    byDate[iso] = dayCampaigns;
   }
 
   // The distinct DMs across the user's campaigns, deduped by userId and sorted
