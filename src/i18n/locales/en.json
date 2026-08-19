@@ -155,7 +155,6 @@
   "sessions": {
     "title": "Upcoming sessions",
     "empty": "No sessions confirmed yet.",
-    "players": "Players",
     "confirm": "Confirm session",
     "confirmed": "Session confirmed",
     "cancel": "Cancel session",
@@ -171,6 +170,13 @@
     "forceWarning": "Answered No: {{players}}.",
     "forceWarningPending": "Haven't answered: {{players}}.",
     "selectAttendees": "Choose who plays",
+    "attendees": "Session players",
+    "attendeesCount": "Playing: {{count}}",
+    "notAttending": "Not playing",
+    "selfJoin": "Join the session",
+    "selfJoinBlocked": "You're already playing {{campaign}} that day.",
+    "addAttendee": "Add",
+    "removeAttendee": "Remove",
     "warning": {
       "noLongerViable": "Not everyone has confirmed anymore: {{players}}."
     },
@@ -189,7 +195,7 @@
       "unauthorized": "You must log in.",
       "unknown": "Something went wrong. Please try again.",
       "notMember": "That person isn't a member of this campaign.",
-      "dmMustAttend": "The confirming DM must be among the players.",
+      "dmMustAttend": "A session must always have a DM among the players.",
       "attendeesRequired": "Choose who plays to force this session.",
       "alreadyAttending": "Already in the session.",
       "requiresYes": "You can only join if you answered Yes that day.",

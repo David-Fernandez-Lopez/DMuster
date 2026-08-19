@@ -155,7 +155,6 @@
   "sessions": {
     "title": "Próximas partidas",
     "empty": "No hay partidas confirmadas próximamente.",
-    "players": "Jugadores",
     "confirm": "Confirmar partida",
     "confirmed": "Partida confirmada",
     "cancel": "Cancelar partida",
@@ -171,6 +170,13 @@
     "forceWarning": "Han respondido que no: {{players}}.",
     "forceWarningPending": "No han respondido: {{players}}.",
     "selectAttendees": "Selecciona quién juega",
+    "attendees": "Jugadores en la partida",
+    "attendeesCount": "Juegan: {{count}}",
+    "notAttending": "No juegan",
+    "selfJoin": "Sumarme a la partida",
+    "selfJoinBlocked": "Ya juegas ese día con {{campaign}}.",
+    "addAttendee": "Añadir",
+    "removeAttendee": "Quitar",
     "warning": {
       "noLongerViable": "Ya no todos han confirmado: {{players}}."
     },
@@ -189,7 +195,7 @@
       "unauthorized": "Debes iniciar sesión.",
       "unknown": "Algo ha ido mal. Inténtalo de nuevo.",
       "notMember": "Esa persona no pertenece a la campaña.",
-      "dmMustAttend": "El máster que confirma debe estar entre los jugadores.",
+      "dmMustAttend": "La partida debe tener siempre un máster entre los jugadores.",
       "attendeesRequired": "Elige quién juega para forzar la partida.",
       "alreadyAttending": "Ya está en la partida.",
       "requiresYes": "Solo puedes sumarte si has respondido Sí ese día.",

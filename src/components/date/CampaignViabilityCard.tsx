@@ -3,9 +3,13 @@
 import { useTranslation } from "react-i18next";
 
 import PlayerStatusRow from "@/components/date/PlayerStatusRow";
+import AttendeeControls, {
+  type AttendeeListMember,
+} from "@/components/sessions/AttendeeControls";
 import CancelSessionButton from "@/components/sessions/CancelSessionButton";
 import ConfirmSessionForm from "@/components/sessions/ConfirmSessionForm";
 import ForceSessionForm from "@/components/sessions/ForceSessionForm";
+import SelfJoinButton from "@/components/sessions/SelfJoinButton";
 import type { CampaignDayViability } from "@/lib/calendarService";
 import type { Viability } from "@/lib/viability";
 
@@ -76,13 +80,16 @@ function ConfirmedBadgeIcon() {
  * No / Tal vez), a checkmark when a session is confirmed, and a chevron;
  * expanding it reveals the alphabetically ordered member rows with each
  * member's response, followed by the session block: a confirmed session shows
- * its time summary plus, for a DM of the campaign, controls to edit the time
- * or cancel (roadmap #21); an unconfirmed viable (`S`) day offers a DM the
- * confirm action; an unconfirmed non-viable day offers a DM the master
- * override, "Forzar partida" (roadmap #22, `ForceSessionForm`). Built on
- * native `<details>/<summary>` so it is collapsed by default, accessible and
- * keyboard-operable with no state. The per-member ordering is decided
- * upstream in `getCalendarViability`.
+ * its time summary, its attendee list with add/remove controls for a DM
+ * (`AttendeeControls`, roadmap #22), and then either a DM's edit-time/cancel
+ * controls (roadmap #21) or — for a non-attending member who answered Sí —
+ * "Sumarme a la partida" (`SelfJoinButton`, roadmap #22), with the blocked
+ * case explained inline instead of a disabled button; an unconfirmed viable
+ * (`S`) day offers a DM the confirm action; an unconfirmed non-viable day
+ * offers a DM the master override, "Forzar partida" (roadmap #22,
+ * `ForceSessionForm`). Built on native `<details>/<summary>` so it is
+ * collapsed by default, accessible and keyboard-operable with no state. The
+ * per-member ordering is decided upstream in `getCalendarViability`.
  *
  * @param {CampaignViabilityCardProps} props
  * @returns {JSX.Element}
@@ -98,6 +105,14 @@ export default function CampaignViabilityCard({
     campaign.players.find((player) => player.userId === currentUserId)
       ?.isDm ?? false;
   const { confirmedSession } = campaign;
+
+  const attendeeIdSet = new Set(
+    confirmedSession?.attendees.map((attendee) => attendee.userId) ?? [],
+  );
+  const attendeeMembers: AttendeeListMember[] = campaign.players.map((player) => ({
+    ...player,
+    isAttending: attendeeIdSet.has(player.userId),
+  }));
 
   return (
     <details className="group rounded-[var(--radius-card)] border border-border bg-bg">
@@ -164,6 +179,12 @@ export default function CampaignViabilityCard({
               </p>
             ) : null}
 
+            <AttendeeControls
+              sessionId={confirmedSession.id}
+              members={attendeeMembers}
+              viewerIsDm={viewerIsDm}
+            />
+
             {viewerIsDm ? (
               <div className="flex flex-col gap-2">
                 <ConfirmSessionForm
@@ -177,6 +198,14 @@ export default function CampaignViabilityCard({
                 />
                 <CancelSessionButton sessionId={confirmedSession.id} />
               </div>
+            ) : confirmedSession.viewerCanSelfJoin ? (
+              <SelfJoinButton sessionId={confirmedSession.id} />
+            ) : confirmedSession.viewerSelfJoinBlockedBy ? (
+              <p className="text-xs text-n">
+                {t("sessions.selfJoinBlocked", {
+                  campaign: confirmedSession.viewerSelfJoinBlockedBy,
+                })}
+              </p>
             ) : null}
           </div>
         ) : viewerIsDm ? (
