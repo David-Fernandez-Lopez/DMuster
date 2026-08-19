@@ -2,11 +2,16 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import GoogleCalendarConnection from "@/components/profile/GoogleCalendarConnection";
+import InvitationsSection from "@/components/profile/InvitationsSection";
 import LocaleSelector from "@/components/profile/LocaleSelector";
 import ThemeSelector from "@/components/profile/ThemeSelector";
+import { CampaignRole } from "@/generated/prisma/enums";
 import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
+import { isDmOfAnyCampaign } from "@/lib/authz";
+import { type CampaignWithRole, listCampaignsForUser } from "@/lib/campaignService";
 import { getConnectionStatus } from "@/lib/google/connectionService";
+import { type InvitationDto, listInvitations } from "@/lib/invitationService";
 import { resolveTheme, THEME_COOKIE } from "@/lib/theme";
 
 const CALLBACK_OUTCOMES = ["connected", "already_linked", "error"] as const;
@@ -42,6 +47,16 @@ export default async function ProfilePage({
   const { google: rawCallbackOutcome } = await searchParams;
   const callbackOutcome = CALLBACK_OUTCOMES.find((outcome) => outcome === rawCallbackOutcome) ?? null;
 
+  // Invitations (roadmap #24): only a DM of at least one campaign may send
+  // them (no global admin role — CLAUDE.md §4), same signal as /holidays.
+  const isDm = await isDmOfAnyCampaign(session.user.id);
+  const [invitations, campaigns]: [InvitationDto[], CampaignWithRole[]] = isDm
+    ? await Promise.all([listInvitations(session.user.id), listCampaignsForUser(session.user.id)])
+    : [[], []];
+  const dmCampaigns = campaigns
+    .filter((campaign) => campaign.role === CampaignRole.DM)
+    .map((campaign) => ({ id: campaign.id, name: campaign.name, tag: campaign.tag }));
+
   const name = session.user.name ?? "";
   const initial = name.trim().charAt(0).toUpperCase() || "?";
 
@@ -69,6 +84,8 @@ export default async function ProfilePage({
         <ThemeSelector initialTheme={initialTheme} />
         <GoogleCalendarConnection status={googleConnectionStatus} callbackOutcome={callbackOutcome} />
       </section>
+
+      {isDm ? <InvitationsSection invitations={invitations} dmCampaigns={dmCampaigns} /> : null}
     </main>
   );
 }
