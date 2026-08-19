@@ -220,7 +220,16 @@
   },
   "integrations": {
     "google": {
-      "eventDescription": "Juegan: {{players}}"
+      "eventDescription": "Juegan: {{players}}",
+      "errors": {
+        "unauthorized": "Debes iniciar sesión.",
+        "notConfigured": "Esta integración no está disponible.",
+        "notConnected": "No tienes conectada tu cuenta de Google.",
+        "exchange": "No se ha podido completar la conexión con Google. Inténtalo de nuevo.",
+        "revoked": "El acceso a tu Google Calendar ha caducado o ha sido revocado. Reconéctalo desde tu perfil.",
+        "alreadyLinked": "Esa cuenta de Google ya está conectada a otro usuario de DMuster.",
+        "unknown": "Algo ha ido mal. Inténtalo de nuevo."
+      }
     }
   },
   "auth": {
