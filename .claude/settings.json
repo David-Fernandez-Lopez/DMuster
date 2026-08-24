@@ -2,7 +2,23 @@
   "permissions": {
     "allow": [
       "Bash(docker exec *)",
-      "Bash(docker exec dmuster-db-1 mysql -uroot -pchange_me_root dmuster -e ' *)"
+      "Bash(docker exec dmuster-db-1 mysql -uroot -pchange_me_root dmuster -e ' *)",
+      "Read(///wsl.localhost/Ubuntu/home/david/**)",
+      "Bash(node -e ' *)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && ls node_modules/bcryptjs/ 2>/dev/null && echo \"=== compare impl ===\" && grep -n \"function compare\\\\|async function compare\\\\|hash.length\\\\|Illegal arguments\\\\|60\" node_modules/bcryptjs/index.js 2>/dev/null | head -40)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && echo \"=== signIn callers ===\"; grep -rn \"signIn\\(\" src/ --include=*.ts --include=*.tsx; echo \"=== compose auth env ===\"; sed -n '15,60p' docker-compose.yml; echo \"=== .env.example auth ===\"; grep -n \"AUTH_\\\\|NODE_ENV\" .env.example)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && ls node_modules/@auth/core/lib/utils/ 2>/dev/null; echo \"=== cookie defaults ===\"; sed -n '1,120p' node_modules/@auth/core/lib/utils/cookie.js 2>/dev/null)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && grep -rn \"useSecureCookies\" node_modules/@auth/core/*.js node_modules/@auth/core/lib/*.js node_modules/next-auth/lib/*.js node_modules/next-auth/*.js 2>/dev/null | head -20)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && echo \"=== default redirect callback ===\"; grep -rn \"redirect\" node_modules/@auth/core/lib/init.js | head -20; echo \"=== ---- ===\"; grep -rn \"async redirect\" -A 12 node_modules/@auth/core/lib/init.js)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && sed -n '1,40p' node_modules/@auth/core/lib/init.js)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && echo \"=== createActionURL / host trust ===\"; grep -rn \"createActionURL\" -A 25 node_modules/@auth/core/lib/utils/env.js | head -50)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && echo \"=== strategy resolution ===\"; grep -n \"strategy\" node_modules/@auth/core/lib/init.js; echo; echo \"=== session read + updateAge ===\"; sed -n '1,80p' node_modules/@auth/core/lib/actions/session.js)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && sed -n '80,130p' node_modules/@auth/core/lib/actions/session.js; echo \"=== updateAge default ===\"; grep -n \"updateAge\" node_modules/@auth/core/lib/init.js)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && echo \"=== SKIP_ENV_VALIDATION in Dockerfile ===\"; grep -n \"SKIP_ENV_VALIDATION\\\\|NODE_ENV\\\\|USER \" Dockerfile; echo \"=== csrf in credentials callback ===\"; grep -rn \"csrf\\\\|skipCSRFCheck\" node_modules/next-auth/lib/actions.js | head -20)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && sed -n '36,79p' Dockerfile; echo \"=== auth route ===\"; cat \"src/app/api/auth/[...nextauth]/route.ts\")",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && grep -rn \"x-forwarded-host\\\\|allowedOrigins\\\\|Invalid Server Actions request\" node_modules/next/dist/server/app-render/action-handler.js 2>/dev/null | head -20)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && grep -rn \"credentials\" node_modules/@auth/core/lib/actions/callback/index.js | head -25; echo \"=== error logging ===\"; grep -rn \"CredentialsSignin\\\\|logger.error\\\\|logger.debug\" node_modules/@auth/core/lib/actions/callback/index.js | head -15)",
+      "Bash(cd '//wsl.localhost/Ubuntu/home/david/DMuster' && sed -n '378,395p' node_modules/@auth/core/lib/actions/callback/index.js; echo \"=== logger debug default ===\"; sed -n '1,60p' node_modules/@auth/core/lib/utils/logger.js | grep -n \"debug\" ; echo \"---\"; grep -n \"debug\" node_modules/@auth/core/lib/init.js node_modules/@auth/core/index.js 2>/dev/null | head)"
     ]
   }
 }

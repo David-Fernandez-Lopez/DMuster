@@ -52,8 +52,9 @@ services:
 
   db:
     image: mysql:8.4
-    ports:
-      - "3306:3306"
+    # No `ports:` on purpose: the database stays on the compose network, where
+    # `app` reaches it at `db:3306`. For an ad-hoc client, go through the
+    # container: `docker compose exec db mysql -u"$MYSQL_USER" -p`.
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-dmuster_root}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-dmuster}
