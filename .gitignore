@@ -2,6 +2,10 @@
 CLAUDE.md
 ROADMAP.md
 
+# Security audit (local only — never publish: open findings with file:line)
+HALLAZGOS.md
+REVIEW_PLAN.md
+
 # Design handoff (local reference, not versioned)
 /design/
 
