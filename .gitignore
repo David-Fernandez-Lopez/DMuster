@@ -5,6 +5,7 @@ ROADMAP.md
 # Security audit (local only — never publish: open findings with file:line)
 HALLAZGOS.md
 REVIEW_PLAN.md
+PLAN_REMEDIACION.md
 
 # Design handoff (local reference, not versioned)
 /design/
