@@ -20,6 +20,11 @@ docker-compose*
 # Local volumes
 mysql_data
 
+# Operational scripts (run against the compose stack from the host, never from
+# inside a container) and any database dump they may have produced
+scripts
+backups
+
 # IDE and local tooling
 .cursor
 .vscode

@@ -55,6 +55,11 @@ Thumbs.db
 # Docker local volumes
 mysql_data/
 
+# Database dumps. backup-db.sh writes outside the repository precisely so this
+# rule never has to save us; it stays as a second fence for the case where
+# someone points the script at a path in here on purpose.
+/backups/
+
 # Certificates
 *.pem
 
