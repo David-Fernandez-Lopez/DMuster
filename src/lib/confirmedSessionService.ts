@@ -11,6 +11,7 @@ import {
 } from "@/lib/google/calendarSyncService";
 import { listHolidays } from "@/lib/holidayService";
 import { prisma } from "@/lib/prisma";
+import { lockRow } from "@/lib/rowLock";
 import {
   findConflictingSessions,
   type SessionAttendance,
@@ -606,9 +607,23 @@ export async function updateSession(
   input: { startTime: string | null; durationMinutes: number | null },
 ): Promise<ConfirmedSessionMutationResult> {
   try {
-    const updated = await prisma.confirmedSession.update({
-      where: { id },
+    // Conditional on the session still being active, in the write itself. The
+    // caller established that with a separate read, and a cancellation landing
+    // in between would otherwise be overwritten: the row would take the new
+    // time, the caller would be told 200, and the sync queue would be handed an
+    // update for a session that no longer exists. Same shape as `cancelSession`
+    // — touch only an active row, and read the count to find out whether it
+    // was there.
+    const changed = await prisma.confirmedSession.updateMany({
+      where: { id, ...ACTIVE_SESSION },
       data: { startTime: input.startTime, durationMinutes: input.durationMinutes },
+    });
+    if (changed.count === 0) {
+      return { ok: false, error: "sessions.errors.notFound" };
+    }
+
+    const updated = await prisma.confirmedSession.findUniqueOrThrow({
+      where: { id },
       select: { date: true, startTime: true, durationMinutes: true },
     });
 
@@ -770,9 +785,31 @@ export async function addAttendee(
   }
 
   try {
-    await prisma.confirmedSessionAttendee.create({
-      data: { sessionId, userId: targetUserId, addedById: actingUserId },
+    // The "still active" check happened at the top, several queries ago. Under
+    // the session's lock, a cancellation racing this one either lands first —
+    // and the re-read below refuses — or waits until the attendee exists.
+    // Without it the attendee is written onto a cancelled session, and the
+    // event queued for them is one nothing will ever delete, because the
+    // cancellation's own cleanup already ran.
+    const outcome = await prisma.$transaction(async (tx): Promise<"added" | "cancelled"> => {
+      await lockRow(tx, "confirmedSession", sessionId);
+
+      const stillActive = await tx.confirmedSession.count({
+        where: { id: sessionId, ...ACTIVE_SESSION },
+      });
+      if (stillActive === 0) {
+        return "cancelled";
+      }
+
+      await tx.confirmedSessionAttendee.create({
+        data: { sessionId, userId: targetUserId, addedById: actingUserId },
+      });
+      return "added";
     });
+
+    if (outcome === "cancelled") {
+      return { ok: false, error: "sessions.errors.notFound" };
+    }
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -817,38 +854,55 @@ export async function removeAttendee(
     return { ok: false, error: authorized.error };
   }
 
-  const attendeeRows = await prisma.confirmedSessionAttendee.findMany({
-    where: { sessionId },
-    select: { userId: true },
-  });
-  const attendeeIds = attendeeRows.map((row) => row.userId);
-  if (!attendeeIds.includes(targetUserId)) {
-    // Nothing to remove — mirrors cancelSession's "count === 0 → notFound".
-    return { ok: false, error: "sessions.errors.notFound" };
-  }
-
-  const remainingIds = attendeeIds.filter((attendeeId) => attendeeId !== targetUserId);
-  const remainingRoles = await prisma.campaignPlayer.findMany({
-    where: { campaignId: authorized.campaignId, userId: { in: remainingIds } },
-    select: { role: true },
-  });
-  const remainingDms = remainingRoles.filter(
-    (row) => row.role === CampaignRole.DM,
-  ).length;
-
-  const verdict = canRemoveAttendee({
-    actorIsDm: true, // guaranteed by authorizeSessionMutation above
-    remainingAttendees: remainingIds.length,
-    remainingDms,
-  });
-  if (!verdict.allowed) {
-    return { ok: false, error: `sessions.errors.${verdict.reason}` };
-  }
+  let verdictError: string | null = null;
 
   try {
-    await prisma.confirmedSessionAttendee.delete({
-      where: { sessionId_userId: { sessionId, userId: targetUserId } },
+    // The refusals below are cross-row invariants — "not the last attendee",
+    // "a DM stays among them" — so reading the list and then deleting from it
+    // is not enough: two DMs removing two different attendees would each see
+    // the other's still present and each conclude the rule held. The session's
+    // lock makes the second one count what is actually there.
+    const removed = await prisma.$transaction(async (tx): Promise<boolean> => {
+      await lockRow(tx, "confirmedSession", sessionId);
+
+      const attendeeRows = await tx.confirmedSessionAttendee.findMany({
+        where: { sessionId },
+        select: { userId: true },
+      });
+      const attendeeIds = attendeeRows.map((row) => row.userId);
+      if (!attendeeIds.includes(targetUserId)) {
+        // Nothing to remove — mirrors cancelSession's "count === 0 → notFound".
+        return false;
+      }
+
+      const remainingIds = attendeeIds.filter((attendeeId) => attendeeId !== targetUserId);
+      const remainingRoles = await tx.campaignPlayer.findMany({
+        where: { campaignId: authorized.campaignId, userId: { in: remainingIds } },
+        select: { role: true },
+      });
+      const remainingDms = remainingRoles.filter(
+        (row) => row.role === CampaignRole.DM,
+      ).length;
+
+      const verdict = canRemoveAttendee({
+        actorIsDm: true, // guaranteed by authorizeSessionMutation above
+        remainingAttendees: remainingIds.length,
+        remainingDms,
+      });
+      if (!verdict.allowed) {
+        verdictError = `sessions.errors.${verdict.reason}`;
+        return false;
+      }
+
+      await tx.confirmedSessionAttendee.delete({
+        where: { sessionId_userId: { sessionId, userId: targetUserId } },
+      });
+      return true;
     });
+
+    if (!removed) {
+      return { ok: false, error: verdictError ?? "sessions.errors.notFound" };
+    }
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&

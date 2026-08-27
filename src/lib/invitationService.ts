@@ -375,13 +375,25 @@ export async function acceptInvitation(input: {
         });
       }
 
+      // `expiresAt` belongs in this clause alongside the other two. The status
+      // check above tests all three, but only two were re-asserted here — so an
+      // invitation that lapsed between that read and this write was consumed
+      // anyway, and the account it created outlived the link's own deadline.
+      // Every condition the read relied on has to reappear in the write, or the
+      // guard is only as good as the gap between them.
       const consumed = await tx.invitation.updateMany({
-        where: { id: invitation.id, acceptedAt: null, revokedAt: null },
+        where: {
+          id: invitation.id,
+          acceptedAt: null,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
         data: { acceptedAt: new Date(), acceptedById: created.userId },
       });
       if (consumed.count === 0) {
         // Someone else accepted or revoked this link between our read above
-        // and this write — abort so the just-created user rolls back too.
+        // and this write, or it expired in between — abort so the just-created
+        // user rolls back too.
         throw new InvitationRaceLostError();
       }
 

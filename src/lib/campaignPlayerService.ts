@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { CampaignRole } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
+import { lockRow } from "@/lib/rowLock";
 
 /** Prisma error code raised when a record to update/delete does not exist. */
 const RECORD_NOT_FOUND = "P2025";
@@ -112,6 +113,13 @@ export async function addPlayerToCampaign(
  * which would leave it unmanageable (there is no global admin to recover it).
  * A user who is not a member surfaces as a friendly i18n error key.
  *
+ * The whole thing runs under a lock on the campaign row, because the guard is a
+ * cross-row invariant that a read cannot hold on its own. Two DMs of the same
+ * campaign leaving at the same moment would each count two DMs — each seeing
+ * the other, who has not committed yet — and each conclude they were not the
+ * last. The campaign ends with nobody able to manage it, and no route back:
+ * there is no way to grant the DM role to anyone, so the state is permanent.
+ *
  * @param {string} campaignId - Id of the campaign to remove the user from.
  * @param {string} userId - Id of the user being removed.
  * @returns {Promise<CampaignPlayerMutationResult>} Success, or an error key
@@ -122,30 +130,34 @@ export async function removePlayerFromCampaign(
   userId: string,
 ): Promise<CampaignPlayerMutationResult> {
   try {
-    const membership = await prisma.campaignPlayer.findUnique({
-      where: { campaignId_userId: { campaignId, userId } },
-      select: { role: true },
-    });
+    return await prisma.$transaction(async (tx): Promise<CampaignPlayerMutationResult> => {
+      await lockRow(tx, "campaign", campaignId);
 
-    if (!membership) {
-      return { ok: false, error: "campaigns.players.errors.notMember" };
-    }
-
-    if (membership.role === CampaignRole.DM) {
-      const dmCount = await prisma.campaignPlayer.count({
-        where: { campaignId, role: CampaignRole.DM },
+      const membership = await tx.campaignPlayer.findUnique({
+        where: { campaignId_userId: { campaignId, userId } },
+        select: { role: true },
       });
-      if (dmCount <= 1) {
-        return { ok: false, error: "campaigns.players.errors.lastDm" };
+
+      if (!membership) {
+        return { ok: false, error: "campaigns.players.errors.notMember" };
       }
-    }
 
-    await prisma.campaignPlayer.delete({
-      where: { campaignId_userId: { campaignId, userId } },
-      select: { campaignId: true },
+      if (membership.role === CampaignRole.DM) {
+        const dmCount = await tx.campaignPlayer.count({
+          where: { campaignId, role: CampaignRole.DM },
+        });
+        if (dmCount <= 1) {
+          return { ok: false, error: "campaigns.players.errors.lastDm" };
+        }
+      }
+
+      await tx.campaignPlayer.delete({
+        where: { campaignId_userId: { campaignId, userId } },
+        select: { campaignId: true },
+      });
+
+      return { ok: true };
     });
-
-    return { ok: true };
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
