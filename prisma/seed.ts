@@ -1,13 +1,19 @@
 // Seeds the database with the reference group data from CLAUDE.md §7:
 // 9 users, 9 campaigns (with 2-letter tags and per-campaign DM roles), their
 // memberships, the extra weekday holidays, and the sample per-day availability.
-// Idempotent: running it multiple times produces no errors or duplicates.
+//
+// It runs only against an EMPTY database. Re-running it over live data is not
+// idempotent, despite the upserts: campaign tags, membership roles and
+// availability statuses are all rewritten to the values hardcoded here, and a
+// membership someone deliberately removed comes back. Campaigns resolve by
+// name, which is not unique, so a same-named campaign belonging to anyone else
+// gets captured and has DMs injected into it. See the guard in `main()`.
 import "dotenv/config";
 
 import bcrypt from "bcryptjs";
-import { z } from "zod";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
+import { loadSeedEnv } from "./seedEnv";
 import {
   PrismaClient,
   CampaignRole,
@@ -104,35 +110,6 @@ const DAY_AVAILABILITY_SEED: Record<string, Partial<Record<Nick, "S" | "N">>> = 
   "2026-08-29": { cgoob: "N", sergio: "S", salgado: "S", paola: "S", tucho: "S", david: "N", adri: "S", patri: "S", ana: "N" },
   "2026-08-30": { cgoob: "S", sergio: "N", salgado: "S", paola: "N", david: "N", adri: "S", patri: "S", ana: "S" },
 };
-
-const seedEnvSchema = z.object({
-  DATABASE_URL: z.url(),
-  SEED_DEFAULT_PASSWORD: z.string().min(1),
-});
-
-type SeedEnv = z.infer<typeof seedEnvSchema>;
-
-/**
- * Validates the environment variables required by the seed script, failing
- * fast with a readable error when one is missing or malformed. Kept local to
- * this script (instead of src/lib/env.ts) because SEED_DEFAULT_PASSWORD is
- * only needed at seed time and must not be required at application runtime.
- *
- * @returns {SeedEnv} The validated seed environment.
- * @throws {Error} If a required environment variable is invalid.
- */
-function loadSeedEnv(): SeedEnv {
-  const result = seedEnvSchema.safeParse(process.env);
-
-  if (!result.success) {
-    console.error(
-      `[SEED/ENV] Invalid environment variables:\n${z.prettifyError(result.error)}`
-    );
-    throw new Error("Invalid seed environment variables. See logs for details.");
-  }
-
-  return result.data;
-}
 
 /**
  * Parses a "YYYY-MM-DD" string into a Date pinned to UTC midnight, so values
@@ -379,9 +356,69 @@ function createAdapter(databaseUrl: string): PrismaMariaDb {
 }
 
 /**
- * Seed entry point: validates the environment and static data, then seeds
- * users, campaigns, memberships, holidays and availability, logging final
- * row counts.
+ * Environment variable that lets the seed run against a database that already
+ * has users. Named for what it does rather than for the flag it is, so nobody
+ * sets it to get past an error without reading what the error says.
+ */
+const OVERWRITE_FLAG = "SEED_OVERWRITE_EXISTING_DATA";
+
+/**
+ * Refuses to seed a database that already holds users, unless the operator
+ * asked for it explicitly.
+ *
+ * The README documents `prisma db seed` next to `migrate deploy`, so the
+ * realistic way this runs over live data is an operator following the
+ * instructions — no attacker needed. What it would do is not additive: roles
+ * and campaign tags are rewritten to the values hardcoded in this file,
+ * memberships someone removed on purpose come back, and stored availability
+ * answers for twenty dates are replaced. There is no undo, and until
+ * scripts/ops/backup-db.sh existed there was nothing to restore from either.
+ *
+ * @param {PrismaClient} prisma - Connected Prisma client.
+ * @returns {Promise<boolean>} True when seeding may proceed.
+ */
+async function maySeed(prisma: PrismaClient): Promise<boolean> {
+  const existingUsers = await prisma.user.count();
+
+  if (existingUsers === 0) {
+    return true;
+  }
+
+  if (process.env[OVERWRITE_FLAG] === "1") {
+    console.warn(
+      `[SEED] ${existingUsers} user(s) already exist. Proceeding anyway because ` +
+        `${OVERWRITE_FLAG}=1 — existing roles, campaign tags and availability ` +
+        `answers will be overwritten.`
+    );
+    return true;
+  }
+
+  const [campaigns, memberships, availabilities] = await Promise.all([
+    prisma.campaign.count(),
+    prisma.campaignPlayer.count(),
+    prisma.availability.count(),
+  ]);
+
+  console.error(
+    `[SEED] Refusing to run: the database is not empty (${existingUsers} users, ` +
+      `${campaigns} campaigns, ${memberships} memberships, ${availabilities} availability ` +
+      `answers).\n` +
+      `[SEED] Seeding would rewrite campaign tags and membership roles, restore ` +
+      `memberships that were removed, and replace stored availability answers. ` +
+      `None of that can be undone.\n` +
+      `[SEED] Back up first (scripts/ops/backup-db.sh). To proceed anyway, set ` +
+      `${OVERWRITE_FLAG}=1.`
+  );
+
+  return false;
+}
+
+/**
+ * Seed entry point: validates the environment and static data, refuses to run
+ * against a populated database, then seeds users, campaigns, memberships,
+ * holidays and availability, logging final row counts.
+ *
+ * @throws {Error} If the database already holds data and the overwrite flag is unset.
  */
 async function main(): Promise<void> {
   const env = loadSeedEnv();
@@ -391,6 +428,13 @@ async function main(): Promise<void> {
   const prisma = new PrismaClient({ adapter });
 
   try {
+    // Thrown rather than returned quietly: a deploy script chaining this after
+    // `migrate deploy` must stop and be looked at, not carry on as if the seed
+    // had run.
+    if (!(await maySeed(prisma))) {
+      throw new Error(`Database is not empty. See the log above, or set ${OVERWRITE_FLAG}=1.`);
+    }
+
     console.log("[SEED] Seeding reference group data...");
     const passwordHash = await bcrypt.hash(env.SEED_DEFAULT_PASSWORD, BCRYPT_COST);
 
