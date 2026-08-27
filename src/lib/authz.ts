@@ -32,10 +32,21 @@ export async function getCampaignRole(
  * so anyone holding the DM role anywhere may add/remove the extra weekday
  * holidays. Reused by the `/api/holidays` guard and the `/holidays` page.
  *
+ * Denies outright on a missing id instead of querying. Prisma reads `undefined`
+ * in a `where` clause as "no filter at all", so the count would fall back to
+ * every DM membership in the instance and return `true` — an authorization
+ * check answering "yes" to a caller who supplied no identity. The type says
+ * that cannot happen; this is here for the runtime where it can, since every
+ * caller reads the id off a session object.
+ *
  * @param {string} userId - Id of the user to check.
  * @returns {Promise<boolean>} True when the user is DM of one or more campaigns.
  */
 export async function isDmOfAnyCampaign(userId: string): Promise<boolean> {
+  if (!userId) {
+    return false;
+  }
+
   const dmCount = await prisma.campaignPlayer.count({
     where: { userId, role: CampaignRole.DM },
   });

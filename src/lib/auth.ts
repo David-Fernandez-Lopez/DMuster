@@ -6,16 +6,9 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { encode as defaultEncode } from "next-auth/jwt";
 
+import { DUMMY_PASSWORD_HASH } from "@/lib/dummyPasswordHash";
 import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validation/auth";
-
-/**
- * Bcrypt hash of a random string, compared against when no user matches the
- * submitted email. Running a hash comparison on both the found and not-found
- * paths keeps the response time constant, mitigating user-enumeration by timing.
- */
-const DUMMY_PASSWORD_HASH =
-  "$2b$10$CwTycUXWue0Thq9StjUM0uJ8i7f7qJt0mQ5g8Yy0m1a2b3c4d5e6";
 
 /** Lifetime of a database session, in milliseconds (30 days). */
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
