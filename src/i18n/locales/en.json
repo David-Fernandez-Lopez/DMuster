@@ -106,7 +106,10 @@
       "edit": "Edit",
       "delete": "Delete",
       "confirmDelete": "Delete this campaign?",
-      "confirmYes": "Yes, delete"
+      "confirmYes": "Yes, delete",
+      "leave": "Leave campaign",
+      "confirmLeave": "Leave this campaign? Only a DM can add you back.",
+      "confirmLeaveYes": "Yes, leave"
     },
     "players": {
       "title": "Players",

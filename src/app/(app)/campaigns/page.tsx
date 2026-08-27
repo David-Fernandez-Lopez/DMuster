@@ -18,12 +18,14 @@ import {
  *
  * @param {CampaignWithRole[]} campaigns - Campaigns in this group.
  * @param {string} emptyHint - Translated hint shown when the group is empty.
+ * @param {string} viewerId - Id of the signed-in user, forwarded to each card.
  * @param {TFunction} t - Server-side translation function.
  * @returns {JSX.Element} The list or the empty hint.
  */
 function renderGroupBody(
   campaigns: CampaignWithRole[],
   emptyHint: string,
+  viewerId: string,
   t: TFunction,
 ) {
   if (campaigns.length === 0) {
@@ -33,7 +35,12 @@ function renderGroupBody(
   return (
     <ul className="flex flex-col gap-3">
       {campaigns.map((campaign) => (
-        <CampaignCard key={campaign.id} campaign={campaign} t={t} />
+        <CampaignCard
+          key={campaign.id}
+          campaign={campaign}
+          viewerId={viewerId}
+          t={t}
+        />
       ))}
     </ul>
   );
@@ -90,7 +97,12 @@ export default async function CampaignsPage() {
             count={dmCampaigns.length}
             defaultOpen
           >
-            {renderGroupBody(dmCampaigns, t("campaigns.groups.dmEmpty"), t)}
+            {renderGroupBody(
+              dmCampaigns,
+              t("campaigns.groups.dmEmpty"),
+              session.user.id,
+              t,
+            )}
           </CampaignSection>
           <CampaignSection
             title={t("campaigns.groups.player")}
@@ -100,6 +112,7 @@ export default async function CampaignsPage() {
             {renderGroupBody(
               playerCampaigns,
               t("campaigns.groups.playerEmpty"),
+              session.user.id,
               t,
             )}
           </CampaignSection>

@@ -106,7 +106,10 @@
       "edit": "Editar",
       "delete": "Eliminar",
       "confirmDelete": "¿Eliminar esta campaña?",
-      "confirmYes": "Sí, eliminar"
+      "confirmYes": "Sí, eliminar",
+      "leave": "Salir de la campaña",
+      "confirmLeave": "¿Salir de esta campaña? Solo un máster podrá volver a añadirte.",
+      "confirmLeaveYes": "Sí, salir"
     },
     "players": {
       "title": "Jugadores",

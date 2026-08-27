@@ -38,18 +38,29 @@ function mutationErrorStatus(error: string): number {
   return 404;
 }
 
+/** The acting user's standing in the campaign a mutation targets. */
+type Membership = { campaignId: string; actorId: string; role: CampaignRole };
+
+/** Ready-to-send 403 for a member who lacks the rights for what they asked. */
+const FORBIDDEN = NextResponse.json(
+  { error: "campaigns.errors.forbidden" },
+  { status: 403 },
+);
+
 /**
- * Resolves the session and DM authorization for a campaign-players mutation.
- * Returns the target campaign id on success, or a ready-to-send error response
- * mirroring the guard ladder of `PUT/DELETE /api/campaigns/[id]`: 401 when
- * unauthenticated, 404 for non-members (hides existence), 403 for players.
+ * Resolves the acting user's membership of the campaign a mutation targets:
+ * 401 when unauthenticated, 404 when they are not a member at all (which hides
+ * the campaign's existence from strangers), otherwise the role they hold.
+ *
+ * Stops at membership rather than demanding DM, because what counts as
+ * authorized depends on who the request targets — see `DELETE`.
  *
  * @param {RouteContext} context - Route context with the async `params`.
- * @returns {Promise<{ campaignId: string } | { response: NextResponse }>}
+ * @returns {Promise<Membership | { response: NextResponse }>}
  */
-async function authorizeDm(
+async function resolveMembership(
   { params }: RouteContext,
-): Promise<{ campaignId: string } | { response: NextResponse }> {
+): Promise<Membership | { response: NextResponse }> {
   const session = await auth();
   if (!session?.user) {
     return {
@@ -71,16 +82,8 @@ async function authorizeDm(
       ),
     };
   }
-  if (role !== CampaignRole.DM) {
-    return {
-      response: NextResponse.json(
-        { error: "campaigns.errors.forbidden" },
-        { status: 403 },
-      ),
-    };
-  }
 
-  return { campaignId: id };
+  return { campaignId: id, actorId: session.user.id, role };
 }
 
 /**
@@ -149,9 +152,12 @@ export async function POST(
   request: Request,
   context: RouteContext,
 ): Promise<NextResponse> {
-  const authorized = await authorizeDm(context);
-  if ("response" in authorized) {
-    return authorized.response;
+  const membership = await resolveMembership(context);
+  if ("response" in membership) {
+    return membership.response;
+  }
+  if (membership.role !== CampaignRole.DM) {
+    return FORBIDDEN;
   }
 
   const parsed = await parseUserId(request);
@@ -160,20 +166,30 @@ export async function POST(
   }
 
   const result = await addPlayerToCampaign(
-    authorized.campaignId,
+    membership.campaignId,
     parsed.userId,
   );
   return respondToMutation(
     result,
-    { campaignId: authorized.campaignId, userId: parsed.userId },
+    { campaignId: membership.campaignId, userId: parsed.userId },
     201,
   );
 }
 
 /**
  * DELETE /api/campaigns/[id]/players — removes a user from the campaign.
- * Restricted to a DM of the campaign; removing the last DM is rejected (400).
- * Non-member → 404, player → 403, malformed body → 400.
+ *
+ * A DM may remove anyone; **anyone may remove themselves**. Leaving needs no
+ * DM's permission because otherwise membership is a one-way door: a campaign
+ * can add any registered user without asking, and until now only a DM of that
+ * campaign could undo it. Someone added against their wishes had no way out —
+ * and, because attending a session blocks that whole day for their other
+ * campaigns, no way to stop it costing them elsewhere either.
+ *
+ * The last-DM guard still applies, and applies to leaving too: a campaign's
+ * only DM cannot walk out and strand it with nobody able to manage it.
+ *
+ * Non-member → 404, player naming someone else → 403, malformed body → 400.
  *
  * @param {Request} request - The incoming request with the JSON body.
  * @param {RouteContext} context - Route context with the async `params`.
@@ -183,9 +199,9 @@ export async function DELETE(
   request: Request,
   context: RouteContext,
 ): Promise<NextResponse> {
-  const authorized = await authorizeDm(context);
-  if ("response" in authorized) {
-    return authorized.response;
+  const membership = await resolveMembership(context);
+  if ("response" in membership) {
+    return membership.response;
   }
 
   const parsed = await parseUserId(request);
@@ -193,13 +209,21 @@ export async function DELETE(
     return parsed.response;
   }
 
+  // Whether DM rights are needed depends on the target, so this check has to
+  // come after the body is read. Membership was already established above, so a
+  // stranger is still turned away with a 404 before anything is parsed.
+  const isSelf = parsed.userId === membership.actorId;
+  if (!isSelf && membership.role !== CampaignRole.DM) {
+    return FORBIDDEN;
+  }
+
   const result = await removePlayerFromCampaign(
-    authorized.campaignId,
+    membership.campaignId,
     parsed.userId,
   );
   return respondToMutation(
     result,
-    { campaignId: authorized.campaignId, userId: parsed.userId },
+    { campaignId: membership.campaignId, userId: parsed.userId },
     200,
   );
 }

@@ -5,23 +5,30 @@ import { CampaignRole } from "@/generated/prisma/enums";
 import type { CampaignWithRole } from "@/lib/campaignService";
 
 import DeleteCampaignButton from "./DeleteCampaignButton";
+import LeaveCampaignButton from "./LeaveCampaignButton";
 
 interface CampaignCardProps {
   campaign: CampaignWithRole;
+  /** Id of the signed-in user, so a player can leave the campaign. */
+  viewerId: string;
   /** Server-side translation function from `getServerTranslation`. */
   t: TFunction;
 }
 
 /**
- * Single campaign row: tag chip, name, an optional description, and — only for
- * a DM of that campaign — edit/delete controls. The member's role is conveyed
- * by the enclosing section header, not repeated here. Hiding the controls for
- * non-DMs is the visible half of the authorization (the API enforces it too).
+ * Single campaign row: tag chip, name, an optional description, and role-
+ * dependent controls — edit/delete/players for a DM, and for everyone else the
+ * way out. The member's role is conveyed by the enclosing section header, not
+ * repeated here. Hiding the DM controls from non-DMs is the visible half of the
+ * authorization (the API enforces it too).
  *
- * @param {CampaignCardProps} props - The campaign and the server `t`.
+ * A DM gets no leave control here because they already have one: the players
+ * screen lists every member, themselves included, with a remove button.
+ *
+ * @param {CampaignCardProps} props - The campaign, the viewer, and the server `t`.
  * @returns {JSX.Element} The campaign card.
  */
-export default function CampaignCard({ campaign, t }: CampaignCardProps) {
+export default function CampaignCard({ campaign, viewerId, t }: CampaignCardProps) {
   const isDm = campaign.role === CampaignRole.DM;
 
   return (
@@ -60,7 +67,11 @@ export default function CampaignCard({ campaign, t }: CampaignCardProps) {
           </Link>
           <DeleteCampaignButton campaignId={campaign.id} />
         </div>
-      ) : null}
+      ) : (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <LeaveCampaignButton campaignId={campaign.id} userId={viewerId} />
+        </div>
+      )}
     </li>
   );
 }
