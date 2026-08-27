@@ -288,10 +288,14 @@ export type AcceptInvitationResult =
  *
  * @param {{ rawToken: string; name: string; password: string }} input -
  *   Already Zod-validated accept payload plus the raw token from the URL.
+ * A campaign invitation additionally revalidates that its sender still holds
+ * the DM role there: the link outlives the authority that created it by up to
+ * seven days.
+ *
  * @returns {Promise<AcceptInvitationResult>} Success with the new account's
  *   email (for the caller to `signIn` with), or an error key
  *   (`invitations.errors.invalid` / `expired` / `revoked` / `alreadyAccepted` /
- *   `auth.errors.emailTaken` / `invitations.errors.unknown`).
+ *   `issuerNoLongerDm` / `auth.errors.emailTaken` / `invitations.errors.unknown`).
  */
 export async function acceptInvitation(input: {
   rawToken: string;
@@ -309,6 +313,7 @@ export async function acceptInvitation(input: {
           email: true,
           campaignId: true,
           role: true,
+          invitedById: true,
           acceptedAt: true,
           revokedAt: true,
           expiresAt: true,
@@ -323,6 +328,33 @@ export async function acceptInvitation(input: {
         const error =
           status === "accepted" ? "invitations.errors.alreadyAccepted" : `invitations.errors.${status}`;
         return { ok: false, error };
+      }
+
+      // The sender's authority is checked when the invitation is issued, and
+      // it was never checked again — but the link stays usable for seven days,
+      // and DM rights can be gone well before then. A DM could invite someone
+      // into a campaign as a DM, be removed from that campaign, and the link
+      // would still hand out the role they chose: a way back into a campaign
+      // they no longer belong to, with full control of it. The same thing
+      // happens without any ill intent when a DM simply leaves and their
+      // outstanding invitations are redeemed afterwards.
+      //
+      // Read through `tx` so the answer cannot go stale between here and the
+      // membership write below.
+      if (invitation.campaignId) {
+        const issuerRole = await getCampaignRole(
+          invitation.invitedById,
+          invitation.campaignId,
+          tx,
+        );
+        if (issuerRole !== CampaignRole.DM) {
+          // Refused whole rather than degraded to an account without the
+          // campaign: access is invitation-only, so minting the account is
+          // itself the grant, and a silent partial join would leave the person
+          // wondering why the campaign never appeared. A current DM can send a
+          // fresh link.
+          return { ok: false, error: "invitations.errors.issuerNoLongerDm" };
+        }
       }
 
       const created = await registerUser(

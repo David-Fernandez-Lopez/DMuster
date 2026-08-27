@@ -324,6 +324,7 @@
       "invalid": "This invitation link is not valid.",
       "expired": "This invitation link has expired.",
       "revoked": "This invitation link has been revoked.",
+      "issuerNoLongerDm": "Whoever invited you is no longer a DM of that campaign. Ask a current DM for a new link.",
       "unknown": "Something went wrong. Please try again."
     }
   }

@@ -324,6 +324,7 @@
       "invalid": "Este enlace de invitación no es válido.",
       "expired": "Este enlace de invitación ha caducado.",
       "revoked": "Este enlace de invitación ha sido revocado.",
+      "issuerNoLongerDm": "Quien te invitó ya no es máster de esa campaña. Pide un enlace nuevo a un máster actual.",
       "unknown": "Algo ha ido mal. Inténtalo de nuevo."
     }
   }

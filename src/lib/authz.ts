@@ -1,3 +1,4 @@
+import { Prisma } from "@/generated/prisma/client";
 import { CampaignRole } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 
@@ -12,13 +13,18 @@ import { prisma } from "@/lib/prisma";
  *
  * @param {string} userId - Id of the user whose role is being resolved.
  * @param {string} campaignId - Id of the campaign to check membership in.
+ * @param {Prisma.TransactionClient | typeof prisma} [client] - Prisma client to
+ *   read through; pass a `$transaction` callback's `tx` when the answer has to
+ *   be consistent with writes in that same transaction. Defaults to the module
+ *   client. Mirrors `registerUser`.
  * @returns {Promise<CampaignRole | null>} The member's role, or `null`.
  */
 export async function getCampaignRole(
   userId: string,
   campaignId: string,
+  client: Prisma.TransactionClient | typeof prisma = prisma,
 ): Promise<CampaignRole | null> {
-  const membership = await prisma.campaignPlayer.findUnique({
+  const membership = await client.campaignPlayer.findUnique({
     where: { campaignId_userId: { campaignId, userId } },
     select: { role: true },
   });
