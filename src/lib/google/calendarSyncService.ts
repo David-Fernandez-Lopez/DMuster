@@ -529,7 +529,21 @@ export async function processPending(
       where: {
         status: { in: [SyncStatus.PENDING, SyncStatus.FAILED] },
         attempts: { lt: MAX_SYNC_ATTEMPTS },
-        ...(options.userId ? { userId: options.userId } : {}),
+        // A shared sweep skips users whose connection is marked broken. Their
+        // rows cannot succeed until the person reconnects, and they are also
+        // the ones that starve everybody else: `processRow` deliberately
+        // returns on a revoked token without stamping `lastAttemptAt` (so the
+        // attempt budget is not burned on something unrecoverable), while
+        // `orderBy lastAttemptAt asc` sorts nulls first — so those same rows
+        // resurface at the head of every sweep and fill the batch. One user
+        // losing their token stopped everyone else from syncing.
+        //
+        // A sweep scoped to one user keeps them: there is no shared batch to
+        // crowd out, and excluding them would make "Reintentar" quietly do
+        // nothing for the very people looking at the retry button.
+        ...(options.userId
+          ? { userId: options.userId }
+          : { user: { googleSyncBrokenAt: null } }),
       },
       select: {
         id: true,

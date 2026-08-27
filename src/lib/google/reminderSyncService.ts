@@ -369,7 +369,19 @@ export async function processPendingReminders(
 
   try {
     const candidates: PendingReminderRow[] = await prisma.availabilityReminderEvent.findMany({
-      where: { status: { in: [SyncStatus.PENDING, SyncStatus.FAILED] }, attempts: { lt: MAX_SYNC_ATTEMPTS } },
+      where: {
+        status: { in: [SyncStatus.PENDING, SyncStatus.FAILED] },
+        attempts: { lt: MAX_SYNC_ATTEMPTS },
+        // Skips users whose connection is marked broken, for the same reason
+        // the session queue does: their rows cannot succeed until they
+        // reconnect, and because the revoked-token path leaves `lastAttemptAt`
+        // null while the ordering puts nulls first, they would head every
+        // sweep and crowd out everyone else's reminders. This queue is always
+        // a shared sweep — it takes no per-user option — so the exclusion is
+        // unconditional here. The rows are left untouched and resume on
+        // reconnection.
+        user: { googleSyncBrokenAt: null },
+      },
       select: {
         id: true,
         userId: true,
