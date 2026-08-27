@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { encode as defaultEncode } from "next-auth/jwt";
+import { cache } from "react";
 
 import { DUMMY_PASSWORD_HASH } from "@/lib/dummyPasswordHash";
 import { prisma } from "@/lib/prisma";
@@ -24,7 +25,12 @@ const adapter = PrismaAdapter(prisma);
  * adapter and stores its opaque token in the session cookie. Every subsequent
  * request then reads the session straight from the database.
  */
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const {
+  handlers,
+  auth: uncachedAuth,
+  signIn,
+  signOut,
+} = NextAuth({
   adapter,
   trustHost: true,
   // Session strategy is intentionally left unset: with an adapter present the
@@ -141,3 +147,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+export { handlers, signIn, signOut };
+
+/**
+ * Resolves the current session, memoized for the duration of one request.
+ *
+ * With database sessions every call is a real session+user join, and a single
+ * authenticated page render calls this from four independent places — the
+ * locale resolver, the root layout, the navigation bar and the page itself —
+ * none of which can know about the others. Four round-trips against a pool of
+ * five connections, repeated per render, is also the pressure that makes the
+ * pool contention elsewhere reachable.
+ *
+ * `cache` scopes the memo to the request, so concurrent requests never share a
+ * session: the value is stored in the per-request context React sets up, not in
+ * module state.
+ */
+export const auth = cache(uncachedAuth);

@@ -45,7 +45,8 @@ export default async function RootLayout({
 
   // Theme is device-specific, so the cookie wins; the persisted `User.theme`
   // seeds a fresh browser where the cookie is absent. `auth()` is memoized per
-  // request (getLocale already called it), so this adds no extra query.
+  // request in src/lib/auth.ts, so this reuses the resolution getLocale already
+  // paid for instead of issuing a second session query.
   const cookieTheme = (await cookies()).get(THEME_COOKIE)?.value;
   const session = await auth();
   const theme = resolveTheme(cookieTheme, session?.user?.theme);
