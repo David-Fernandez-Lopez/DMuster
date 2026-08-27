@@ -1,5 +1,10 @@
 import { Prisma } from "@/generated/prisma/client";
 import { CampaignRole } from "@/generated/prisma/enums";
+import {
+  DISCONNECT_PROCESS_LIMIT,
+  enqueueDeletionForCampaign,
+  processPending,
+} from "@/lib/google/calendarSyncService";
 import { prisma } from "@/lib/prisma";
 import type { CampaignInput } from "@/lib/validation/campaign";
 
@@ -171,8 +176,22 @@ export async function updateCampaign(
 }
 
 /**
- * Deletes a campaign. Its `CampaignPlayer` rows are removed by the cascade on
- * the foreign key. A missing record surfaces as a friendly i18n error key.
+ * Deletes a campaign, after removing whatever it put in its players' Google
+ * calendars. Its `CampaignPlayer` rows are removed by the cascade on the
+ * foreign key. A missing record surfaces as a friendly i18n error key.
+ *
+ * The order is the point. The cascade reaches the campaign's sessions and,
+ * through them, the `SessionCalendarEvent` rows — the only place the id of each
+ * Google event is kept. Deleting first and cleaning up afterwards is not
+ * possible: by then there is nothing left to clean up *from*, and the events go
+ * on existing in other people's calendars, for a campaign that no longer does,
+ * with no way for the app to ever reach them again. The Google disconnect route
+ * has always done it in this order and says why; this did not.
+ *
+ * A drain that cannot finish — Google unreachable — does not block the delete,
+ * which is the campaign owner's decision to make. It is logged instead, with
+ * the sessions involved, and the events stay findable through the
+ * `dmusterSessionId` property each one carries.
  *
  * @param {string} campaignId - Id of the campaign to delete.
  * @returns {Promise<CampaignMutationResult>} Success, or an error key
@@ -182,6 +201,25 @@ export async function deleteCampaign(
   campaignId: string,
 ): Promise<CampaignMutationResult> {
   try {
+    try {
+      const sessionIds = await enqueueDeletionForCampaign(campaignId);
+      if (sessionIds.length > 0) {
+        const drained = await processPending({ limit: DISCONNECT_PROCESS_LIMIT });
+        if (drained.failed > 0) {
+          console.error(
+            `[CAMPAIGNS/DELETE] ${drained.failed} calendar event(s) could not be removed before ` +
+              `deleting campaign ${campaignId}; they may be left behind in attendees' calendars. ` +
+              `Sessions: ${sessionIds.join(", ")}`,
+          );
+        }
+      }
+    } catch (syncError) {
+      console.error(
+        `[CAMPAIGNS/DELETE] Calendar cleanup failed before deleting campaign ${campaignId}:`,
+        syncError,
+      );
+    }
+
     await prisma.campaign.delete({
       where: { id: campaignId },
       select: { id: true },

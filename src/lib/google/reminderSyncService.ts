@@ -143,6 +143,35 @@ export async function reconcileReminders(): Promise<ReconcileRemindersResult> {
 }
 
 /**
+ * Marks every one of a user's reminder events for deletion — the counterpart to
+ * `calendarSyncService.ts#enqueueDeletionForUser`, called when they pause sync
+ * or disconnect.
+ *
+ * Disconnecting used to walk only the session queue, so the monthly "check the
+ * calendar" reminder stayed in the person's Google Calendar after they had
+ * severed the connection, with the app no longer holding a token to remove it.
+ * A reminder is not tied to any session, so nothing else was ever going to
+ * clean it up.
+ *
+ * @param {string} userId - The user pausing or disconnecting sync.
+ * @returns {Promise<void>}
+ */
+export async function enqueueReminderDeletionForUser(userId: string): Promise<void> {
+  const notAlreadyDeleted = { status: { not: SyncStatus.DELETED } };
+
+  // Nothing at Google to remove — close the row out directly.
+  await prisma.availabilityReminderEvent.updateMany({
+    where: { userId, ...notAlreadyDeleted, googleEventId: null },
+    data: { status: SyncStatus.DELETED, operation: SyncOperation.DELETE },
+  });
+
+  await prisma.availabilityReminderEvent.updateMany({
+    where: { userId, ...notAlreadyDeleted, googleEventId: { not: null } },
+    data: { status: SyncStatus.PENDING, operation: SyncOperation.DELETE, attempts: 0, lastError: null },
+  });
+}
+
+/**
  * Marks a row FAILED after an unsuccessful attempt, mirroring
  * `calendarSyncService.ts#markRowFailed`.
  *

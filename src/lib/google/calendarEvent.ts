@@ -19,6 +19,20 @@ const MINUTES_PER_DAY = 24 * 60;
 const DEFAULT_EVENT_DURATION_MINUTES = 240;
 
 /**
+ * Private extended-property key stamped on every session event, holding the
+ * `ConfirmedSession` id it was created for.
+ *
+ * It is the only handle that survives the local ledger: `googleEventId` lives
+ * in a `SessionCalendarEvent` row, and that row can be destroyed — by a
+ * campaign cascade, by a re-enqueue that blanks it — while the event carries on
+ * existing in someone else's calendar with nothing pointing at it. Asking
+ * Google "do you already have an event for this session?" is what turns those
+ * orphans back into something the app can find, and what stops a second insert
+ * from creating a duplicate beside the first.
+ */
+export const DMUSTER_SESSION_PROPERTY = "dmusterSessionId";
+
+/**
  * A Google Calendar event boundary: a specific instant (timed session, with
  * an explicit `timeZone` so Google — not this app — resolves DST) or a whole
  * calendar day (all-day session).
@@ -171,7 +185,7 @@ export function buildCalendarEvent(input: CalendarEventInput): GoogleCalendarEve
     start,
     end,
     extendedProperties: {
-      private: { dmusterSessionId: sessionId },
+      private: { [DMUSTER_SESSION_PROPERTY]: sessionId },
     },
   };
 }

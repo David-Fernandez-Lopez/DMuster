@@ -26,7 +26,13 @@ import { prisma } from "@/lib/prisma";
 
 import { buildCalendarEvent } from "./calendarEvent";
 import { logCalendarEvent } from "./calendarEventLog";
-import { deleteEvent, insertEvent, patchEvent, type MutateEventResult } from "./calendarClient";
+import {
+  deleteEvent,
+  findEventBySession,
+  insertEvent,
+  patchEvent,
+  type MutateEventResult,
+} from "./calendarClient";
 import { getAccessToken } from "./oauth";
 import { isDueForRetry, MAX_SYNC_ATTEMPTS } from "./syncBackoff";
 
@@ -35,6 +41,15 @@ const DEFAULT_PROCESS_LIMIT = 25;
 
 /** Sanity ceiling on candidate rows loaded before filtering by due-ness; this app's data volume never approaches it. */
 const CANDIDATE_FETCH_CAP = 500;
+
+/**
+ * Rows processed by a drain that has to finish before something destroys the
+ * ledger it reads from — disconnecting a Google account, deleting a campaign.
+ * Anything left behind at that point is an event nothing can reach again, so
+ * this is deliberately far above any realistic backlog rather than the
+ * opportunistic default.
+ */
+export const DISCONNECT_PROCESS_LIMIT = CANDIDATE_FETCH_CAP;
 
 type PendingSyncRow = {
   id: string;
@@ -94,10 +109,14 @@ async function filterSyncEnabledUsers(userIds: string[]): Promise<string[]> {
  * Upserts a PENDING/UPSERT sync row for each given attendee who has Google
  * Calendar sync enabled — called right after a session is confirmed (every
  * attendee) or after a single attendee is added (roadmap #22, one id).
- * Idempotent: resets a previously DELETED row's stale `googleEventId` back to
- * null (and `attempts` to 0), so a person removed and later re-added gets a
- * fresh `insertEvent` instead of `processPending` trying to PATCH an event
- * Google no longer has.
+ *
+ * A DELETED row has its stale `googleEventId` cleared first, so a person
+ * removed and later re-added gets a fresh `insertEvent` rather than a PATCH
+ * against an event Google no longer has. Every other row keeps its id: it used
+ * to be blanked unconditionally, which meant re-queuing an already-SYNCED row
+ * threw away the only handle to its event. The next pass would insert a second
+ * event beside the first, and the first — now unreferenced — could never be
+ * updated or deleted again.
  *
  * @param {string} sessionId - The confirmed session to sync.
  * @param {string[]} [attendeeUserIds] - The attendees to (re)queue; defaults to every current attendee of the session.
@@ -114,6 +133,13 @@ export async function enqueueForSession(sessionId: string, attendeeUserIds?: str
     return;
   }
 
+  // Only where the event really is gone. Done before the upsert so the upsert
+  // itself never has to decide.
+  await prisma.sessionCalendarEvent.updateMany({
+    where: { sessionId, userId: { in: syncEnabledUserIds }, status: SyncStatus.DELETED },
+    data: { googleEventId: null },
+  });
+
   await Promise.all(
     syncEnabledUserIds.map((userId) =>
       prisma.sessionCalendarEvent.upsert({
@@ -124,7 +150,6 @@ export async function enqueueForSession(sessionId: string, attendeeUserIds?: str
           operation: SyncOperation.UPSERT,
           attempts: 0,
           lastError: null,
-          googleEventId: null,
         },
       }),
     ),
@@ -228,6 +253,36 @@ export async function enqueueDeletionForUser(userId: string): Promise<void> {
   for (const sessionId of sessionIds) {
     await enqueueDeletion(sessionId, userId);
   }
+}
+
+/**
+ * Marks every calendar event this app created for a campaign's sessions for
+ * deletion, and reports which sessions were touched.
+ *
+ * Meant to be called — and drained — *before* the campaign row goes away.
+ * Deleting a campaign cascades through its sessions to their
+ * `SessionCalendarEvent` rows, and those rows hold the only local handle to the
+ * events sitting in the attendees' calendars. Destroy them first and the events
+ * stay there forever, referenced by nothing.
+ *
+ * Every session is included, not only the future active ones: a session
+ * cancelled earlier may still carry rows that never got drained, and
+ * `enqueueDeletion` skips whatever is already DELETED.
+ *
+ * @param {string} campaignId - The campaign about to be deleted.
+ * @returns {Promise<string[]>} Ids of the sessions whose events were queued.
+ */
+export async function enqueueDeletionForCampaign(campaignId: string): Promise<string[]> {
+  const sessions = await prisma.confirmedSession.findMany({
+    where: { campaignId },
+    select: { id: true },
+  });
+
+  for (const session of sessions) {
+    await enqueueDeletion(session.id);
+  }
+
+  return sessions.map((session) => session.id);
 }
 
 /**
@@ -474,11 +529,42 @@ async function processRow(
   if (row.googleEventId) {
     const result = await patchEvent(accessToken, row.googleEventId, eventBody);
     await logSessionEvent(row, CalendarEventAction.UPDATE, result, row.googleEventId, trigger, cronRunId);
-    if (!result.ok) {
+    if (result.ok) {
+      await markRowSynced(row.id, row.googleEventId);
+      return "processed";
+    }
+    if (!result.notFound) {
       return handleGoogleFailure(row, result);
     }
-    await markRowSynced(row.id, row.googleEventId);
+
+    // The person deleted the event from their own calendar. Retrying the same
+    // PATCH would say 404 again every time until the attempt budget ran out and
+    // the row was abandoned as FAILED. Dropping the dead id instead lets the
+    // insert below put the session back where it belongs.
+    await prisma.sessionCalendarEvent.update({
+      where: { id: row.id },
+      data: { googleEventId: null },
+    });
+  }
+
+  // Ask Google whether it already has an event for this session before creating
+  // one. The local id can be missing for reasons that have nothing to do with
+  // the event: a re-queue used to blank it, a campaign cascade can destroy the
+  // row outright. Inserting blindly in those cases leaves a duplicate in the
+  // person's calendar and orphans the original beyond reach.
+  const existing = await findEventBySession(accessToken, row.sessionId);
+  if (existing.ok && existing.eventId) {
+    const adopted = await patchEvent(accessToken, existing.eventId, eventBody);
+    await logSessionEvent(row, CalendarEventAction.UPDATE, adopted, existing.eventId, trigger, cronRunId);
+    if (!adopted.ok) {
+      return handleGoogleFailure(row, adopted);
+    }
+    await markRowSynced(row.id, existing.eventId);
     return "processed";
+  }
+  if (!existing.ok && existing.authFailure) {
+    // The token is the problem, not the event; creating now would fail anyway.
+    return handleGoogleFailure(row, existing);
   }
 
   const result = await insertEvent(accessToken, eventBody);

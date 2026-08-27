@@ -12,14 +12,30 @@
 // "try again later" from "this payload will never work", and both still only
 // get the same fixed attempt budget either way.
 
-import type { GoogleCalendarEventBody } from "./calendarEvent";
+import { DMUSTER_SESSION_PROPERTY, type GoogleCalendarEventBody } from "./calendarEvent";
 
 const CALENDAR_EVENTS_URL = "https://www.googleapis.com/calendar/v3/calendars/primary/events";
 const GOOGLE_REQUEST_TIMEOUT_MS = 10_000;
 
-type GoogleApiFailure = { ok: false; authFailure: boolean; errorMessage: string };
+type GoogleApiFailure = {
+  ok: false;
+  authFailure: boolean;
+  /**
+   * True when Google says the event is not there. Distinguished from every
+   * other failure because it is not a failure to retry: the event is gone, and
+   * repeating the same call with the same id will keep saying so until the
+   * attempt budget runs out and the row is abandoned as FAILED.
+   */
+  notFound: boolean;
+  errorMessage: string;
+};
 export type InsertEventResult = { ok: true; eventId: string } | GoogleApiFailure;
 export type MutateEventResult = { ok: true } | GoogleApiFailure;
+
+/** Result of looking an event up by the session it belongs to. */
+export type FindEventResult =
+  | { ok: true; eventId: string | null }
+  | { ok: false; authFailure: boolean; errorMessage: string };
 
 /**
  * Extracts a short, human-readable reason from a failed Google API response,
@@ -71,6 +87,7 @@ export async function insertEvent(
       return {
         ok: false,
         authFailure: isAuthFailure(response.status),
+        notFound: response.status === 404,
         errorMessage: await describeFailure(response),
       };
     }
@@ -81,6 +98,7 @@ export async function insertEvent(
     return {
       ok: false,
       authFailure: false,
+      notFound: false,
       errorMessage: error instanceof Error ? error.message : "Network error",
     };
   }
@@ -112,11 +130,66 @@ export async function patchEvent(
       return {
         ok: false,
         authFailure: isAuthFailure(response.status),
+        notFound: response.status === 404,
         errorMessage: await describeFailure(response),
       };
     }
 
     return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      authFailure: false,
+      notFound: false,
+      errorMessage: error instanceof Error ? error.message : "Network error",
+    };
+  }
+}
+
+/**
+ * Asks Google whether this calendar already holds an event for a session,
+ * matching on the private extended property every event is stamped with.
+ *
+ * This is the only way back to an event whose local `googleEventId` was lost —
+ * and the only thing that stops a second `insertEvent` from leaving a duplicate
+ * beside the first. The property has been written on every event since the
+ * integration existed; it had simply never been read.
+ *
+ * @param {string} accessToken - A valid (non-expired) Google access token.
+ * @param {string} sessionId - The `ConfirmedSession` id to look for.
+ * @returns {Promise<FindEventResult>} The event id, `null` when Google has
+ *   none, or a classified failure.
+ */
+export async function findEventBySession(
+  accessToken: string,
+  sessionId: string,
+): Promise<FindEventResult> {
+  const url = new URL(CALENDAR_EVENTS_URL);
+  url.searchParams.set(
+    "privateExtendedProperty",
+    `${DMUSTER_SESSION_PROPERTY}=${sessionId}`,
+  );
+  url.searchParams.set("maxResults", "1");
+  // Cancelled events still match the property; adopting one would hand back an
+  // id that cannot be patched.
+  url.searchParams.set("showDeleted", "false");
+
+  try {
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(GOOGLE_REQUEST_TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        authFailure: isAuthFailure(response.status),
+        errorMessage: await describeFailure(response),
+      };
+    }
+
+    const data = (await response.json()) as { items?: { id?: string }[] };
+    return { ok: true, eventId: data.items?.[0]?.id ?? null };
   } catch (error) {
     return {
       ok: false,
@@ -147,6 +220,7 @@ export async function deleteEvent(accessToken: string, eventId: string): Promise
       return {
         ok: false,
         authFailure: isAuthFailure(response.status),
+        notFound: response.status === 404,
         errorMessage: await describeFailure(response),
       };
     }
@@ -156,6 +230,7 @@ export async function deleteEvent(accessToken: string, eventId: string): Promise
     return {
       ok: false,
       authFailure: false,
+      notFound: false,
       errorMessage: error instanceof Error ? error.message : "Network error",
     };
   }
