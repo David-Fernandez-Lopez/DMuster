@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import { toIsoDate, toUtcDate } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
+import { todayIso } from "@/lib/today";
 
 /** Prisma error code raised when a record to update/delete does not exist. */
 const RECORD_NOT_FOUND = "P2025";
@@ -74,20 +75,72 @@ export async function addHoliday(
 }
 
 /**
- * Removes a holiday by id. A missing record (e.g. deleted concurrently)
- * surfaces as a friendly i18n error key rather than throwing.
+ * Removes a holiday by id, refusing while a confirmed session still depends on
+ * it, and recording who did it.
+ *
+ * Holidays are global: a weekday is playable for the whole instance or for
+ * nobody, so removing one takes the day away from every campaign at once, not
+ * only from the person tapping the button. What happens to a session already
+ * confirmed on that day is worse than it disappearing — it stays in the
+ * database with its `activeDate`, keeps occupying the one-session-per-day slot
+ * so its campaign cannot confirm that date again, and its events remain in the
+ * attendees' Google calendars. Invisible in the app, alive everywhere else.
+ *
+ * The guard only applies from today onwards. A past holiday cannot cost anyone
+ * a session that has not happened yet, and blocking those would leave the list
+ * accumulating entries nobody can ever clear.
+ *
+ * The check and the delete share a transaction, which closes the ordinary
+ * overlap but not a session confirmed in the same instant; that class of race
+ * is what the conditional-write work addresses across the codebase.
  *
  * @param {string} id - Id of the holiday to remove.
+ * @param {string} actorId - Id of the user performing the removal, for the audit line.
  * @returns {Promise<HolidayMutationResult>} Success with the id, or an error key
- *   (`holidays.errors.notFound` / `holidays.errors.unknown`).
+ *   (`holidays.errors.notFound` / `holidays.errors.hasSessions` /
+ *   `holidays.errors.unknown`).
  */
 export async function removeHoliday(
   id: string,
+  actorId: string,
 ): Promise<HolidayMutationResult> {
   try {
-    await prisma.holiday.delete({ where: { id }, select: { id: true } });
+    const removed = await prisma.$transaction(async (tx) => {
+      const holiday = await tx.holiday.findUnique({
+        where: { id },
+        select: { date: true },
+      });
+      if (!holiday) {
+        return { ok: false, error: "holidays.errors.notFound" } as const;
+      }
 
-    return { ok: true, id };
+      const dateIso = toIsoDate(holiday.date);
+
+      if (dateIso >= todayIso()) {
+        const activeSessions = await tx.confirmedSession.count({
+          where: { date: holiday.date, cancelledAt: null },
+        });
+        if (activeSessions > 0) {
+          return { ok: false, error: "holidays.errors.hasSessions" } as const;
+        }
+      }
+
+      await tx.holiday.delete({ where: { id }, select: { id: true } });
+      return { ok: true, id, dateIso } as const;
+    });
+
+    if (!removed.ok) {
+      return removed;
+    }
+
+    // The row itself carried the only record of who added it, and deleting it
+    // takes that with it — so without this line nobody could tell who removed a
+    // date that every campaign depended on, or when.
+    console.info(
+      `[HOLIDAYS/REMOVE] ${removed.dateIso} removed by user ${actorId} at ${new Date().toISOString()}`,
+    );
+
+    return { ok: true, id: removed.id };
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&

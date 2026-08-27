@@ -9,10 +9,19 @@ interface RemoveHolidayButtonProps {
 }
 
 /**
- * Inline control that removes a holiday. Re-adding a holiday is a single tap in
- * the form below, so removal needs no confirmation step. A failed removal (e.g.
- * the DM role lost mid-session → 403, or already deleted → 404) surfaces a
- * translated error and keeps the row visible.
+ * Two-step inline control that removes a holiday.
+ *
+ * It used to remove on the first tap, on the reasoning that re-adding one is a
+ * single tap in the form below. That reasoning only holds for the person
+ * tapping: holidays are global, so a mis-tap takes the day away from every
+ * campaign in the instance, and any campaign that had already confirmed a
+ * session on it is left unable to confirm that date again. The confirmation
+ * step, and the sentence it shows, are what make the reach of the action
+ * visible before it happens rather than after.
+ *
+ * A refused removal (a session still depends on the date → 400, the DM role
+ * lost mid-session → 403, already deleted → 404) shows the translated reason
+ * and keeps the row.
  *
  * @param {RemoveHolidayButtonProps} props - The holiday to remove.
  * @returns {JSX.Element} The remove control.
@@ -22,6 +31,7 @@ export default function RemoveHolidayButton({
 }: RemoveHolidayButtonProps) {
   const { t } = useTranslation();
   const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
 
@@ -53,18 +63,41 @@ export default function RemoveHolidayButton({
     }
   }
 
-  return (
-    <div className="flex shrink-0 flex-col items-end gap-1">
+  if (!confirming) {
+    return (
       <button
         type="button"
-        onClick={handleRemove}
-        disabled={isPending}
-        className="btn btn-no min-h-[44px] px-3 text-sm font-semibold disabled:opacity-60"
+        onClick={() => setConfirming(true)}
+        className="btn btn-no min-h-[44px] shrink-0 px-3 text-sm font-semibold"
       >
-        {isPending ? t("common.loading") : t("holidays.remove")}
+        {t("holidays.remove")}
       </button>
+    );
+  }
+
+  return (
+    <div className="flex shrink-0 flex-col items-end gap-2">
+      <p className="text-right text-sm text-ink">{t("holidays.confirmRemove")}</p>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleRemove}
+          disabled={isPending}
+          className="btn btn-no btn-filled min-h-[44px] px-3 text-sm font-semibold disabled:opacity-60"
+        >
+          {isPending ? t("common.loading") : t("holidays.confirmRemoveYes")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirming(false)}
+          disabled={isPending}
+          className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold disabled:opacity-60"
+        >
+          {t("common.cancel")}
+        </button>
+      </div>
       {errorKey ? (
-        <p className="text-right text-xs text-n" role="alert">
+        <p className="text-right text-sm text-n" role="alert">
           {t(errorKey)}
         </p>
       ) : null}

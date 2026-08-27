@@ -59,6 +59,11 @@ export default async function HolidaysPage() {
         {t("holidays.title")}
       </h1>
 
+      {/* Nothing on this screen used to say the list is shared. Every campaign
+          in the instance plays by it, and any DM can edit it, so a change here
+          is never only the editor's own. */}
+      <p className="mt-2 text-sm text-ink-muted">{t("holidays.scope")}</p>
+
       {holidays.length === 0 ? (
         <p className="mt-6 rounded-[var(--radius-card)] border border-border bg-bg-elevated p-6 text-center text-sm text-ink-muted">
           {t("holidays.empty")}

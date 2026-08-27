@@ -143,11 +143,15 @@
     "remove": "Quitar",
     "empty": "Aún no hay festivos configurados.",
     "dateLabel": "Fecha",
+    "scope": "Los festivos son comunes a toda la instancia: cualquier máster puede editarlos, y cada cambio afecta a todas las campañas.",
+    "confirmRemove": "¿Quitar este festivo? Dejará de ser jugable para todas las campañas.",
+    "confirmRemoveYes": "Sí, quitar",
     "errors": {
       "invalidDate": "Introduce una fecha válida.",
       "weekend": "Los fines de semana ya son jugables; añade solo días entre semana.",
       "duplicate": "Este festivo ya existe.",
       "notFound": "Festivo no encontrado.",
+      "hasSessions": "Hay una partida confirmada ese día. Cancélala antes de quitar el festivo.",
       "forbidden": "Solo un máster puede gestionar los festivos.",
       "unauthorized": "Debes iniciar sesión.",
       "unknown": "Algo ha ido mal. Inténtalo de nuevo."

@@ -143,11 +143,15 @@
     "remove": "Remove",
     "empty": "No holidays configured yet.",
     "dateLabel": "Date",
+    "scope": "Holidays are shared across the whole instance: any DM can edit them, and every change affects all campaigns.",
+    "confirmRemove": "Remove this holiday? It stops being playable for every campaign.",
+    "confirmRemoveYes": "Yes, remove",
     "errors": {
       "invalidDate": "Enter a valid date.",
       "weekend": "Weekends are already playable; add weekdays only.",
       "duplicate": "This holiday already exists.",
       "notFound": "Holiday not found.",
+      "hasSessions": "A session is confirmed that day. Cancel it before removing the holiday.",
       "forbidden": "Only a DM can manage holidays.",
       "unauthorized": "You must log in.",
       "unknown": "Something went wrong. Please try again."
