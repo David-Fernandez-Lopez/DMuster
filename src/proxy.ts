@@ -1,14 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-// Routes that anonymous users may reach; an already-signed-in visitor is
-// bounced to "/" (e.g. opening /login while logged in).
-const PUBLIC_ROUTES = ["/login"];
-
-// Routes open to anonymous AND signed-in visitors alike — neither redirect
-// applies. Invitation links (roadmap #24) must render their own state (an
-// explanation, or the accept form) for whoever opens them, instead of a
-// signed-in visitor silently bouncing to "/" before ever seeing the page.
-const OPEN_ROUTES = ["/invite"];
+// Routes the proxy never demands a session for. It lets them through
+// unconditionally and leaves any redirect to the page itself, which can tell a
+// real session from a mere cookie:
+//   - /login must stay reachable even while holding a session cookie. The
+//     cookie check below is optimistic — a cookie whose session row is gone
+//     (expired and purged, revoked, or deleted to lock an attacker out) still
+//     looks signed in from here. Bouncing it to "/" sent the visitor to a page
+//     that redirects back to /login, and around again: an inescapable loop with
+//     no way out but clearing the cookie by hand on every device. That made
+//     "delete the sessions" unusable as a revocation tool, which is the only
+//     one this application currently has.
+//   - /invite links (roadmap #24) must render their own state — an explanation,
+//     or the accept form — for whoever opens them, instead of a signed-in
+//     visitor silently bouncing to "/" before ever seeing the page.
+const UNPROTECTED_ROUTES = ["/login", "/invite"];
 
 // Cookie names Auth.js uses for the session token (secure prefix in production).
 const SESSION_COOKIE = "authjs.session-token";
@@ -30,11 +36,13 @@ function matchesRoute(pathname: string, routes: string[]): boolean {
  *
  * Because sessions live in the database and the proxy can't open a DB
  * connection, it does an **optimistic** check on the presence of the session
- * cookie — real verification happens in pages/handlers via `auth()`:
+ * cookie. That check can only ever be trusted in one direction: no cookie means
+ * definitely not signed in, but a cookie means *maybe*. So the proxy only acts
+ * on the reliable direction, and every decision that needs certainty is left to
+ * the pages, which verify with `auth()`:
  * - No cookie on a protected route → redirect to `/login`.
- * - Cookie present on a public route (`/login`) → redirect to `/` (already
- *   signed in).
- * - An open route (`/invite/*`) → always passes through, regardless of session.
+ * - An unprotected route (`/login`, `/invite/*`) → always passes through. The
+ *   page decides what a signed-in visitor sees.
  * - `/register` no longer exists (roadmap #24 removed public sign-up) →
  *   redirect to `/login` so old links and bookmarks don't 404.
  *
@@ -48,20 +56,13 @@ export function proxy(request: NextRequest): NextResponse {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (matchesRoute(pathname, OPEN_ROUTES)) {
+  if (matchesRoute(pathname, UNPROTECTED_ROUTES)) {
     return NextResponse.next();
   }
 
   const hasSession =
     request.cookies.has(SESSION_COOKIE) ||
     request.cookies.has(SECURE_SESSION_COOKIE);
-
-  if (matchesRoute(pathname, PUBLIC_ROUTES)) {
-    if (hasSession) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-    return NextResponse.next();
-  }
 
   if (!hasSession) {
     return NextResponse.redirect(new URL("/login", request.url));
