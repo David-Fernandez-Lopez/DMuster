@@ -197,7 +197,8 @@
       "alreadyAttending": "Ya está en la partida.",
       "requiresYes": "Solo puedes sumarte si has respondido Sí ese día.",
       "attendeeConflict": "Ya hay partida ese día con {{campaign}}.",
-      "lastAttendee": "La partida no puede quedarse sin jugadores."
+      "lastAttendee": "La partida no puede quedarse sin jugadores.",
+      "past": "Esa partida ya ha pasado."
     }
   },
   "profile": {

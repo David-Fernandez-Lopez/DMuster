@@ -680,12 +680,12 @@ export async function cancelSession(
 /**
  * Adds one member as an attendee of an active session (roadmap #22) — serves
  * both a DM-driven addition and a player's own last-minute rejoin ("Sumarme a
- * la partida"), branching on whether the actor targets themselves. The DM
- * path may add any campaign member; the self path additionally requires the
- * actor to have answered `YES` for the session's date. Both paths then reject
- * an attendee already on the list and a conflicting same-day session the
- * target already attends elsewhere, via the same `findConflicts` used by
- * `confirmSession`.
+ * la partida"), branching on whether the actor targets themselves. Neither path
+ * may touch a session whose date has passed. The DM path may add any campaign
+ * member; the self path additionally requires the actor to have answered `YES`
+ * for the session's date. Both paths then reject an attendee already on the
+ * list and a conflicting same-day session the target already attends elsewhere,
+ * via the same `findConflicts` used by `confirmSession`.
  *
  * @param {string} sessionId - The active session being joined.
  * @param {string} targetUserId - The user being added.
@@ -706,6 +706,19 @@ export async function addAttendee(
   }
 
   const dateIso = toIsoDate(session.date);
+
+  // The session already happened. `canSelfJoin` states this rule, but only the
+  // render consults it: the self-join button sends an empty body, so there is
+  // no field a schema could reject and nothing downstream re-asserted the date.
+  // Anyone posting to this route directly could join — or be added to — a
+  // session from any point in the past, which then enqueues a calendar event
+  // for a day that has been and gone. Applies to the DM path too: adding
+  // someone to a session that has already happened is not a correction the
+  // product offers anywhere.
+  if (dateIso < todayIso()) {
+    return { ok: false, error: "sessions.errors.past" };
+  }
+
   const isSelf = targetUserId === actingUserId;
 
   if (isSelf) {

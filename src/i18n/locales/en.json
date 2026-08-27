@@ -197,7 +197,8 @@
       "alreadyAttending": "Already in the session.",
       "requiresYes": "You can only join if you answered Yes that day.",
       "attendeeConflict": "Already a session that day with {{campaign}}.",
-      "lastAttendee": "A session can't be left with no players."
+      "lastAttendee": "A session can't be left with no players.",
+      "past": "That session has already taken place."
     }
   },
   "profile": {

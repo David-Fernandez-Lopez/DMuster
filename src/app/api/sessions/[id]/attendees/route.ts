@@ -19,7 +19,8 @@ const FORBIDDEN_ERRORS = new Set(["sessions.errors.forbidden"]);
  * Maps a failed `addAttendee` call to its HTTP status: a missing/cancelled
  * session or a non-member is 404, a non-DM naming someone else is 403, an
  * unexpected failure is 500, and every other business-rule key
- * (`alreadyAttending`, `requiresYes`, `notMember`, `attendeeConflict`) is 400.
+ * (`alreadyAttending`, `requiresYes`, `notMember`, `attendeeConflict`, `past`)
+ * is 400.
  *
  * @param {string} error - The i18n error key returned by the service.
  * @returns {number} The HTTP status to respond with.
