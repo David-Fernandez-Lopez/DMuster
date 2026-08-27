@@ -131,3 +131,101 @@ export async function updateUserTheme(
     return { ok: false, error: "profile.errors.updateFailed" };
   }
 }
+
+/** Result of ending a user's sessions. `error` holds an i18n key on failure. */
+export type EndSessionsResult =
+  | { ok: true; count: number }
+  | { ok: false; error: string };
+
+/**
+ * Deletes every session row belonging to a user, signing them out of every
+ * device at once — the one they are using included.
+ *
+ * Sessions live in the database and never expire in practice: the window slides
+ * forward on use, so an account that gets opened once a month stays valid
+ * indefinitely, and each sign-in adds a row without clearing the previous ones.
+ * Changing a password does not touch any of that on its own, which is why the
+ * password change calls this too: without it, someone else who is already
+ * signed in stays signed in, and the new password locks out nobody.
+ *
+ * Kept whole rather than "everywhere except here": a person reaching for this
+ * does not know which of the live sessions are theirs, and leaving one behind
+ * defeats the point. Signing back in afterwards is the confirmation that the
+ * account is theirs again.
+ *
+ * @param {string} userId - Id of the user whose sessions are being ended.
+ * @returns {Promise<EndSessionsResult>} How many sessions were ended, or an
+ *   error key (`profile.errors.updateFailed`).
+ */
+export async function endAllSessions(userId: string): Promise<EndSessionsResult> {
+  try {
+    const result = await prisma.session.deleteMany({ where: { userId } });
+
+    return { ok: true, count: result.count };
+  } catch (error) {
+    console.error("[PROFILE/END_SESSIONS] Failed to end sessions:", error);
+    return { ok: false, error: "profile.errors.updateFailed" };
+  }
+}
+
+/** Result of a password change. `error` holds an i18n key on failure. */
+export type ChangePasswordResult =
+  | { ok: true; endedSessions: number }
+  | { ok: false; error: string };
+
+/**
+ * Replaces a user's password, after checking the one they currently hold, and
+ * ends every one of their sessions.
+ *
+ * Until now the application had no way to change a password at all: the only
+ * route to it was an `UPDATE` run by hand against the database, which also left
+ * every live session untouched. So an account known to be compromised could not
+ * actually be taken back — the new password guarded the login form while the
+ * old cookie walked straight past it.
+ *
+ * The current password is required so that a browser left open on someone
+ * else's screen cannot be used to lock its owner out.
+ *
+ * @param {string} userId - Id of the user changing their password.
+ * @param {string} currentPassword - The password they hold today.
+ * @param {string} newPassword - The password to set.
+ * @returns {Promise<ChangePasswordResult>} How many sessions were ended, or an
+ *   error key (`profile.errors.wrongPassword` / `profile.errors.updateFailed`).
+ */
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<ChangePasswordResult> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { password: true },
+    });
+    if (!user) {
+      return { ok: false, error: "profile.errors.updateFailed" };
+    }
+
+    const currentMatches = await bcrypt.compare(currentPassword, user.password);
+    if (!currentMatches) {
+      return { ok: false, error: "profile.errors.wrongPassword" };
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: passwordHash },
+      select: { id: true },
+    });
+
+    // Deliberately outside the update's success path rather than inside a
+    // transaction: if the sessions somehow survive, the password has still
+    // changed, and the caller is told how many were ended so a zero is visible.
+    const ended = await endAllSessions(userId);
+
+    return { ok: true, endedSessions: ended.ok ? ended.count : 0 };
+  } catch (error) {
+    console.error("[PROFILE/CHANGE_PASSWORD] Failed to change password:", error);
+    return { ok: false, error: "profile.errors.updateFailed" };
+  }
+}

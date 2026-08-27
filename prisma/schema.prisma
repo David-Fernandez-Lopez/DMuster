@@ -104,6 +104,18 @@ model User {
   // (`invalid_grant` on refresh). Surfaces a "reconnect" prompt in /profile;
   // cleared on a fresh, successful connect.
   googleSyncBrokenAt DateTime?
+  // Set to revoke an account's access without deleting it. `authorize` refuses
+  // to sign a disabled account in, and clearing it restores access.
+  //
+  // A soft flag rather than a row deletion because deleting the row is not
+  // available: six foreign keys reference a user with `Restrict` (campaigns and
+  // holidays created, sessions confirmed and cancelled, invitations sent and
+  // accepted), so anyone who has used the app is undeletable. It would also
+  // cascade away their `Account` row — leaving the Google token alive on
+  // Google's side with nothing left pointing at it — and their
+  // `CalendarEventLog` history, which is exactly the record a compromised
+  // account makes worth keeping.
+  disabledAt         DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

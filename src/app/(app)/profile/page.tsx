@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import ChangePasswordForm from "@/components/profile/ChangePasswordForm";
+import CloseAllSessionsButton from "@/components/profile/CloseAllSessionsButton";
 import GoogleCalendarConnection from "@/components/profile/GoogleCalendarConnection";
 import InvitationsSection from "@/components/profile/InvitationsSection";
 import LocaleSelector from "@/components/profile/LocaleSelector";
@@ -83,6 +85,14 @@ export default async function ProfilePage({
         <LocaleSelector />
         <ThemeSelector initialTheme={initialTheme} />
         <GoogleCalendarConnection status={googleConnectionStatus} callbackOutcome={callbackOutcome} />
+      </section>
+
+      <h2 className="mt-8 mb-3 font-display text-xl font-semibold text-ink">
+        {t("profile.security.title")}
+      </h2>
+      <section className="divide-y divide-border rounded-[var(--radius-card)] border border-border bg-bg-elevated px-6 py-2">
+        <ChangePasswordForm />
+        <CloseAllSessionsButton />
       </section>
 
       {isDm ? <InvitationsSection invitations={invitations} dmCampaigns={dmCampaigns} /> : null}

@@ -20,6 +20,7 @@ writes anything until explicitly told to.
 | `purge-expired-sessions.sh` | Deletes `sessions` rows whose `expires` is already past. Auth.js never prunes them |
 | `rotate-secrets.sh` | Generates fresh `AUTH_SECRET` and `CRON_SECRET` values to paste into `.env` |
 | `rotatePasswords.ts` | Gives every account a fresh random password with its own bcrypt salt |
+| `disableAccount.ts` | Revokes (or restores) one account's access and ends its sessions |
 
 ## Order, and what depends on what
 
@@ -69,6 +70,38 @@ Run in this order. Steps 3–5 have a hard prerequisite spelled out below.
    scripts/ops/purge-expired-sessions.sh           # counts
    scripts/ops/purge-expired-sessions.sh --apply   # delete
    ```
+
+## Taking someone's access away
+
+Not part of the sequence above — this is what to reach for when an account is
+compromised, or when someone leaves.
+
+```bash
+docker compose exec app npx tsx scripts/ops/disableAccount.ts                              # who exists, and their session counts
+docker compose exec app npx tsx scripts/ops/disableAccount.ts --email=a@b --apply          # revoke
+docker compose exec app npx tsx scripts/ops/disableAccount.ts --email=a@b --enable --apply # restore
+```
+
+It sets `User.disabledAt` and deletes that user's sessions. Both halves are
+needed: the flag stops new sign-ins, but a session already open is resolved from
+its own row and never consults the user's state, so it would keep working.
+
+**It does not delete the row, and cannot.** Six foreign keys reference a user
+with `Restrict` — campaigns and holidays created, sessions confirmed and
+cancelled, invitations sent and accepted — so anyone who has used the app is
+undeletable. Deleting would also be the wrong thing: it cascades away their
+`Account` row, leaving the Google token alive on Google's side with nothing
+pointing at it, and their `CalendarEventLog` history, which is exactly the
+record worth keeping when an account is suspect.
+
+**It does not revoke their Google Calendar token.** DMuster can only do that
+while the person is signed in and disconnecting from `/profile`. Once the
+account is disabled, revoking it is theirs to do from their Google account
+settings.
+
+A person acting on their own account does not need any of this: `/profile` now
+offers a password change and "close all sessions", both of which end every
+session they hold.
 
 ### ⚠ Prerequisite for steps 3 (with `--end-sessions`), 4 and 5
 

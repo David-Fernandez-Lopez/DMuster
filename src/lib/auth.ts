@@ -73,6 +73,18 @@ const {
           return null;
         }
 
+        // Checked after the comparison, not instead of it, so a disabled
+        // account answers in the same time as any other and the flag stays
+        // invisible from outside. The caller is told "wrong credentials" rather
+        // than "disabled" for the same reason — whoever holds the password
+        // learns nothing about the account's state.
+        if (user.disabledAt) {
+          console.warn(
+            `[AUTH/AUTHORIZE] Refused sign-in for disabled account ${user.id}.`,
+          );
+          return null;
+        }
+
         return {
           id: user.id,
           name: user.name,

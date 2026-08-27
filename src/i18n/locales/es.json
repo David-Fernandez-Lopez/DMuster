@@ -220,9 +220,30 @@
       "light": "Claro",
       "dark": "Oscuro"
     },
+    "security": {
+      "title": "Seguridad"
+    },
+    "password": {
+      "label": "Contraseña",
+      "change": "Cambiar",
+      "hint": "Al cambiarla se cerrarán todas tus sesiones, también la de este dispositivo. Tendrás que volver a entrar.",
+      "current": "Contraseña actual",
+      "new": "Contraseña nueva",
+      "confirm": "Repite la contraseña nueva",
+      "submit": "Cambiar contraseña"
+    },
+    "sessions": {
+      "label": "Sesiones abiertas",
+      "hint": "Ciérralas todas si crees que alguien más tiene acceso a tu cuenta.",
+      "closeAll": "Cerrar todas",
+      "confirm": "¿Cerrar todas las sesiones? Se cerrará también la de este dispositivo.",
+      "confirmYes": "Sí, cerrar todas"
+    },
     "errors": {
       "invalidLocale": "Idioma no válido.",
       "invalidTheme": "Tema no válido.",
+      "wrongPassword": "La contraseña actual no es correcta.",
+      "samePassword": "La contraseña nueva debe ser distinta de la actual.",
       "updateFailed": "No se ha podido guardar el cambio. Inténtalo de nuevo."
     }
   },

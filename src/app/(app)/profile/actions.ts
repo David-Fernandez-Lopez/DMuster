@@ -3,12 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { isAppLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from "@/i18n/settings";
 import { auth } from "@/lib/auth";
+import { clearSessionCookies } from "@/lib/sessionCookie";
 import { isTheme, THEME_COOKIE, THEME_COOKIE_MAX_AGE } from "@/lib/theme";
-import { updateUserLocale, updateUserTheme } from "@/lib/userService";
-import type { ProfileActionState } from "@/lib/validation/profile";
+import {
+  changePassword as changePasswordRequest,
+  endAllSessions,
+  updateUserLocale,
+  updateUserTheme,
+} from "@/lib/userService";
+import { firstFieldErrors } from "@/lib/validation/auth";
+import { changePasswordSchema, type ProfileActionState } from "@/lib/validation/profile";
 
 /**
  * Persists the current user's preferred locale. Writes it to `User.locale`
@@ -84,4 +92,81 @@ export async function updateTheme(theme: unknown): Promise<ProfileActionState> {
   });
 
   return {};
+}
+
+/**
+ * Ends every session the current user holds, on every device, and sends them
+ * back to the login page.
+ *
+ * This is the application's answer to "someone else may be signed in as me".
+ * There was none before: sessions are database rows the app never listed and
+ * never deleted, so the only way to end one was an operator running SQL — and
+ * doing that used to strand every other user outside the login page.
+ *
+ * The current session goes with the rest, so signing back in is part of the
+ * flow rather than a failure of it.
+ *
+ * Ends the sessions and clears the cookie directly rather than going through
+ * `signOut`: the adapter's `deleteSession` is a bare delete that throws when
+ * the row is already gone, and by this point it is.
+ *
+ * @returns {Promise<void>} Never returns; redirects to `/login`.
+ */
+export async function closeAllSessions(): Promise<void> {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  await endAllSessions(session.user.id);
+  clearSessionCookies(await cookies());
+
+  redirect("/login");
+}
+
+/**
+ * Changes the current user's password and ends every session they hold.
+ *
+ * The two halves belong together: a database session survives a password
+ * change untouched, so replacing the password alone leaves anyone already
+ * signed in exactly where they were. Ending the sessions is what turns a new
+ * password into actual revocation.
+ *
+ * @param {ProfileActionState} _prevState - Previous action state (unused).
+ * @param {FormData} formData - Submitted form with current, new and confirmed passwords.
+ * @returns {Promise<ProfileActionState>} Field/top-level error keys, or never (redirects).
+ */
+export async function changePassword(
+  _prevState: ProfileActionState,
+  formData: FormData,
+): Promise<ProfileActionState> {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: formData.get("currentPassword"),
+    newPassword: formData.get("newPassword"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) {
+    return {
+      fieldErrors: firstFieldErrors(z.flattenError(parsed.error).fieldErrors),
+    };
+  }
+
+  const result = await changePasswordRequest(
+    session.user.id,
+    parsed.data.currentPassword,
+    parsed.data.newPassword,
+  );
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  // Their own session was among the ones just ended, so there is nothing left
+  // to return to.
+  clearSessionCookies(await cookies());
+  redirect("/login");
 }

@@ -220,8 +220,29 @@
       "light": "Light",
       "dark": "Dark"
     },
+    "security": {
+      "title": "Security"
+    },
+    "password": {
+      "label": "Password",
+      "change": "Change",
+      "hint": "Changing it ends all your sessions, including this device's. You will need to sign in again.",
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Repeat the new password",
+      "submit": "Change password"
+    },
+    "sessions": {
+      "label": "Open sessions",
+      "hint": "Close them all if you think someone else has access to your account.",
+      "closeAll": "Close all",
+      "confirm": "Close all sessions? This device's session ends too.",
+      "confirmYes": "Yes, close them all"
+    },
     "errors": {
       "invalidLocale": "Invalid language.",
+      "wrongPassword": "Your current password is not correct.",
+      "samePassword": "The new password must differ from the current one.",
       "invalidTheme": "Invalid theme.",
       "updateFailed": "Could not save the change. Please try again."
     }

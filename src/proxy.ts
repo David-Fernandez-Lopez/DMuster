@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { SECURE_SESSION_COOKIE, SESSION_COOKIE } from "@/lib/sessionCookie";
+
 // Routes the proxy never demands a session for. It lets them through
 // unconditionally and leaves any redirect to the page itself, which can tell a
 // real session from a mere cookie:
@@ -15,10 +17,6 @@ import { NextResponse, type NextRequest } from "next/server";
 //     or the accept form — for whoever opens them, instead of a signed-in
 //     visitor silently bouncing to "/" before ever seeing the page.
 const UNPROTECTED_ROUTES = ["/login", "/invite"];
-
-// Cookie names Auth.js uses for the session token (secure prefix in production).
-const SESSION_COOKIE = "authjs.session-token";
-const SECURE_SESSION_COOKIE = "__Secure-authjs.session-token";
 
 /**
  * Reports whether `pathname` is (or is nested under) one of `routes`.
