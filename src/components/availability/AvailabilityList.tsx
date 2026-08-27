@@ -23,9 +23,16 @@ interface AvailabilityListProps {
 /**
  * Client owner of the "Mi disponibilidad" list. Holds the Pendientes/Todas
  * filter and a live map of answered days so a card can leave the "Pendientes"
- * view the moment its response is persisted, without a server refetch. Each
- * card's toggle owns its own optimistic state; this component only tracks which
- * days are answered so the filter and empty state stay correct.
+ * view the moment its response is persisted, without a server refetch.
+ *
+ * That map — not the server-rendered prop it starts from — is what seeds each
+ * card. Answering a day removes it from the "Pendientes" list, which unmounts
+ * its card; coming back via "Todas" mounts a fresh one, and a toggle takes its
+ * initial value once, at mount. Seeding from the original prop showed the
+ * answer as it was *before* this session's changes, contradicting the database.
+ * Re-tapping the answer a toggle displays clears it, so a stale display turns
+ * "confirm what I chose" into "delete what I chose" — a day silently back to
+ * pending, which every campaign then reads as an unresolved "T".
  *
  * @param {AvailabilityListProps} props - The days, the user's current
  *   responses, and the campaign tags.
@@ -78,7 +85,7 @@ export default function AvailabilityList({
               key={day}
               date={day}
               tags={tags}
-              initialStatus={initialResponses[day] ?? null}
+              initialStatus={responses[day] ?? null}
               onPersisted={handlePersisted}
             />
           ))}
