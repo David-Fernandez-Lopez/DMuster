@@ -77,13 +77,49 @@ export function isEligible(iso: string, holidays: Set<string>): boolean {
 }
 
 /**
- * Returns today's calendar day as "YYYY-MM-DD" in UTC, consistent with how all
- * calendar dates are stored and compared across the app.
+ * Formats an instant as the calendar day it falls on in a given timezone.
  *
- * @returns {string} Today's date, "YYYY-MM-DD" (UTC).
+ * Unlike `toIsoDate`, which reads UTC components, this asks which civil day it
+ * is *somewhere* — the question the app actually needs when it says "today".
+ * The two disagree for as many hours a day as the zone is offset from UTC: at
+ * 00:30 in Madrid in summer the UTC clock still reads the previous day, and
+ * that is exactly the window in which a group of role-players is awake.
+ *
+ * `Intl` handles the offset and DST; `formatToParts` avoids depending on any
+ * locale's date ordering.
+ *
+ * @param {Date} instant - The point in time to place on a calendar.
+ * @param {string} timeZone - IANA timezone name, e.g. "Europe/Madrid".
+ * @returns {string} The calendar day in that zone, "YYYY-MM-DD".
+ * @throws {RangeError} If `timeZone` is not a recognised IANA name.
  */
-export function todayIso(): string {
-  return toIsoDate(new Date());
+export function toIsoDateIn(instant: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(instant);
+
+  const part = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((candidate) => candidate.type === type)?.value ?? "";
+
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+/**
+ * Returns today's calendar day as "YYYY-MM-DD" in a given timezone.
+ *
+ * The timezone is a required argument rather than a default so no call site can
+ * silently fall back to UTC. Application code should reach for `todayIso` from
+ * `@/lib/today`, which binds this to the configured `APP_TIMEZONE`.
+ *
+ * @param {string} timeZone - IANA timezone name, e.g. "Europe/Madrid".
+ * @returns {string} Today's date in that zone, "YYYY-MM-DD".
+ * @throws {RangeError} If `timeZone` is not a recognised IANA name.
+ */
+export function todayIsoIn(timeZone: string): string {
+  return toIsoDateIn(new Date(), timeZone);
 }
 
 /** Matches a strict "YYYY-MM" month with a month component in 01–12. */

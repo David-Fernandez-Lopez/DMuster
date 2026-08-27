@@ -6,6 +6,8 @@ import {
   lastDayOfMonth,
   monthDays,
   toIsoDate,
+  toIsoDateIn,
+  todayIsoIn,
   toUtcDate,
 } from "@/lib/date";
 
@@ -97,5 +99,65 @@ describe("eligibleDaysOfMonth", () => {
   it("includes a weekday listed as a holiday", () => {
     const eligible = eligibleDaysOfMonth("2026-08", SEED_HOLIDAYS);
     expect(eligible).toContain("2026-08-06"); // Thursday, seed holiday
+  });
+});
+
+describe("toIsoDateIn", () => {
+  // The window this exists for. Madrid runs UTC+2 in summer, so from local
+  // midnight until 02:00 the UTC clock still reads the previous day — and that
+  // is exactly when a role-playing group is awake and using the app.
+  it("gives the local civil day just after midnight in summer", () => {
+    const justAfterLocalMidnight = new Date("2026-08-26T22:30:00.000Z");
+
+    expect(toIsoDateIn(justAfterLocalMidnight, "Europe/Madrid")).toBe("2026-08-27");
+    expect(toIsoDate(justAfterLocalMidnight)).toBe("2026-08-26"); // what UTC said
+  });
+
+  it("gives the local civil day just after midnight in winter", () => {
+    // UTC+1 in January, so the disagreement window is one hour instead of two.
+    const justAfterLocalMidnight = new Date("2026-01-14T23:30:00.000Z");
+
+    expect(toIsoDateIn(justAfterLocalMidnight, "Europe/Madrid")).toBe("2026-01-15");
+    expect(toIsoDate(justAfterLocalMidnight)).toBe("2026-01-14");
+  });
+
+  it("agrees with the UTC reading during the rest of the day", () => {
+    const midMorning = new Date("2026-08-27T09:00:00.000Z");
+
+    expect(toIsoDateIn(midMorning, "Europe/Madrid")).toBe(toIsoDate(midMorning));
+  });
+
+  it("crosses the other way for a zone behind UTC", () => {
+    // 20:00 in New York is already the next day in UTC.
+    const evening = new Date("2026-08-28T00:30:00.000Z");
+
+    expect(toIsoDateIn(evening, "America/New_York")).toBe("2026-08-27");
+    expect(toIsoDate(evening)).toBe("2026-08-28");
+  });
+
+  it("pads single-digit months and days", () => {
+    expect(toIsoDateIn(new Date("2026-01-05T12:00:00.000Z"), "Europe/Madrid")).toBe(
+      "2026-01-05",
+    );
+  });
+
+  it("rejects a timezone that is not a real IANA name", () => {
+    expect(() => toIsoDateIn(new Date(), "Europe/Madridd")).toThrow(RangeError);
+  });
+});
+
+describe("todayIsoIn", () => {
+  it("returns a well-formed calendar day", () => {
+    expect(todayIsoIn("Europe/Madrid")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  it("can differ from the UTC day, which is the point", () => {
+    // Both readings are of the same instant, so they are either equal or one
+    // day apart — never more.
+    const madrid = todayIsoIn("Europe/Madrid");
+    const utc = todayIsoIn("UTC");
+    const gap = Math.abs(Date.parse(`${madrid}T00:00:00Z`) - Date.parse(`${utc}T00:00:00Z`));
+
+    expect(gap).toBeLessThanOrEqual(24 * 60 * 60 * 1000);
   });
 });

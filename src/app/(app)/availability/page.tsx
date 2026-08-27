@@ -5,7 +5,8 @@ import { getServerTranslation } from "@/i18n/server";
 import { getUserAvailability } from "@/lib/availabilityService";
 import { auth } from "@/lib/auth";
 import { listCampaignsForUser } from "@/lib/campaignService";
-import { addDays, todayIso, upcomingEligibleDays } from "@/lib/date";
+import { addDays, upcomingEligibleDays } from "@/lib/date";
+import { todayIso } from "@/lib/today";
 import { listHolidays } from "@/lib/holidayService";
 
 /** How many days ahead the responding window scans for eligible days. */

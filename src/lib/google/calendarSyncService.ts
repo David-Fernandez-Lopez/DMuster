@@ -12,7 +12,8 @@
 import { after } from "next/server";
 
 import { DEFAULT_LOCALE } from "@/i18n/settings";
-import { toIsoDate, toUtcDate, todayIso } from "@/lib/date";
+import { toIsoDate, toUtcDate } from "@/lib/date";
+import { todayIso } from "@/lib/today";
 import { env } from "@/lib/env";
 import {
   CalendarEventAction,

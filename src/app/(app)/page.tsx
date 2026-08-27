@@ -6,7 +6,8 @@ import { getServerTranslation } from "@/i18n/server";
 import { getUserAvailability } from "@/lib/availabilityService";
 import { auth } from "@/lib/auth";
 import { getCalendarViability } from "@/lib/calendarService";
-import { isValidIsoMonth, monthGridDays, todayIso } from "@/lib/date";
+import { isValidIsoMonth, monthGridDays } from "@/lib/date";
+import { todayIso } from "@/lib/today";
 import { listHolidays } from "@/lib/holidayService";
 
 /**

@@ -2,6 +2,14 @@ import { addAttendee } from "@/lib/confirmedSessionService";
 import { getCampaignRole } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 
+/** The day the service will consider "today" throughout this file. */
+const TODAY = "2026-08-27";
+
+// Pinned rather than read from the clock, so these cases mean the same thing on
+// every machine and at every hour — including the 00:00–02:00 window where the
+// civil day and UTC disagree, which is the whole point of `@/lib/today`.
+jest.mock("@/lib/today", () => ({ todayIso: () => "2026-08-27" }));
+
 // The generated Prisma client is ESM and uses `import.meta.url`, which ts-jest
 // cannot parse under the current CommonJS setup. The service only reaches into
 // it for the error class it matches on, so a stand-in is enough here. Loading
@@ -27,9 +35,9 @@ jest.mock("@/lib/holidayService", () => ({ listHolidays: jest.fn() }));
 const findSession = prisma.confirmedSession.findFirst as jest.Mock;
 const campaignRole = getCampaignRole as jest.Mock;
 
-/** Returns a "YYYY-MM-DD" date `days` away from today, in UTC. */
+/** Returns a "YYYY-MM-DD" date `days` away from the pinned today. */
 function isoDaysFromToday(days: number): string {
-  const date = new Date();
+  const date = new Date(`${TODAY}T00:00:00.000Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
 }

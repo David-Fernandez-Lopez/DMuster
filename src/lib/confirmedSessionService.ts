@@ -2,7 +2,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { CampaignRole } from "@/generated/prisma/enums";
 import { getCampaignRole } from "@/lib/authz";
 import type { PlayerStatusValue } from "@/lib/calendarService";
-import { isEligible, toIsoDate, toUtcDate, todayIso } from "@/lib/date";
+import { isEligible, toIsoDate, toUtcDate } from "@/lib/date";
+import { todayIso } from "@/lib/today";
 import {
   enqueueDeletion,
   enqueueForSession,

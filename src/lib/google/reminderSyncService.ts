@@ -13,8 +13,8 @@ import {
   lastDayOfMonth,
   toIsoDate,
   toUtcDate,
-  todayIso,
 } from "@/lib/date";
+import { todayIso } from "@/lib/today";
 import { env } from "@/lib/env";
 import {
   CalendarEventAction,

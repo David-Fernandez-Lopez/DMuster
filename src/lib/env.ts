@@ -14,6 +14,23 @@ function emptyToUndefined(value: unknown): unknown {
   return value === "" ? undefined : value;
 }
 
+/**
+ * Reports whether a string is an IANA timezone the runtime recognises. Asked by
+ * constructing a formatter and seeing whether it throws, which is the only
+ * check guaranteed to agree with the `Intl` calls that will use the value.
+ *
+ * @param {string} timeZone - Candidate IANA timezone name.
+ * @returns {boolean} True when `Intl` accepts it.
+ */
+function isValidTimeZone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
@@ -27,10 +44,19 @@ const envSchema = z
     GOOGLE_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
     GOOGLE_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
     GOOGLE_OAUTH_REDIRECT_URI: z.preprocess(emptyToUndefined, z.url().optional()),
-    // Wall-clock timezone confirmed sessions are stored in (IANA name). Sent to
-    // the Google Calendar API alongside each event's local time so Google
-    // resolves the instant, avoiding any DST math in the app.
-    APP_TIMEZONE: z.string().min(1).default("Europe/Madrid"),
+    // Wall-clock timezone the application lives in (IANA name). Sent to the
+    // Google Calendar API alongside each event's local time so Google resolves
+    // the instant, and used to decide what day "today" is (see @/lib/today).
+    // Validated as a real zone, not merely non-empty: a typo used to surface
+    // only at the Google API boundary, but now it would reach every page that
+    // asks for today's date.
+    APP_TIMEZONE: z
+      .string()
+      .min(1)
+      .refine(isValidTimeZone, {
+        error: "APP_TIMEZONE must be a valid IANA timezone name, e.g. Europe/Madrid",
+      })
+      .default("Europe/Madrid"),
     // Shared secret for the optional POST /api/cron/calendar-sync sweeper.
     // Unset disables that route entirely (404).
     CRON_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),

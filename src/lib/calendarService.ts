@@ -3,7 +3,8 @@ import {
   type ConfirmedSessionDetailDto,
   listConfirmedSessionsForCampaigns,
 } from "@/lib/confirmedSessionService";
-import { addDays, isEligible, toIsoDate, todayIso, toUtcDate } from "@/lib/date";
+import { addDays, isEligible, toIsoDate, toUtcDate } from "@/lib/date";
+import { todayIso } from "@/lib/today";
 import { prisma } from "@/lib/prisma";
 import { canSelfJoin } from "@/lib/sessionRules";
 import { computeViability, type Viability } from "@/lib/viability";
