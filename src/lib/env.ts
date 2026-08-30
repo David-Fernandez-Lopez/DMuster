@@ -1,77 +1,8 @@
 import { z } from "zod";
 
-/**
- * Treats an empty string the same as an unset variable before the inner
- * schema sees it. A blank ".env" line (`KEY=`, exactly what `.env.example`
- * shows for every optional Google/cron var) is parsed as `""`, not
- * `undefined` — without this, leaving one blank would fail validation
- * instead of just leaving the feature it gates disabled.
- *
- * @param {unknown} value - The raw value read from `process.env`.
- * @returns {unknown} `undefined` when the value is an empty string, else the value unchanged.
- */
-function emptyToUndefined(value: unknown): unknown {
-  return value === "" ? undefined : value;
-}
+import { type Env, envSchema } from "@/lib/envSchema";
 
-/**
- * Reports whether a string is an IANA timezone the runtime recognises. Asked by
- * constructing a formatter and seeing whether it throws, which is the only
- * check guaranteed to agree with the `Intl` calls that will use the value.
- *
- * @param {string} timeZone - Candidate IANA timezone name.
- * @returns {boolean} True when `Intl` accepts it.
- */
-function isValidTimeZone(timeZone: string): boolean {
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-const envSchema = z
-  .object({
-    NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-    DATABASE_URL: z.url(),
-    AUTH_SECRET: z.string().min(1),
-    AUTH_URL: z.url().optional(),
-    DEFAULT_LOCALE: z.enum(["es", "en"]).default("es"),
-    // Google Calendar sync (roadmap #23) — optional. Unset means the app boots
-    // normally and the profile hides the integration entirely; see
-    // `isGoogleSyncConfigured` below.
-    GOOGLE_CLIENT_ID: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-    GOOGLE_CLIENT_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-    GOOGLE_OAUTH_REDIRECT_URI: z.preprocess(emptyToUndefined, z.url().optional()),
-    // Wall-clock timezone the application lives in (IANA name). Sent to the
-    // Google Calendar API alongside each event's local time so Google resolves
-    // the instant, and used to decide what day "today" is (see @/lib/today).
-    // Validated as a real zone, not merely non-empty: a typo used to surface
-    // only at the Google API boundary, but now it would reach every page that
-    // asks for today's date.
-    APP_TIMEZONE: z
-      .string()
-      .min(1)
-      .refine(isValidTimeZone, {
-        error: "APP_TIMEZONE must be a valid IANA timezone name, e.g. Europe/Madrid",
-      })
-      .default("Europe/Madrid"),
-    // Shared secret for the optional POST /api/cron/calendar-sync sweeper.
-    // Unset disables that route entirely (404).
-    CRON_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
-  })
-  .superRefine((value, ctx) => {
-    if (value.NODE_ENV === "production" && !value.AUTH_URL) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["AUTH_URL"],
-        message: "AUTH_URL is required in production",
-      });
-    }
-  });
-
-export type Env = z.infer<typeof envSchema>;
+export type { Env };
 
 /**
  * Parses and validates `process.env` against the application schema, failing
@@ -99,6 +30,8 @@ function loadEnv(): Env {
   return result.data;
 }
 
+// Runs at import time on purpose: a deployment missing a variable should fail
+// on startup, not on whichever request happens to need it first.
 export const env = loadEnv();
 
 /**
