@@ -264,6 +264,8 @@
       "neverSynced": "Todavía no se ha sincronizado ninguna partida.",
       "pendingSummary": "Pendientes de sincronizar: {{count}}",
       "failedSummary": "Con error de sincronización: {{count}}",
+      "lastCronRun": "Última comprobación automática: {{date}}",
+      "cronNeverRan": "La comprobación automática no se ha ejecutado nunca. Puede que el programador no esté funcionando.",
       "retry": "Reintentar",
       "disconnect": "Desconectar",
       "disconnectPrompt": "¿Desconectar Google Calendar? Se eliminarán de tu calendario los eventos de tus próximas partidas.",

@@ -37,6 +37,11 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   if (!hasValidCronSecret(request, env.CRON_SECRET)) {
+    // A rejected sweep used to leave no trace anywhere: no `CronRun` row (the
+    // run opens after this guard) and no log line. A scheduler whose secret
+    // stopped matching would go quiet, and the only visible symptom would be
+    // sync gradually not happening — with nothing to connect it to.
+    console.warn("[CRON/CALENDAR-SYNC] Rejected a call with a missing or wrong secret.");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

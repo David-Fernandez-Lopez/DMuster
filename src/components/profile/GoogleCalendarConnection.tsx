@@ -4,20 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-/** The profile's Google Calendar section state, one shape per rendered case. */
-export type GoogleConnectionStatus =
-  | { configured: false }
-  | { configured: true; connected: false }
-  | {
-      configured: true;
-      connected: true;
-      googleEmail: string | null;
-      enabled: boolean;
-      brokenAt: Date | null;
-      pendingCount: number;
-      failedCount: number;
-      lastSyncAt: Date | null;
-    };
+// Type-only, so nothing from the service (Prisma, env) is pulled into the
+// client bundle. It used to be declared here as well as there, two copies of
+// one shape with nothing keeping them in step — which is how a field added to
+// the service went unnoticed here.
+import type { GoogleConnectionStatus } from "@/lib/google/connectionService";
 
 interface GoogleCalendarConnectionProps {
   status: GoogleConnectionStatus;
@@ -264,6 +255,23 @@ export default function GoogleCalendarConnection({
         >
           {isPending ? t("common.loading") : t("integrations.google.retry")}
         </button>
+      ) : null}
+
+      {/* Whether the scheduled sweep is alive at all. A cron whose secret stops
+          matching produces no error anyone sees — it just stops, and the only
+          symptom is sync quietly not happening. This is the line that would
+          show it. */}
+      {status.cronConfigured ? (
+        <p className={`mt-2 text-xs ${status.lastCronSuccessAt ? "text-ink-muted" : "text-n"}`}>
+          {status.lastCronSuccessAt
+            ? t("integrations.google.lastCronRun", {
+                date: new Intl.DateTimeFormat(i18n.language, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                }).format(status.lastCronSuccessAt),
+              })
+            : t("integrations.google.cronNeverRan")}
+        </p>
       ) : null}
 
       <div className="mt-3">

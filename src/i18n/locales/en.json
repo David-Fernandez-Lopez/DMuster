@@ -264,6 +264,8 @@
       "neverSynced": "No session has synced yet.",
       "pendingSummary": "Pending sync: {{count}}",
       "failedSummary": "Sync errors: {{count}}",
+      "lastCronRun": "Last automatic check: {{date}}",
+      "cronNeverRan": "The automatic check has never run. The scheduler may not be working.",
       "retry": "Retry",
       "disconnect": "Disconnect",
       "disconnectPrompt": "Disconnect Google Calendar? The events for your upcoming sessions will be removed from your calendar.",

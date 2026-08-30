@@ -385,13 +385,14 @@ export type ProcessPendingRemindersResult = { processed: number; failed: number 
  * `availability-reminders` cron route right after `reconcileReminders`.
  *
  * @param {object} [options]
+ * @param {string} [options.userId] - Restrict to one user's rows (the profile's manual retry); omitted sweeps across all users.
  * @param {number} [options.limit] - Maximum rows to process in this call.
- * @param {SyncTrigger} [options.trigger] - What caused this sweep to run, recorded on every `CalendarEventLog` row it writes. Defaults to CRON — unlike session sync, reminders have no opportunistic or manual-retry caller yet.
+ * @param {SyncTrigger} [options.trigger] - What caused this sweep to run, recorded on every `CalendarEventLog` row it writes. Defaults to CRON.
  * @param {string} [options.cronRunId] - The triggering `CronRun`'s id, when `trigger` is CRON.
  * @returns {Promise<ProcessPendingRemindersResult>} How many rows synced vs. failed.
  */
 export async function processPendingReminders(
-  options: { limit?: number; trigger?: SyncTrigger; cronRunId?: string } = {},
+  options: { userId?: string; limit?: number; trigger?: SyncTrigger; cronRunId?: string } = {},
 ): Promise<ProcessPendingRemindersResult> {
   const limit = options.limit ?? DEFAULT_PROCESS_LIMIT;
   const trigger: SyncTrigger = options.trigger ?? SyncTrigger.CRON;
@@ -402,15 +403,18 @@ export async function processPendingReminders(
       where: {
         status: { in: [SyncStatus.PENDING, SyncStatus.FAILED] },
         attempts: { lt: MAX_SYNC_ATTEMPTS },
-        // Skips users whose connection is marked broken, for the same reason
-        // the session queue does: their rows cannot succeed until they
-        // reconnect, and because the revoked-token path leaves `lastAttemptAt`
-        // null while the ordering puts nulls first, they would head every
-        // sweep and crowd out everyone else's reminders. This queue is always
-        // a shared sweep — it takes no per-user option — so the exclusion is
-        // unconditional here. The rows are left untouched and resume on
-        // reconnection.
-        user: { googleSyncBrokenAt: null },
+        // A shared sweep skips users whose connection is marked broken, for the
+        // same reason the session queue does: their rows cannot succeed until
+        // they reconnect, and because the revoked-token path leaves
+        // `lastAttemptAt` null while the ordering puts nulls first, they would
+        // head every sweep and crowd out everyone else's reminders. The rows
+        // are left untouched and resume on reconnection.
+        //
+        // A sweep scoped to one user keeps them, so "Reintentar" is not a
+        // button that quietly does nothing.
+        ...(options.userId
+          ? { userId: options.userId }
+          : { user: { googleSyncBrokenAt: null } }),
         // Rows another sweep already holds — same reservation as the session queue.
         ...unclaimedFilter(),
       },

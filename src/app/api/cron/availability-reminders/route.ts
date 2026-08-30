@@ -32,6 +32,9 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   if (!hasValidCronSecret(request, env.CRON_SECRET)) {
+    // See the same guard in the calendar-sync route: without this line a
+    // scheduler whose secret stopped matching fails silently.
+    console.warn("[CRON/AVAILABILITY-REMINDERS] Rejected a call with a missing or wrong secret.");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

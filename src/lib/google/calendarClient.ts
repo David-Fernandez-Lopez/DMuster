@@ -2,15 +2,16 @@
 // primary calendar (roadmap #23). No SDK — three plain `fetch` calls,
 // matching this project's existing minimalism (see `src/lib/google/oauth.ts`).
 // Every result is discriminated and classifies failures for the caller
-// (`calendarSyncService.processPending`): `authFailure: true` means the
-// access token itself was rejected (401/403) — retrying with the SAME token
-// will fail identically, so the caller treats it like a revoked connection
-// instead of just spending a retry attempt. Every other failure (429 rate
-// limits, 5xx, and other 4xx) is `authFailure: false` and goes through the
-// normal retry/backoff path (see syncBackoff.ts) — Google's REST API gives no
-// stronger signal than the status code and an error body to distinguish
-// "try again later" from "this payload will never work", and both still only
-// get the same fixed attempt budget either way.
+// (`calendarSyncService.processPending`): `authFailure: true` means the access
+// token itself was rejected — retrying with the SAME token will fail
+// identically, so the caller treats it like a revoked connection instead of
+// just spending a retry attempt. Everything else (quota, 429, 5xx, other 4xx)
+// is `authFailure: false` and goes through the normal retry/backoff path (see
+// syncBackoff.ts).
+//
+// That distinction is drawn from the error body, not the status code alone:
+// Google answers 403 both for a token it will not accept and for a quota that
+// has run out, and those want opposite handling. See `classifyGoogleFailure`.
 
 import { DMUSTER_SESSION_PROPERTY, type GoogleCalendarEventBody } from "./calendarEvent";
 
@@ -38,29 +39,56 @@ export type FindEventResult =
   | { ok: false; authFailure: boolean; errorMessage: string };
 
 /**
- * Extracts a short, human-readable reason from a failed Google API response,
- * for storage in `SessionCalendarEvent.lastError`. Falls back to the bare
- * status when the body isn't the expected `{ error: { message } }` shape.
- *
- * @param {Response} response - The failed fetch response.
- * @returns {Promise<string>} A short diagnostic string, never empty.
+ * Reasons Google puts on a 403 that mean "too much, too fast" rather than
+ * "this token is no good". Documented for the Calendar API; anything else on a
+ * 403 is taken as an authorization problem.
  */
-async function describeFailure(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
-  const message = body?.error?.message;
-  return message ? `${response.status} ${message}` : `HTTP ${response.status}`;
-}
+const QUOTA_REASONS = new Set([
+  "rateLimitExceeded",
+  "userRateLimitExceeded",
+  "quotaExceeded",
+  "dailyLimitExceeded",
+  "variableTermLimitExceeded",
+]);
+
+/** Shape of Google's error body, as much of it as this app reads. */
+type GoogleErrorBody = {
+  error?: { message?: string; errors?: { reason?: string }[]; status?: string };
+};
 
 /**
- * Classifies a failed Google API response: 401/403 mean the access token
- * itself was rejected, as opposed to a rate limit, transient server error, or
- * a payload problem.
+ * Classifies a failed Google API response, reading the body once for both the
+ * diagnostic string and the decision.
  *
- * @param {number} status - The HTTP status code.
- * @returns {boolean} True when the failure means the token is bad.
+ * The status alone is not enough on a 403. Google uses it for a revoked or
+ * insufficient token *and* for exceeding a quota, and the two want opposite
+ * handling: a bad token is unrecoverable until the person reconnects, while a
+ * quota is the definition of "try again later". Treating them alike meant one
+ * burst of activity against a shared quota marked the connection broken — and
+ * because the quota is per project, that verdict landed on whoever's row
+ * happened to be next, however healthy their token was.
+ *
+ * @param {Response} response - The failed fetch response.
+ * @returns {Promise<{ authFailure: boolean; notFound: boolean; errorMessage: string }>}
+ *   How to treat it, and a short diagnostic for `lastError`.
  */
-function isAuthFailure(status: number): boolean {
-  return status === 401 || status === 403;
+export async function classifyGoogleFailure(
+  response: Response,
+): Promise<{ authFailure: boolean; notFound: boolean; errorMessage: string }> {
+  const body = (await response.json().catch(() => null)) as GoogleErrorBody | null;
+  const message = body?.error?.message;
+  const errorMessage = message ? `${response.status} ${message}` : `HTTP ${response.status}`;
+
+  const reasons = body?.error?.errors?.map((entry) => entry.reason ?? "") ?? [];
+  const isQuota =
+    reasons.some((reason) => QUOTA_REASONS.has(reason)) ||
+    body?.error?.status === "RESOURCE_EXHAUSTED";
+
+  return {
+    authFailure: response.status === 401 || (response.status === 403 && !isQuota),
+    notFound: response.status === 404,
+    errorMessage,
+  };
 }
 
 /**
@@ -84,12 +112,7 @@ export async function insertEvent(
     });
 
     if (!response.ok) {
-      return {
-        ok: false,
-        authFailure: isAuthFailure(response.status),
-        notFound: response.status === 404,
-        errorMessage: await describeFailure(response),
-      };
+      return { ok: false, ...(await classifyGoogleFailure(response)) };
     }
 
     const data = (await response.json()) as { id: string };
@@ -127,12 +150,7 @@ export async function patchEvent(
     });
 
     if (!response.ok) {
-      return {
-        ok: false,
-        authFailure: isAuthFailure(response.status),
-        notFound: response.status === 404,
-        errorMessage: await describeFailure(response),
-      };
+      return { ok: false, ...(await classifyGoogleFailure(response)) };
     }
 
     return { ok: true };
@@ -181,11 +199,8 @@ export async function findEventBySession(
     });
 
     if (!response.ok) {
-      return {
-        ok: false,
-        authFailure: isAuthFailure(response.status),
-        errorMessage: await describeFailure(response),
-      };
+      const { authFailure, errorMessage } = await classifyGoogleFailure(response);
+      return { ok: false, authFailure, errorMessage };
     }
 
     const data = (await response.json()) as { items?: { id?: string }[] };
@@ -217,12 +232,7 @@ export async function deleteEvent(accessToken: string, eventId: string): Promise
     });
 
     if (!response.ok && response.status !== 404) {
-      return {
-        ok: false,
-        authFailure: isAuthFailure(response.status),
-        notFound: response.status === 404,
-        errorMessage: await describeFailure(response),
-      };
+      return { ok: false, ...(await classifyGoogleFailure(response)) };
     }
 
     return { ok: true };
