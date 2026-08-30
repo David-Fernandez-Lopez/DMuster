@@ -366,26 +366,46 @@ export async function getAccessToken(userId: string): Promise<AccessTokenResult>
   return { ok: true, accessToken: result.data.access_token };
 }
 
+/** What a disconnect achieved, reported separately for each side of it. */
+export type RevokeAccessResult = {
+  /** The local `Account` row is gone. */
+  disconnected: boolean;
+  /**
+   * Google confirmed the token is dead. When false, the app has forgotten the
+   * connection but the grant is still live on Google's side, and only the
+   * person themselves can withdraw it now.
+   */
+  revokedAtGoogle: boolean;
+};
+
 /**
  * Disconnects a user's Google account: revokes the token at Google (best
- * effort — a network failure here must not block a local disconnect, since a
- * token Google never hears from again is inert either way) and deletes the
- * `Account` row. Idempotent: a user with no connection is treated as already
- * disconnected. Does not touch `SessionCalendarEvent` rows or enqueue
- * deletions — that is `calendarSyncService.enqueueDeletionForUser`'s job
- * (roadmap #23 phase 5), called by the route before this.
+ * effort — a network failure here must not block a local disconnect) and
+ * deletes the `Account` row. Idempotent: a user with no connection is treated
+ * as already disconnected. Does not touch `SessionCalendarEvent` rows or
+ * enqueue deletions — that is `calendarSyncService.enqueueDeletionForUser`'s
+ * job (roadmap #23 phase 5), called by the route before this.
+ *
+ * The two outcomes are reported separately because they are not the same
+ * thing, and it used to say `{ ok: true }` regardless. A revoke request that
+ * never reached Google left the grant standing while the app deleted the only
+ * record of it — the person was told they had disconnected, and nothing they
+ * could do in DMuster would ever undo what was still granted.
  *
  * @param {string} userId - The user disconnecting.
- * @returns {Promise<{ ok: true }>} Always succeeds from the caller's perspective.
+ * @returns {Promise<RevokeAccessResult>} What actually happened on each side.
  */
-export async function revokeAccess(userId: string): Promise<{ ok: true }> {
+export async function revokeAccess(userId: string): Promise<RevokeAccessResult> {
   const account = await prisma.account.findFirst({
     where: { userId, provider: GOOGLE_PROVIDER },
   });
 
   if (!account) {
-    return { ok: true };
+    // Nothing stored, so nothing is left anywhere — including at Google.
+    return { disconnected: true, revokedAtGoogle: true };
   }
+
+  let revokedAtGoogle = false;
 
   const token = account.refresh_token ?? account.access_token;
   if (token) {
@@ -398,12 +418,16 @@ export async function revokeAccess(userId: string): Promise<{ ok: true }> {
       });
       // Google returns 200 on success and 400 when the token was already
       // invalid — both mean there is nothing left to revoke on its side.
-      if (!response.ok && response.status !== 400) {
+      revokedAtGoogle = response.ok || response.status === 400;
+      if (!revokedAtGoogle) {
         console.error("[GOOGLE-OAUTH/REVOKE] Unexpected status revoking token:", response.status);
       }
     } catch (error) {
       console.error("[GOOGLE-OAUTH/REVOKE] Failed to reach Google's revoke endpoint:", error);
     }
+  } else {
+    // No token to revoke: there is nothing outstanding on Google's side.
+    revokedAtGoogle = true;
   }
 
   await prisma.$transaction([
@@ -421,5 +445,5 @@ export async function revokeAccess(userId: string): Promise<{ ok: true }> {
     }),
   ]);
 
-  return { ok: true };
+  return { disconnected: true, revokedAtGoogle };
 }

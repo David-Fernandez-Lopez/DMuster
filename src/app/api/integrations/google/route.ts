@@ -25,7 +25,14 @@ import { revokeAccess } from "@/lib/google/oauth";
  * reminder is not attached to any session, so nothing else would ever remove
  * it, and it would sit in the person's calendar for good.
  *
- * @returns {Promise<NextResponse>} `200 { data: { disconnected: true } }`, or 401.
+ * The response says what actually happened rather than a flat success. Two
+ * things here can fail without the disconnect itself failing — the calendar
+ * cleanup, and the revoke request to Google — and both leave something behind
+ * that only the person can deal with, from their own Google account. Reporting
+ * them as success meant nobody ever found out.
+ *
+ * @returns {Promise<NextResponse>} `200 { data: { disconnected, revokedAtGoogle,
+ *   calendarCleanupFailed } }`, or 401.
  */
 export async function DELETE(): Promise<NextResponse> {
   const session = await auth();
@@ -42,10 +49,27 @@ export async function DELETE(): Promise<NextResponse> {
   // An explicit limit, because the default caps at 25 rows: someone attending
   // more future sessions than that would have had the rest revoked out from
   // under them, left PENDING with a token that no longer works.
-  await processPending({ userId: session.user.id, limit: DISCONNECT_PROCESS_LIMIT });
-  await processPendingReminders({ limit: DISCONNECT_PROCESS_LIMIT });
+  const sessions = await processPending({
+    userId: session.user.id,
+    limit: DISCONNECT_PROCESS_LIMIT,
+  });
+  const reminders = await processPendingReminders({ limit: DISCONNECT_PROCESS_LIMIT });
+  const calendarCleanupFailed = sessions.failed > 0 || reminders.failed > 0;
 
-  await revokeAccess(session.user.id);
+  if (calendarCleanupFailed) {
+    console.error(
+      `[INTEGRATIONS/GOOGLE] Disconnect for user ${session.user.id} left ` +
+        `${sessions.failed} session event(s) and ${reminders.failed} reminder(s) behind.`,
+    );
+  }
 
-  return NextResponse.json({ data: { disconnected: true } });
+  const revoked = await revokeAccess(session.user.id);
+
+  return NextResponse.json({
+    data: {
+      disconnected: revoked.disconnected,
+      revokedAtGoogle: revoked.revokedAtGoogle,
+      calendarCleanupFailed,
+    },
+  });
 }

@@ -253,6 +253,10 @@
       "description": "Conecta tu cuenta de Google para que tus partidas confirmadas aparezcan automáticamente en tu calendario principal. Se crea un evento por cada partida en la que juegas; puedes pausarlo o desconectarlo cuando quieras.",
       "connect": "Conectar Google Calendar",
       "connectedNotice": "Cuenta de Google conectada correctamente.",
+      "warnings": {
+        "notRevokedAtGoogle": "Hemos desconectado la cuenta aquí, pero no hemos podido confirmárselo a Google. Retira el permiso de DMuster desde la configuración de tu cuenta de Google.",
+        "calendarCleanupFailed": "Algunos eventos no se han podido borrar de tu calendario. Revísalo y elimina a mano los que sobren."
+      },
       "connectedAs": "Conectado como {{email}}",
       "enable": "Activada",
       "paused": "Pausada",

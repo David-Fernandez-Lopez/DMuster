@@ -47,29 +47,34 @@ export default function GoogleCalendarConnection({
   const [isPending, setIsPending] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [disconnectConfirming, setDisconnectConfirming] = useState(false);
+  const [warningKeys, setWarningKeys] = useState<string[]>([]);
 
   /**
    * Shared fetch + error + refresh idiom for every mutation below.
    *
    * @param {RequestInfo} input - The fetch URL.
    * @param {RequestInit} [init] - The fetch options.
-   * @returns {Promise<boolean>} Whether the call succeeded.
+   * @returns {Promise<Record<string, unknown> | null>} The response's `data`
+   *   payload on success, or null when the call failed.
    */
-  async function callApi(input: RequestInfo, init?: RequestInit): Promise<boolean> {
+  async function callApi(
+    input: RequestInfo,
+    init?: RequestInit,
+  ): Promise<Record<string, unknown> | null> {
     setIsPending(true);
     setErrorKey(null);
     try {
       const response = await fetch(input, init);
+      const body = await response.json().catch(() => null);
       if (!response.ok) {
-        const body = await response.json().catch(() => null);
         setErrorKey(body?.error ?? "integrations.google.errors.unknown");
-        return false;
+        return null;
       }
       router.refresh();
-      return true;
+      return (body?.data as Record<string, unknown> | undefined) ?? {};
     } catch {
       setErrorKey("integrations.google.errors.unknown");
-      return false;
+      return null;
     } finally {
       setIsPending(false);
     }
@@ -90,11 +95,30 @@ export default function GoogleCalendarConnection({
     await callApi("/api/integrations/google/retry", { method: "POST" });
   }
 
+  /**
+   * Disconnects, then reports what the server could not finish.
+   *
+   * Both leftovers below are things only the person can resolve, from their own
+   * Google account — so staying silent about them was the same as never having
+   * tried. The disconnect itself still counts as done either way: the app has
+   * let go of the connection regardless.
+   */
   async function handleDisconnect(): Promise<void> {
-    const ok = await callApi("/api/integrations/google", { method: "DELETE" });
-    if (ok) {
-      setDisconnectConfirming(false);
+    const data = await callApi("/api/integrations/google", { method: "DELETE" });
+    if (!data) {
+      return;
     }
+
+    const warnings: string[] = [];
+    if (data.revokedAtGoogle === false) {
+      warnings.push("integrations.google.warnings.notRevokedAtGoogle");
+    }
+    if (data.calendarCleanupFailed === true) {
+      warnings.push("integrations.google.warnings.calendarCleanupFailed");
+    }
+
+    setWarningKeys(warnings);
+    setDisconnectConfirming(false);
   }
 
   if (!status.configured) {
@@ -120,6 +144,23 @@ export default function GoogleCalendarConnection({
     </p>
   ) : null;
 
+  // Survives the disconnect: once `status.connected` flips to false the whole
+  // branch below changes, and these are exactly the messages the person needs
+  // at that moment.
+  const warnings = warningKeys.length > 0 ? (
+    <div className="mt-2 flex flex-col gap-2">
+      {warningKeys.map((key) => (
+        <p
+          key={key}
+          className="rounded-[var(--radius-control)] bg-t-soft px-3 py-2 text-sm text-t"
+          role="alert"
+        >
+          {t(key)}
+        </p>
+      ))}
+    </div>
+  ) : null;
+
   if (!status.connected) {
     return (
       <div className="py-3">
@@ -132,6 +173,7 @@ export default function GoogleCalendarConnection({
           {t("integrations.google.connect")}
         </a>
         {banner}
+        {warnings}
       </div>
     );
   }
@@ -265,6 +307,7 @@ export default function GoogleCalendarConnection({
       ) : null}
 
       {banner}
+      {warnings}
     </div>
   );
 }

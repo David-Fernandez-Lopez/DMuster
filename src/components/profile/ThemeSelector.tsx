@@ -64,9 +64,13 @@ export default function ThemeSelector({
   );
   const active = theme ?? systemTheme;
 
-  // Apply the chosen theme to the DOM + cookie for an instant, flash-free repaint.
+  // Apply the chosen theme to the DOM + cookie for an instant, flash-free
+  // repaint — and undo both when the choice goes back to "follow the OS", which
+  // is where a reverted selection lands if that is what it was before.
   useEffect(() => {
     if (!theme) {
+      delete document.documentElement.dataset.theme;
+      document.cookie = `${THEME_COOKIE}=; path=/; max-age=0; samesite=lax`;
       return;
     }
     document.documentElement.dataset.theme = theme;
@@ -74,20 +78,33 @@ export default function ThemeSelector({
   }, [theme]);
 
   /**
-   * Selects a theme: repaint happens via the effect above; here we also persist
-   * it to the user's profile for cross-device durability, surfacing any error.
+   * Selects a theme: the repaint happens via the effect above, optimistically,
+   * and the choice is persisted to the profile for cross-device durability.
+   *
+   * A failure puts the previous choice back. The optimistic repaint used to
+   * stand whatever happened — and a rejected promise was not even caught, so a
+   * dropped connection left the interface showing a theme the server had never
+   * been told about, silently, until the next load undid it. Mirrors
+   * `AvailabilityToggle`, which reverts on both the error result and the throw.
    *
    * @param {Theme} option - The theme the user tapped.
    * @returns {void}
    */
   function handleSelect(option: Theme): void {
+    const previous = theme;
     setTheme(option);
     setError(null);
-    void updateTheme(option).then((result) => {
-      if (result.error) {
-        setError(result.error);
-      }
-    });
+    void updateTheme(option)
+      .then((result) => {
+        if (result.error) {
+          setTheme(previous);
+          setError(result.error);
+        }
+      })
+      .catch(() => {
+        setTheme(previous);
+        setError("profile.errors.updateFailed");
+      });
   }
 
   return (
