@@ -34,6 +34,7 @@ import {
   type MutateEventResult,
 } from "./calendarClient";
 import { getAccessToken } from "./oauth";
+import { claimRow, newSweepId, releaseRow, unclaimedFilter } from "./rowClaim";
 import { isDueForRetry, MAX_SYNC_ATTEMPTS } from "./syncBackoff";
 
 /** How many due rows `processPending` handles in one call by default. */
@@ -630,6 +631,10 @@ export async function processPending(
         ...(options.userId
           ? { userId: options.userId }
           : { user: { googleSyncBrokenAt: null } }),
+        // Rows another sweep is already working on. Filtered here as well as at
+        // the claim, so a concurrent sweep does not keep loading rows it will
+        // only be refused.
+        ...unclaimedFilter(),
       },
       select: {
         id: true,
@@ -661,17 +666,33 @@ export async function processPending(
 
     let processed = 0;
     let failed = 0;
+    const sweepId = newSweepId();
 
     for (const [sessionId, rows] of rowsBySession) {
       const needsSessionData = rows.some((row) => row.operation === SyncOperation.UPSERT);
       const sessionData = needsSessionData ? await loadSessionSyncData(sessionId) : null;
 
       for (const row of rows) {
-        const outcome = await processRow(row, sessionData, trigger, cronRunId);
-        if (outcome === "processed") {
-          processed += 1;
-        } else {
-          failed += 1;
+        // Reserve the row before touching Google. Two sweeps can be in flight at
+        // once with no secret and no cron involved — the post-response sweep
+        // fires on every session mutation, so two people confirming at the same
+        // moment start two. Without this both would call Google for the same
+        // row, each create an event, and the second would write its id over the
+        // first: one event left in someone's calendar that nothing can update
+        // or delete, because nothing knows it is there.
+        if (!(await claimRow("sessionCalendarEvent", row.id, sweepId))) {
+          continue;
+        }
+
+        try {
+          const outcome = await processRow(row, sessionData, trigger, cronRunId);
+          if (outcome === "processed") {
+            processed += 1;
+          } else {
+            failed += 1;
+          }
+        } finally {
+          await releaseRow("sessionCalendarEvent", row.id, sweepId);
         }
       }
     }

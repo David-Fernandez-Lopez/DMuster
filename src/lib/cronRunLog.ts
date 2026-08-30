@@ -4,11 +4,27 @@
 // stale RUNNING row instead of leaving no trace at all. Logging failures here
 // must never break the sweep itself, so every export swallows its own errors.
 
+import { CronRunStatus as CronRunStatusEnum } from "@/generated/prisma/enums";
 import type { CronJob, CronRunStatus } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
 
 /** How long a finished `CronRun` row is kept before `pruneCronRuns` deletes it. */
 const CRON_RUN_RETENTION_DAYS = 90;
+
+/**
+ * How long a RUNNING row keeps another run of the same job out.
+ *
+ * A process killed mid-sweep leaves its row RUNNING with nobody to close it, so
+ * the block has to expire or the job would never run again. Well above any real
+ * sweep and below the fifteen-minute schedule, so a stranded row costs at most
+ * one skipped tick.
+ */
+const CRON_RUN_STALE_AFTER_MS = 10 * 60 * 1000;
+
+/** Outcome of trying to open a run: either it is ours, or one is already going. */
+export type CronRunStart =
+  | { started: true; runId: string | null }
+  | { started: false; runningSince: Date };
 
 export type CronRunOutcome = {
   status: CronRunStatus;
@@ -19,20 +35,46 @@ export type CronRunOutcome = {
 };
 
 /**
- * Opens a `CronRun` row in RUNNING state for a job that is about to execute.
+ * Opens a `CronRun` row in RUNNING state for a job about to execute, unless one
+ * is already running.
+ *
+ * A sweep that takes longer than the schedule between ticks would otherwise be
+ * joined by the next one — and a sweep that hangs would collect a new companion
+ * every fifteen minutes, each of them working the same backlog against the same
+ * Google quota.
+ *
+ * The check is advisory, not a mutex: two ticks arriving in the same instant
+ * could both see no RUNNING row. What actually guarantees a row is handled once
+ * is the per-row reservation in `google/rowClaim.ts`, which is a conditional
+ * write and therefore decided by the database. This narrows the window and
+ * keeps the log readable; it does not carry the correctness.
  *
  * @param {CronJob} job - Which scheduled sweep is starting.
- * @returns {Promise<string | null>} The new row's id, or null if the insert
- *   itself failed — callers proceed with `cronRunId: null` rather than abort
- *   the sweep over a logging problem.
+ * @returns {Promise<CronRunStart>} The opened run, or when one is already in
+ *   flight, since when. A failed insert still starts the sweep with a null id
+ *   rather than abort it over a logging problem.
  */
-export async function startCronRun(job: CronJob): Promise<string | null> {
+export async function startCronRun(job: CronJob): Promise<CronRunStart> {
   try {
+    const inFlight = await prisma.cronRun.findFirst({
+      where: {
+        job,
+        status: CronRunStatusEnum.RUNNING,
+        startedAt: { gt: new Date(Date.now() - CRON_RUN_STALE_AFTER_MS) },
+      },
+      select: { startedAt: true },
+      orderBy: { startedAt: "desc" },
+    });
+
+    if (inFlight) {
+      return { started: false, runningSince: inFlight.startedAt };
+    }
+
     const run = await prisma.cronRun.create({ data: { job }, select: { id: true } });
-    return run.id;
+    return { started: true, runId: run.id };
   } catch (error) {
     console.error("[CRON-LOG/START] Failed to open a cron run row:", error);
-    return null;
+    return { started: true, runId: null };
   }
 }
 

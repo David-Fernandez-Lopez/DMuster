@@ -30,6 +30,7 @@ import { logCalendarEvent } from "./calendarEventLog";
 import { deleteEvent, insertEvent, patchEvent, type MutateEventResult } from "./calendarClient";
 import { getAccessToken } from "./oauth";
 import { buildReminderEvent } from "./reminderEvent";
+import { claimRow, newSweepId, releaseRow, unclaimedFilter } from "./rowClaim";
 import { isDueForRetry, MAX_SYNC_ATTEMPTS } from "./syncBackoff";
 
 /** How many due rows `processPendingReminders` handles in one call by default. */
@@ -410,6 +411,8 @@ export async function processPendingReminders(
         // unconditional here. The rows are left untouched and resume on
         // reconnection.
         user: { googleSyncBrokenAt: null },
+        // Rows another sweep already holds — same reservation as the session queue.
+        ...unclaimedFilter(),
       },
       select: {
         id: true,
@@ -431,13 +434,22 @@ export async function processPendingReminders(
 
     let processed = 0;
     let failed = 0;
+    const sweepId = newSweepId();
 
     for (const row of due) {
-      const outcome = await processReminderRow(row, trigger, cronRunId);
-      if (outcome === "processed") {
-        processed += 1;
-      } else {
-        failed += 1;
+      if (!(await claimRow("availabilityReminderEvent", row.id, sweepId))) {
+        continue;
+      }
+
+      try {
+        const outcome = await processReminderRow(row, trigger, cronRunId);
+        if (outcome === "processed") {
+          processed += 1;
+        } else {
+          failed += 1;
+        }
+      } finally {
+        await releaseRow("availabilityReminderEvent", row.id, sweepId);
       }
     }
 

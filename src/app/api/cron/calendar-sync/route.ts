@@ -23,8 +23,13 @@ const CRON_SWEEP_LIMIT = 200;
  * not i18n keys: nothing renders this route's output, it is
  * machine-to-machine.
  *
+ * A tick that arrives while the previous one is still going is skipped rather
+ * than run alongside it: two sweeps over the same backlog spend the same Google
+ * quota twice and race each other for the same rows.
+ *
  * @param {Request} request - Must carry the `x-cron-secret` header.
- * @returns {Promise<NextResponse>} `200 { data: { runId, processed, failed } }`, 401, or 404.
+ * @returns {Promise<NextResponse>} `200 { data: { runId, processed, failed } }`,
+ *   `200 { data: { skipped: true } }`, 401, or 404.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   if (!env.CRON_SECRET) {
@@ -35,7 +40,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const runId = await startCronRun(CronJob.CALENDAR_SYNC);
+  const started = await startCronRun(CronJob.CALENDAR_SYNC);
+  if (!started.started) {
+    console.warn(
+      `[CRON/CALENDAR-SYNC] Skipped: a sweep has been running since ${started.runningSince.toISOString()}.`,
+    );
+    return NextResponse.json({
+      data: { skipped: true, runningSince: started.runningSince.toISOString() },
+    });
+  }
+  const runId = started.runId;
 
   try {
     const result = await processPending({

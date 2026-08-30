@@ -19,8 +19,12 @@ import { processPendingReminders, reconcileReminders } from "@/lib/google/remind
  * strings here are not i18n keys: nothing renders this route's output, it is
  * machine-to-machine.
  *
+ * A tick arriving while the previous one is still going is skipped rather than
+ * run alongside it.
+ *
  * @param {Request} request - Must carry the `x-cron-secret` header.
- * @returns {Promise<NextResponse>} `200 { data: { runId, evaluated, enqueued, cleared, processed, failed } }`, 401, or 404.
+ * @returns {Promise<NextResponse>} `200 { data: { runId, evaluated, enqueued,
+ *   cleared, processed, failed } }`, `200 { data: { skipped: true } }`, 401, or 404.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   if (!env.CRON_SECRET) {
@@ -31,7 +35,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const runId = await startCronRun(CronJob.AVAILABILITY_REMINDERS);
+  const started = await startCronRun(CronJob.AVAILABILITY_REMINDERS);
+  if (!started.started) {
+    console.warn(
+      `[CRON/AVAILABILITY-REMINDERS] Skipped: a sweep has been running since ${started.runningSince.toISOString()}.`,
+    );
+    return NextResponse.json({
+      data: { skipped: true, runningSince: started.runningSince.toISOString() },
+    });
+  }
+  const runId = started.runId;
 
   try {
     const reconcileResult = await reconcileReminders();

@@ -289,6 +289,12 @@ model SessionCalendarEvent {
   lastError     String?       @db.Text
   lastAttemptAt DateTime?
   syncedAt      DateTime?
+  // Reservation held by the sweep currently working this row, so two overlapping
+  // sweeps cannot both drive it to Google. `claimedBy` identifies the sweep, and
+  // `claimedAt` lets a claim left behind by a crashed process go stale and be
+  // taken again instead of stranding the row forever.
+  claimedAt     DateTime?
+  claimedBy     String?   @db.VarChar(36)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -323,6 +329,9 @@ model AvailabilityReminderEvent {
   lastError     String?       @db.Text
   lastAttemptAt DateTime?
   syncedAt      DateTime?
+  // Same reservation as `SessionCalendarEvent.claimedAt`/`claimedBy`.
+  claimedAt     DateTime?
+  claimedBy     String?       @db.VarChar(36)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
