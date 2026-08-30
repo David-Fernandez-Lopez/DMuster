@@ -3,6 +3,8 @@
 import { useEffect, useId, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
+import { useReturnFocusTo } from "@/lib/useReturnFocus";
+
 interface FiltersModalProps {
   /** Modal title, shown as the dialog heading. */
   title: string;
@@ -33,10 +35,12 @@ export default function FiltersModal({
   const boxRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    boxRef.current?.focus();
+  // Focus is handled apart from the Escape listener, which has to follow
+  // `onClose`. The parent re-renders on every filter change, so tying focus to
+  // that same callback re-ran it mid-interaction.
+  useReturnFocusTo(boxRef);
 
+  useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
@@ -46,7 +50,6 @@ export default function FiltersModal({
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      previouslyFocused?.focus();
     };
   }, [onClose]);
 

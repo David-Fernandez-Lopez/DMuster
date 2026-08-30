@@ -107,7 +107,12 @@ export default function AttendeeControls({
 }: AttendeeControlsProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  // A set, not one id. Every row stays clickable while another is in flight —
+  // the rows are independent and that is deliberate — so a single scalar was
+  // wrong twice over: starting a second mutation overwrote the first one's id,
+  // and whichever finished first cleared the flag for both, un-disabling a row
+  // still waiting on its response and inviting a double submit.
+  const [pendingUserIds, setPendingUserIds] = useState<ReadonlySet<string>>(new Set());
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [errorParams, setErrorParams] = useState<
     Record<string, string> | undefined
@@ -123,7 +128,11 @@ export default function AttendeeControls({
    * @param {"add" | "remove"} action - Which mutation to perform.
    */
   async function mutate(userId: string, action: "add" | "remove") {
-    setPendingUserId(userId);
+    // Ignore a repeat tap on a row that is already working.
+    if (pendingUserIds.has(userId)) {
+      return;
+    }
+    setPendingUserIds((current) => new Set(current).add(userId));
     setErrorKey(null);
     setErrorParams(undefined);
 
@@ -150,7 +159,11 @@ export default function AttendeeControls({
     } catch {
       setErrorKey("sessions.errors.unknown");
     } finally {
-      setPendingUserId(null);
+      setPendingUserIds((current) => {
+        const next = new Set(current);
+        next.delete(userId);
+        return next;
+      });
     }
   }
 
@@ -173,7 +186,7 @@ export default function AttendeeControls({
                 ? {
                     symbol: "−",
                     label: t("sessions.removeAttendee"),
-                    pending: pendingUserId === member.userId,
+                    pending: pendingUserIds.has(member.userId),
                     onClick: () => mutate(member.userId, "remove"),
                   }
                 : null
@@ -197,7 +210,7 @@ export default function AttendeeControls({
                     ? {
                         symbol: "+",
                         label: t("sessions.addAttendee"),
-                        pending: pendingUserId === member.userId,
+                        pending: pendingUserIds.has(member.userId),
                         onClick: () => mutate(member.userId, "add"),
                       }
                     : null

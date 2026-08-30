@@ -115,6 +115,9 @@ export default function CampaignViabilityCard({
     ...player,
     isAttending: attendeeIdSet.has(player.userId),
   }));
+  const unavailableAttendees = attendeeMembers.filter(
+    (member) => member.isAttending && member.status !== "YES",
+  );
 
   return (
     <details
@@ -174,13 +177,18 @@ export default function CampaignViabilityCard({
               {formatSessionTime(confirmedSession, t)}
             </p>
 
-            {campaign.viability !== "S" ? (
+            {/* Over the people actually playing, not over the whole campaign.
+                Forcing a session is a supported move — the DM picks a subset
+                and confirms a day that was never viable — so measuring the
+                warning against every member meant every forced session carried
+                one, naming precisely the people who had been left out on
+                purpose. A warning that fires when nothing is wrong stops being
+                read, and then it is not there for the case that matters: an
+                attendee who changed their answer after the session was set. */}
+            {unavailableAttendees.length > 0 ? (
               <p className="text-sm text-n">
                 {t("sessions.warning.noLongerViable", {
-                  players: campaign.players
-                    .filter((player) => player.status !== "YES")
-                    .map((player) => player.name)
-                    .join(", "),
+                  players: unavailableAttendees.map((member) => member.name).join(", "),
                 })}
               </p>
             ) : null}

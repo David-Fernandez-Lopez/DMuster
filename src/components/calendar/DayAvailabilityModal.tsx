@@ -9,6 +9,7 @@ import AvailabilityToggle, {
 import CampaignViabilityCard from "@/components/date/CampaignViabilityCard";
 import type { CampaignDayViability } from "@/lib/calendarService";
 import { toUtcDate } from "@/lib/date";
+import { useReturnFocusTo } from "@/lib/useReturnFocus";
 
 interface DayAvailabilityModalProps {
   /** The selected day, "YYYY-MM-DD". */
@@ -55,11 +56,15 @@ export default function DayAvailabilityModal({
   const boxRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
-  // Close on Escape, move focus into the box on open, and restore it on close.
-  useEffect(() => {
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    boxRef.current?.focus();
+  // Focus in on open, back out on close. Kept apart from the Escape listener
+  // below: that one has to follow `onClose`, and focus must not — the parent
+  // passes an inline arrow and re-renders whenever a response is saved from
+  // inside this modal, so sharing the dependency yanked focus off the toggle
+  // the person had just tapped, every single time.
+  useReturnFocusTo(boxRef);
 
+  // Close on Escape.
+  useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         onClose();
@@ -69,7 +74,6 @@ export default function DayAvailabilityModal({
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      previouslyFocused?.focus();
     };
   }, [onClose]);
 

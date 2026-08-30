@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import MenuToggleIcon from "@/components/nav/MenuToggleIcon";
 import NavLinks, { type NavLinkItem } from "@/components/nav/NavLinks";
+import { useReturnFocus } from "@/lib/useReturnFocus";
 
 interface MobileNavProps {
   /** Primary destinations (Calendario, Disponibilidad, Campañas). Shown inline on
@@ -69,19 +70,20 @@ export default function MobileNav({
     };
   }, [open]);
 
-  // Move focus into the panel on open and restore it to the button on close.
+  // Move focus into the panel on open and restore it on close. The comment here
+  // used to claim it restored focus to the button; the effect had no cleanup at
+  // all, so closing by Escape or by clicking away dropped focus onto `<body>` —
+  // for anyone on a keyboard, back to the top of the document. Only the
+  // navigate path put it back, by hand, in two places.
+  //
   // The primary-items group is `lg:hidden` on desktop, so skip links that
   // aren't actually rendered (offsetParent is null while display: none).
-  useEffect(() => {
-    if (open) {
-      const candidates =
-        panelRef.current?.querySelectorAll<HTMLElement>("a, button");
-      const firstVisible = candidates
-        ? Array.from(candidates).find((element) => element.offsetParent !== null)
-        : undefined;
-      firstVisible?.focus();
-    }
-  }, [open]);
+  useReturnFocus(open, () => {
+    const candidates = panelRef.current?.querySelectorAll<HTMLElement>("a, button");
+    return candidates
+      ? Array.from(candidates).find((element) => element.offsetParent !== null)
+      : undefined;
+  });
 
   return (
     <div ref={rootRef} className="relative ml-auto">

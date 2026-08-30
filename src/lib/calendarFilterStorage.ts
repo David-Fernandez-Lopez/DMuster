@@ -171,3 +171,27 @@ export function writeStoredSelection(
   }
   notify();
 }
+
+/**
+ * Removes the stored filters entirely.
+ *
+ * What is kept here is a list of the *excluded* campaign ids and master user
+ * ids — which is to say, identifiers belonging to whoever was signed in. On a
+ * browser more than one person uses, leaving that behind hands the next person
+ * a set of ids from someone else's campaigns, and gives them a calendar
+ * silently filtered by choices they never made.
+ *
+ * Distinct from clearing the filters in the UI: that writes an empty exclusion
+ * list, which is still a stored preference. This forgets there was one.
+ */
+export function forgetStoredSelection(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Best-effort: ignore availability errors.
+  }
+  notify();
+}
