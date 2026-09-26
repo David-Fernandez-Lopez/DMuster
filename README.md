@@ -57,18 +57,19 @@ docker compose up
 
 The app will be available at `http://localhost:3000`.
 
-To run database migrations and seed reference data:
+To run database migrations and create the first account:
 
 ```bash
 docker compose exec app npx prisma migrate deploy
 docker compose exec app npx prisma db seed
 ```
 
-> **Bootstrap warning:** there is no public sign-up (see *Features*) — creating an account
-> requires an invitation, and sending one requires already being a DM of a campaign. On a
-> **fresh deployment with an empty database, nobody can invite anyone yet.** The seed command
-> above is what creates the first accounts (and their campaigns/DM roles); log in with one of
-> the seeded users to send the first real invitation. There is no separate bootstrap script.
+> **Bootstrap:** there is no public sign-up (see *Features*) — creating an account requires an
+> invitation, and sending one requires already being a DM of a campaign. On a fresh deployment
+> the seed is what breaks that loop: it creates **one user as DM of one campaign**, taken from
+> the `SEED_*` variables in `.env` (email, name, password, campaign name and tag). Log in as that
+> user and invite the rest of the group from `/profile`. The seed refuses to run against a
+> database that already has users or campaigns.
 
 ## Environment
 

@@ -3,8 +3,8 @@
 //
 // The application offers no way to change a password (there is no such screen
 // and no such route), so this script is the only remedy available today for
-// the accounts created by the seed: they all share a single bcrypt hash,
-// which means guessing one password unlocks every one of them.
+// accounts that share a password — as every account created by the former
+// multi-user seed did: one bcrypt hash, so guessing one password unlocked all.
 //
 // It runs inside the `app` container, because the database has no published
 // port and `db` only resolves on the compose network:

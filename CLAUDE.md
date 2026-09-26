@@ -155,9 +155,12 @@ Never do commits, theyu will always be done by the developer, only give the conv
 - `.env.example` — committed template with all keys and comments, no real values
 - Validate all env vars with a Zod schema at app startup to fail fast on misconfiguration
 
-## 7. Reference Data (Seed)
+## 7. Reference Data
 
-Current group data — use as seed and for tests.
+Current group data — use for tests and as a mental model of the real group. It is **not**
+seeded: `prisma/seed.ts` only bootstraps an empty database with one user as DM of one campaign,
+all values read from the `SEED_*` env vars (no personal data in the repo). That user invites
+everyone else from `/profile`.
 
 **Players** and the campaigns they belong to (referenced by campaign key):
 
@@ -183,7 +186,4 @@ Current group data — use as seed and for tests.
 | `poulard` | PO |  | `verkko` | VE |
 | `fishing` | FI |  | | |
 
-**Holidays** (extra weekday-eligible dates, seed): `2026-07-15`, `2026-08-06`.
-
-**Availability**: the seed includes ~152 sample per-day responses (YES/NO) across Jul–Aug 2026,
-on eligible days only. Absence of a response is "pending" (T) and is not stored.
+**Holidays** (extra weekday-eligible dates): `2026-07-15`, `2026-08-06`.

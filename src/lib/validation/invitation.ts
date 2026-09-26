@@ -18,8 +18,10 @@ import {
  * Written as what is allowed rather than what is forbidden, so anything nobody
  * thought of — angle brackets, control characters, zero-width joiners — is out
  * by default rather than by having been remembered.
+ *
+ * Also enforced by the seed (prisma/seedEnv.ts) on the bootstrap account's name.
  */
-const SAFE_NAME_PATTERN = /^[\p{L}\p{N} '’·.,\-()]+$/u;
+export const SAFE_NAME_PATTERN = /^[\p{L}\p{N} '’·.,\-()]+$/u;
 
 /**
  * Payload for creating an invitation: who it is for, and optionally which
