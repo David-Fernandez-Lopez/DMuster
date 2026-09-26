@@ -45,9 +45,17 @@ function buildReminderCopy(
   i18n.init(getOptions(locale));
   const t = i18n.getFixedT(locale);
 
-  const monthLabel = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(
-    new Date(`${month}-01T00:00:00.000Z`),
-  );
+  // Pinned to UTC, matching the Date built on the next line and the six other
+  // Intl calls in this project. Without it the formatter followed the *process*
+  // timezone, so under any negative offset a month built at UTC midnight
+  // rendered as the previous one — the reminder would name the wrong month.
+  // Inert today only because no service declares TZ and the containers land on
+  // UTC; the test alongside it passed for the same accidental reason.
+  const monthLabel = new Intl.DateTimeFormat(locale, {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${month}-01T00:00:00.000Z`));
 
   const summary = t("integrations.google.reminderTitle");
   const line = t("integrations.google.reminderDescription", { month: monthLabel });

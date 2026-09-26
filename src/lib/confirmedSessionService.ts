@@ -154,6 +154,42 @@ export async function findConflicts(
 }
 
 /**
+ * Turns a conflict into the message its requester is entitled to see.
+ *
+ * Detecting the conflict has to look across every campaign — that is the rule,
+ * and it is deliberate. Reporting it does not. Naming the blocking campaign
+ * told a DM which *other* campaign one of their players is in, and by probing
+ * dates that reconstructs where and when someone plays: exactly the shape the
+ * calendar's own scoping works to avoid. Someone who already belongs to that
+ * campaign learns nothing new, so they still get the name; everyone else gets
+ * the fact, which is all they need in order to decide.
+ *
+ * The shared player names are not withheld either way — they are members of the
+ * requester's own campaign, since the attendee set is a subset of it.
+ *
+ * @param {SessionConflict} conflict - The blocking session.
+ * @param {string} requesterId - The user who will read the message.
+ * @returns {Promise<{ error: string; params?: Record<string, string> }>} The
+ *   i18n key and its interpolations.
+ */
+async function describeConflict(
+  conflict: SessionConflict,
+  requesterId: string,
+): Promise<{ error: string; params?: Record<string, string> }> {
+  const role = await getCampaignRole(requesterId, conflict.campaignId);
+  const players = conflict.sharedNames.join(", ");
+
+  if (role === null) {
+    return { error: "sessions.errors.playerConflictOther", params: { players } };
+  }
+
+  return {
+    error: "sessions.errors.playerConflict",
+    params: { campaign: conflict.campaignName, players },
+  };
+}
+
+/**
  * Recomputes a campaign's viability for one day server-side, never trusting a
  * client-claimed value. Reuses `computeViability` (src/lib/viability.ts) —
  * same rule as the calendar (`getCalendarViability`).
@@ -471,11 +507,7 @@ export async function confirmSession({
     const [conflict] = conflicts;
     return {
       ok: false,
-      error: "sessions.errors.playerConflict",
-      params: {
-        campaign: conflict.campaignName,
-        players: conflict.sharedNames.join(", "),
-      },
+      ...(await describeConflict(conflict, userId)),
     };
   }
 
@@ -777,10 +809,18 @@ export async function addAttendee(
 
   const conflicts = await findConflicts(dateIso, [targetUserId], sessionId);
   if (conflicts.length > 0) {
+    const blocking = conflicts[0];
+    const actorRole = await getCampaignRole(actingUserId, blocking.campaignId);
     return {
       ok: false,
-      error: "sessions.errors.attendeeConflict",
-      params: { campaign: conflicts[0].campaignName },
+      // Same reasoning as `describeConflict`: the campaign's name only goes to
+      // someone already in it.
+      error:
+        actorRole === null
+          ? "sessions.errors.attendeeConflictOther"
+          : "sessions.errors.attendeeConflict",
+      params:
+        actorRole === null ? undefined : { campaign: blocking.campaignName },
     };
   }
 

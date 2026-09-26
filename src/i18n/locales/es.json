@@ -204,6 +204,8 @@
       "alreadyAttending": "Ya está en la partida.",
       "requiresYes": "Solo puedes sumarte si has respondido Sí ese día.",
       "attendeeConflict": "Ya hay partida ese día con {{campaign}}.",
+      "attendeeConflictOther": "Esa persona ya tiene partida ese día en otra campaña.",
+      "playerConflictOther": "Ya tienen partida ese día en otra campaña: {{players}}.",
       "lastAttendee": "La partida no puede quedarse sin jugadores.",
       "past": "Esa partida ya ha pasado."
     }
@@ -302,7 +304,10 @@
       "nameRequired": "El nombre es obligatorio.",
       "nameTooLong": "El nombre es demasiado largo.",
       "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
+      "passwordTooLong": "La contraseña es demasiado larga: el cifrado solo tiene en cuenta los primeros 72 bytes.",
       "passwordMismatch": "Las contraseñas no coinciden.",
+      "emailTooLong": "El correo electrónico es demasiado largo.",
+      "nameInvalidCharacters": "El nombre solo puede llevar letras, números, espacios y signos de puntuación básicos.",
       "emailTaken": "Ya existe una cuenta con este correo.",
       "unknown": "Algo ha ido mal. Inténtalo de nuevo."
     }

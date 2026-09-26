@@ -1,9 +1,25 @@
 import { z } from "zod";
 
-import { NAME_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib/validation/auth";
+import {
+  EMAIL_MAX_LENGTH,
+  fitsPasswordLimit,
+  NAME_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from "@/lib/validation/auth";
 
 // Validation error messages are i18n keys, not user-facing text: the client
 // resolves them through `t(...)` so no copy is ever hardcoded here.
+
+/**
+ * Characters a display name may contain: letters in any script, digits,
+ * spaces, and the punctuation that shows up in real names (apostrophes,
+ * hyphens, dots, commas, parentheses).
+ *
+ * Written as what is allowed rather than what is forbidden, so anything nobody
+ * thought of — angle brackets, control characters, zero-width joiners — is out
+ * by default rather than by having been remembered.
+ */
+const SAFE_NAME_PATTERN = /^[\p{L}\p{N} '’·.,\-()]+$/u;
 
 /**
  * Payload for creating an invitation: who it is for, and optionally which
@@ -12,7 +28,9 @@ import { NAME_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib/validation/auth";
  */
 export const createInvitationSchema = z
   .object({
-    email: z.email({ error: "auth.errors.invalidEmail" }),
+    email: z
+      .email({ error: "auth.errors.invalidEmail" })
+      .max(EMAIL_MAX_LENGTH, { error: "auth.errors.emailTooLong" }),
     campaignId: z.string().trim().min(1).optional(),
     role: z.enum(["DM", "PLAYER"], { error: "invitations.errors.validation" }).optional(),
   })
@@ -33,10 +51,19 @@ export const acceptInvitationSchema = z
       .string()
       .trim()
       .min(1, { error: "auth.errors.nameRequired" })
-      .max(NAME_MAX_LENGTH, { error: "auth.errors.nameTooLong" }),
+      .max(NAME_MAX_LENGTH, { error: "auth.errors.nameTooLong" })
+      // The name is fixed here once and for all — there is no way to change it
+      // afterwards — and it travels into the description of a calendar event on
+      // every campaign-mate's Google Calendar. Google renders a subset of HTML
+      // in that field, so a name shaped like a tag or an anchor would show
+      // interpreted rather than literal in someone else's calendar. Restricting
+      // the character set at the only point a name is set is the fix that holds
+      // for the whole application; `buildDescription` escapes as well.
+      .regex(SAFE_NAME_PATTERN, { error: "auth.errors.nameInvalidCharacters" }),
     password: z
       .string()
-      .min(PASSWORD_MIN_LENGTH, { error: "auth.errors.passwordTooShort" }),
+      .min(PASSWORD_MIN_LENGTH, { error: "auth.errors.passwordTooShort" })
+      .refine(fitsPasswordLimit, { error: "auth.errors.passwordTooLong" }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {

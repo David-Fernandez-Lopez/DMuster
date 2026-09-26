@@ -100,7 +100,14 @@ function buildDescription(
   appUrl: string | null,
 ): string {
   const i18n = createInstance();
-  i18n.init(getOptions(locale));
+  // Escaping on, unlike the app-wide instance. This description is rendered by
+  // Google Calendar, which interprets a subset of HTML in that field, and the
+  // names interpolated here belong to other people — each attendee's name lands
+  // in every campaign-mate's calendar. The character set is already restricted
+  // where a name is set (`acceptInvitationSchema`); this is the second half, in
+  // the module that does the interpolating. The instance is created per call
+  // precisely so changing this shares nothing with the rest of the app.
+  i18n.init({ ...getOptions(locale), interpolation: { escapeValue: true } });
   const t = i18n.getFixedT(locale);
 
   const line = t("integrations.google.eventDescription", {

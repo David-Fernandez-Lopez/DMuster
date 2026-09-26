@@ -244,6 +244,11 @@ model ConfirmedSession {
 
   @@unique([campaignId, activeDate])
   @@index([campaignId, date])
+  // Both existing indexes lead with `campaignId`, but the hottest read filters
+  // on the date alone: the shared-attendee conflict check, which runs on every
+  // session confirmation and every attendee added. Cancelling is a soft delete,
+  // so this table only ever grows.
+  @@index([date])
   @@map("confirmed_sessions")
 }
 
@@ -393,6 +398,10 @@ model CronRun {
   error      String?       @db.Text
 
   @@index([job, startedAt])
+  // The retention purge filters on `startedAt` alone, and the composite above
+  // leads with `job`, so InnoDB could not use it: a full table scan every
+  // fifteen minutes, on both cron routes, on the success path and the error one.
+  @@index([startedAt])
   @@map("cron_runs")
 }
 
@@ -452,7 +461,11 @@ model Account {
 }
 
 model Session {
-  sessionToken String   @unique
+  // Declared as the primary key, not merely unique. Without one InnoDB builds a
+  // hidden clustered index of its own — and this is the table with no bound on
+  // its growth: Auth.js never deletes a row, and a session that gets used now
+  // and then slides its expiry forward indefinitely.
+  sessionToken String   @id
   userId       String
   expires      DateTime
   createdAt    DateTime @default(now())
@@ -460,6 +473,9 @@ model Session {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // The purge (`scripts/ops/purge-expired-sessions.sh`) filters on `expires`
+  // alone, and had nothing to filter with.
+  @@index([expires])
   @@map("sessions")
 }
 

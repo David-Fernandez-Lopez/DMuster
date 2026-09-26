@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { PASSWORD_MIN_LENGTH } from "@/lib/validation/auth";
+import { fitsPasswordLimit, PASSWORD_MIN_LENGTH } from "@/lib/validation/auth";
 
 /**
  * State returned by the profile server actions to the client form.
@@ -24,7 +24,8 @@ export const changePasswordSchema = z
     currentPassword: z.string().min(1, { error: "auth.errors.required" }),
     newPassword: z
       .string()
-      .min(PASSWORD_MIN_LENGTH, { error: "auth.errors.passwordTooShort" }),
+      .min(PASSWORD_MIN_LENGTH, { error: "auth.errors.passwordTooShort" })
+      .refine(fitsPasswordLimit, { error: "auth.errors.passwordTooLong" }),
     confirmPassword: z.string().min(1, { error: "auth.errors.required" }),
   })
   .refine((value) => value.newPassword === value.confirmPassword, {

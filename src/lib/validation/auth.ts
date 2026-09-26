@@ -17,9 +17,46 @@ export const PASSWORD_MIN_LENGTH = 8;
  */
 export const NAME_MAX_LENGTH = 100;
 
+/**
+ * Maximum length accepted for an email address, matching the `VARCHAR(191)`
+ * columns that store one.
+ *
+ * Without it a longer address reached the database, where `STRICT_TRANS_TABLES`
+ * aborts the insert; the generic catch turned that into a 500 and wrote the
+ * rejected value into the server log. A 400 is the correct answer, and the log
+ * stays free of attacker-chosen content.
+ */
+export const EMAIL_MAX_LENGTH = 191;
+
+/**
+ * Maximum length accepted for a password, in **bytes**.
+ *
+ * bcrypt reads only the first 72 bytes and silently ignores the rest, so
+ * without a bound two different passwords sharing that prefix authenticate
+ * interchangeably — and a password manager generating a long passphrase
+ * produces a weaker credential than the person believes. Refusing anything
+ * longer means every accepted password is hashed whole.
+ *
+ * Bytes rather than characters because that is what bcrypt counts: an accented
+ * or emoji-bearing passphrase reaches the limit sooner than its length suggests.
+ */
+export const PASSWORD_MAX_BYTES = 72;
+
+/**
+ * Reports whether a password fits within what bcrypt will actually read.
+ *
+ * @param {string} password - The candidate password.
+ * @returns {boolean} True when it is at most `PASSWORD_MAX_BYTES` bytes.
+ */
+export function fitsPasswordLimit(password: string): boolean {
+  return new TextEncoder().encode(password).length <= PASSWORD_MAX_BYTES;
+}
+
 /** Login form payload: an email and a non-empty password. */
 export const loginSchema = z.object({
-  email: z.email({ error: "auth.errors.invalidEmail" }),
+  email: z
+    .email({ error: "auth.errors.invalidEmail" })
+    .max(EMAIL_MAX_LENGTH, { error: "auth.errors.emailTooLong" }),
   password: z.string().min(1, { error: "auth.errors.required" }),
 });
 

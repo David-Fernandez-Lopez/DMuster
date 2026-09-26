@@ -204,6 +204,8 @@
       "alreadyAttending": "Already in the session.",
       "requiresYes": "You can only join if you answered Yes that day.",
       "attendeeConflict": "Already a session that day with {{campaign}}.",
+      "attendeeConflictOther": "That person already has a session that day in another campaign.",
+      "playerConflictOther": "They already have a session that day in another campaign: {{players}}.",
       "lastAttendee": "A session can't be left with no players.",
       "past": "That session has already taken place."
     }
@@ -302,7 +304,10 @@
       "nameRequired": "Name is required.",
       "nameTooLong": "Name is too long.",
       "passwordTooShort": "Password must be at least 8 characters.",
+      "passwordTooLong": "Password is too long: the hash only takes the first 72 bytes into account.",
       "passwordMismatch": "Passwords do not match.",
+      "emailTooLong": "That email address is too long.",
+      "nameInvalidCharacters": "Names may only contain letters, digits, spaces and basic punctuation.",
       "emailTaken": "An account with this email already exists.",
       "unknown": "Something went wrong. Please try again."
     }

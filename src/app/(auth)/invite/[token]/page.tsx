@@ -6,6 +6,7 @@ import AcceptInviteForm from "@/components/auth/AcceptInviteForm";
 import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
 import { getInvitationForToken } from "@/lib/invitationService";
+import { maskEmail } from "@/lib/maskEmail";
 
 type InvitePageProps = { params: Promise<{ token: string }> };
 
@@ -100,7 +101,14 @@ export default async function InvitePage({ params }: InvitePageProps) {
           </form>
         </div>
       ) : (
-        <AcceptInviteForm token={token} email={invitation.email} />
+        // Masked, because this page is public and reading it is passive: no
+        // session, no consumption of the token, no `acceptedAt`, nothing the
+        // group could ever notice. Whoever ends up holding the link — a
+        // forward, a shared browser's history, an access log, since the token
+        // travels in the path — learned who it was for and which campaign,
+        // before deciding whether to use it. The masked form still lets the
+        // intended recipient recognise their own address.
+        <AcceptInviteForm token={token} email={maskEmail(invitation.email)} />
       )}
     </div>
   );

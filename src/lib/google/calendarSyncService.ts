@@ -718,10 +718,10 @@ const AFTER_RESPONSE_PROCESS_LIMIT = 25;
  *
  * @returns {void}
  */
-export function scheduleSyncSweep(): void {
+export function scheduleSyncSweep(userId?: string): void {
   after(async () => {
     try {
-      await processPending({ limit: AFTER_RESPONSE_PROCESS_LIMIT });
+      await processPending({ userId, limit: AFTER_RESPONSE_PROCESS_LIMIT });
     } catch (error) {
       console.error("[GOOGLE-SYNC/AFTER] Deferred sync sweep failed:", error);
     }
