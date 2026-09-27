@@ -29,6 +29,7 @@ enum AvailabilityStatus {
   YES
   NO
   MAYBE
+  ONLINE
 }
 
 // Lifecycle of one (session, user) row's Google Calendar event. PENDING/FAILED
@@ -188,8 +189,9 @@ model Holiday {
 
 // A player's global availability for a single calendar day. The response is
 // not scoped to a campaign: it applies to every campaign the player belongs
-// to. YES/NO/MAYBE are all stored ("Tal vez" is a real answer). Only the
-// pending state stays derived — the absence of a row for a (date, user) pair.
+// to. YES/NO/MAYBE/ONLINE are all stored ("Tal vez" and "Sí (Online)" are real
+// answers; ONLINE means "yes, but remotely"). Only the pending state stays
+// derived — the absence of a row for a (date, user) pair.
 // For viability (roadmap #17), the "T" tier is any stored MAYBE OR a missing
 // response; clearing an answer still deletes the row.
 model Availability {

@@ -19,7 +19,7 @@ import type {
   CalendarMaster,
   CampaignDayViability,
 } from "@/lib/calendarService";
-import type { Viability } from "@/lib/viability";
+import type { ResponseStatus, Viability } from "@/lib/viability";
 
 type CalendarBoardProps = {
   /** The visible month, "YYYY-MM". */
@@ -33,7 +33,7 @@ type CalendarBoardProps = {
   /** Active locale for localized weekday headers. */
   locale: string;
   /** The user's stored responses across the grid range, keyed by day. */
-  initialResponses: Record<string, "YES" | "NO" | "MAYBE">;
+  initialResponses: Record<string, ResponseStatus>;
   /** The user's campaigns, for the campaign filter. */
   campaigns: CalendarCampaign[];
   /** The distinct DMs across those campaigns, for the master filter. */

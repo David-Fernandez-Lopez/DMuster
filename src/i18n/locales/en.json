@@ -53,6 +53,7 @@
   "date": {
     "status": {
       "yes": "Yes",
+      "online": "Yes (Online)",
       "maybe": "Maybe",
       "no": "No",
       "none": "No answer"
@@ -67,6 +68,7 @@
       "all": "All"
     },
     "yes": "Yes",
+    "online": "Yes (Online)",
     "maybe": "Maybe",
     "no": "No",
     "affects": "Affects: {{tags}}",
@@ -202,7 +204,7 @@
       "dmMustAttend": "A session must always have a DM among the players.",
       "attendeesRequired": "Choose who plays to force this session.",
       "alreadyAttending": "Already in the session.",
-      "requiresYes": "You can only join if you answered Yes that day.",
+      "requiresYes": "You can only join if you answered Yes or Yes (Online) that day.",
       "attendeeConflict": "Already a session that day with {{campaign}}.",
       "attendeeConflictOther": "That person already has a session that day in another campaign.",
       "playerConflictOther": "They already have a session that day in another campaign: {{players}}.",

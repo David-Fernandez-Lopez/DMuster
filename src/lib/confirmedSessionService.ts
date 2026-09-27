@@ -18,7 +18,11 @@ import {
   type SessionConflict,
 } from "@/lib/sessionConflict";
 import { canRemoveAttendee, canSelfJoin } from "@/lib/sessionRules";
-import { computeViability, type Viability } from "@/lib/viability";
+import {
+  computeViability,
+  isAvailableResponse,
+  type Viability,
+} from "@/lib/viability";
 
 /** Prisma error code raised on a unique-constraint violation. */
 const UNIQUE_VIOLATION = "P2002";
@@ -731,7 +735,7 @@ export async function cancelSession(
  * la partida"), branching on whether the actor targets themselves. Neither path
  * may touch a session whose date has passed. The DM path may add any campaign
  * member; the self path additionally requires the actor to have answered `YES`
- * for the session's date. Both paths then reject an attendee already on the
+ * or `ONLINE` for the session's date. Both paths then reject an attendee already on the
  * list and a conflicting same-day session the target already attends elsewhere,
  * via the same `findConflicts` used by `confirmSession`.
  *
@@ -781,7 +785,7 @@ export async function addAttendee(
       where: { date_userId: { date: session.date, userId: actingUserId } },
       select: { status: true },
     });
-    if (availability?.status !== "YES") {
+    if (!isAvailableResponse(availability?.status)) {
       return { ok: false, error: "sessions.errors.requiresYes" };
     }
   } else {

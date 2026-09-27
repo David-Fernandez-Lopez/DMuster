@@ -3,7 +3,7 @@
 
 /*
  * Design tokens ported from the design handoff (design/README.md §Design Tokens).
- * Light theme: parchment/browns. Dark theme: greens. Status colors S/N/T are
+ * Light theme: parchment/browns. Dark theme: greens. Status colors S/O/N/T are
  * shared, with light/dark variants. Each token uses `light-dark()` so a single
  * definition covers both palettes; `color-scheme` selects which side applies.
  *
@@ -39,6 +39,11 @@
   --color-n-soft: light-dark(#f1cfc7, #3e241e);
   --color-t: light-dark(#c79a3e, #dcb85a);
   --color-t-soft: light-dark(#ede0be, #3a3016);
+  /* "Sí (Online)": the answer, and the O viability tier (everyone can play,
+     someone remotely). Not in the design handoff — a muted blue matched to the
+     S/N/T saturation. */
+  --color-o: light-dark(#3f7cb8, #6ea6dc);
+  --color-o-soft: light-dark(#cfdef0, #1f3243);
 }
 
 :root[data-theme="light"] {
@@ -64,6 +69,8 @@
   --color-n-soft: var(--color-n-soft);
   --color-t: var(--color-t);
   --color-t-soft: var(--color-t-soft);
+  --color-o: var(--color-o);
+  --color-o-soft: var(--color-o-soft);
 
   --font-display: var(--font-cinzel), serif;
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
@@ -145,10 +152,14 @@ body {
     --btn-fillet: var(--color-border);
   }
 
-  /* Status chips: fillet and text take the existing S/T/N state colors. */
+  /* Status chips: fillet and text take the S/O/T/N state colors. */
   .btn-yes {
     --btn-fillet: var(--color-s);
     color: var(--color-s);
+  }
+  .btn-online {
+    --btn-fillet: var(--color-o);
+    color: var(--color-o);
   }
   .btn-maybe {
     --btn-fillet: var(--color-t);
@@ -162,6 +173,7 @@ body {
   /* Active/filled state: solid state color, white text, no paper texture.
      Triggered by aria-pressed (toggle chips) or the explicit .btn-filled modifier. */
   .btn-yes[aria-pressed="true"],
+  .btn-online[aria-pressed="true"],
   .btn-maybe[aria-pressed="true"],
   .btn-no[aria-pressed="true"],
   .btn-filled {
@@ -171,6 +183,7 @@ body {
   }
 
   .btn-yes[aria-pressed="true"]:hover:not(:disabled),
+  .btn-online[aria-pressed="true"]:hover:not(:disabled),
   .btn-maybe[aria-pressed="true"]:hover:not(:disabled),
   .btn-no[aria-pressed="true"]:hover:not(:disabled),
   .btn-filled:hover:not(:disabled) {

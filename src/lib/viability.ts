@@ -7,10 +7,11 @@
 /**
  * A stored availability response. Mirrors the values of Prisma's
  * `AvailabilityStatus` enum, but declared locally so this module stays free of
- * Prisma imports (the pending "T" state is never stored — it is the *absence*
- * of a response, represented here as `undefined`).
+ * Prisma imports and client components can share it (the pending "T" state is
+ * never stored — it is the *absence* of a response, represented here as
+ * `undefined`). `ONLINE` is "Sí (Online)": the player can play, remotely.
  */
-export type ResponseStatus = "YES" | "NO" | "MAYBE";
+export type ResponseStatus = "YES" | "NO" | "MAYBE" | "ONLINE";
 
 /** The computed viability tier for a campaign on a given day. */
 export type Viability = "S" | "N" | "T";
@@ -23,7 +24,7 @@ export type Viability = "S" | "N" | "T";
  *
  * 1. any `NO` ⇒ `N` (someone cannot make it)
  * 2. else any `MAYBE` **or** missing response (`undefined`) ⇒ `T` (pending)
- * 3. else all `YES` ⇒ `S` (everyone confirmed)
+ * 3. else all `YES` ⇒ `S` (everyone confirmed; `ONLINE` counts as `YES`)
  *
  * An empty input yields `S` (vacuously "all confirmed"); real campaigns always
  * have members, so this edge case does not arise in practice.
@@ -42,4 +43,20 @@ export function computeViability(
     return "T";
   }
   return "S";
+}
+
+/**
+ * Whether a response means the player can play that day: `YES` or `ONLINE`
+ * ("Sí (Online)" is a yes, just remote). Pending (`null`/`undefined`),
+ * `MAYBE` and `NO` are not. Used by the session rules (self-join, the
+ * attendee warnings, the force-confirm preselection).
+ *
+ * @param {ResponseStatus | null | undefined} status - A member's stored
+ *   response, or `null`/`undefined` when they have not answered.
+ * @returns {boolean} True for `YES` and `ONLINE`.
+ */
+export function isAvailableResponse(
+  status: ResponseStatus | null | undefined,
+): boolean {
+  return status === "YES" || status === "ONLINE";
 }

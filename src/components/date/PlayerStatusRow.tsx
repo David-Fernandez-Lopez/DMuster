@@ -3,6 +3,7 @@
 import { useTranslation } from "react-i18next";
 
 import type { PlayerStatusValue } from "@/lib/calendarService";
+import type { ResponseStatus } from "@/lib/viability";
 
 interface PlayerStatusRowProps {
   /** The member's display name. */
@@ -15,10 +16,11 @@ interface PlayerStatusRowProps {
 
 /** Soft-pill classes + label key per response value (null = pending). */
 const STATUS_STYLE: Record<
-  "YES" | "NO" | "MAYBE" | "NONE",
+  ResponseStatus | "NONE",
   { className: string; labelKey: string }
 > = {
   YES: { className: "bg-s-soft text-s", labelKey: "date.status.yes" },
+  ONLINE: { className: "bg-o-soft text-o", labelKey: "date.status.online" },
   MAYBE: { className: "bg-t-soft text-t", labelKey: "date.status.maybe" },
   NO: { className: "bg-n-soft text-n", labelKey: "date.status.no" },
   NONE: {
@@ -29,8 +31,8 @@ const STATUS_STYLE: Record<
 
 /**
  * One member's row inside a campaign viability card: an avatar initial, the
- * member's name, a "Máster" badge for DMs, and a status pill (Sí / Tal vez / No
- * / Sin responder). Pending members (no stored response) render the neutral
+ * member's name, a "Máster" badge for DMs, and a status pill (Sí / Sí (Online) /
+ * Tal vez / No / Sin responder). Pending members (no stored response) render the neutral
  * "Sin responder" pill.
  *
  * @param {PlayerStatusRowProps} props

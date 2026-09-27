@@ -16,7 +16,10 @@ import type {
   CampaignDayViability,
 } from "@/lib/calendarService";
 import { isEligible, toUtcDate } from "@/lib/date";
-import type { Viability } from "@/lib/viability";
+import type {
+  ResponseStatus as StoredResponseStatus,
+  Viability,
+} from "@/lib/viability";
 
 /** Chip ordering priority: available first, then maybe, then unavailable. */
 const VIABILITY_ORDER: Record<Viability, number> = { S: 0, T: 1, N: 2 };
@@ -33,7 +36,7 @@ type CalendarGridProps = {
   /** Active locale for localized weekday headers. */
   locale: string;
   /** The user's stored responses across the grid range, keyed by day. */
-  initialResponses: Record<string, "YES" | "NO" | "MAYBE">;
+  initialResponses: Record<string, StoredResponseStatus>;
   /** The user's campaigns, for the campaign filter. */
   campaigns: CalendarCampaign[];
   /** The distinct DMs across those campaigns, for the master filter. */
@@ -101,7 +104,7 @@ export default function CalendarGrid({
   const holidaySet = new Set(holidays);
   const [selected, setSelected] = useState<string | null>(null);
   const [responses, setResponses] =
-    useState<Record<string, "YES" | "NO" | "MAYBE">>(initialResponses);
+    useState<Record<string, StoredResponseStatus>>(initialResponses);
 
   /**
    * Reconciles the live responses map after the modal persists a change, then

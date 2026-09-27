@@ -11,7 +11,7 @@ import ConfirmSessionForm from "@/components/sessions/ConfirmSessionForm";
 import ForceSessionForm from "@/components/sessions/ForceSessionForm";
 import SelfJoinButton from "@/components/sessions/SelfJoinButton";
 import type { CampaignDayViability } from "@/lib/calendarService";
-import type { Viability } from "@/lib/viability";
+import { isAvailableResponse, type Viability } from "@/lib/viability";
 
 interface CampaignViabilityCardProps {
   /** The selected day, "YYYY-MM-DD" — needed to confirm a new session. */
@@ -87,7 +87,7 @@ function ConfirmedBadgeIcon() {
  * summary, the attendee list with add/remove controls for a DM
  * (`AttendeeControls`, roadmap #22, itself showing every member's answer), and
  * then either a DM's edit-time/cancel controls (roadmap #21) or — for a
- * non-attending member who answered Sí — "Sumarme a la partida"
+ * non-attending member who answered Sí or Sí (Online) — "Sumarme a la partida"
  * (`SelfJoinButton`, roadmap #22), with the blocked case explained inline
  * instead of a disabled button. Built on native `<details>/<summary>` so it is
  * collapsed by default, accessible and keyboard-operable with no state. The
@@ -116,7 +116,7 @@ export default function CampaignViabilityCard({
     isAttending: attendeeIdSet.has(player.userId),
   }));
   const unavailableAttendees = attendeeMembers.filter(
-    (member) => member.isAttending && member.status !== "YES",
+    (member) => member.isAttending && !isAvailableResponse(member.status),
   );
 
   return (

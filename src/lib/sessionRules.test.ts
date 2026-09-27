@@ -13,6 +13,18 @@ describe("canSelfJoin", () => {
     ).toBe(true);
   });
 
+  it("allows a member who answered ONLINE (a remote yes)", () => {
+    expect(
+      canSelfJoin({
+        isMember: true,
+        isAttendee: false,
+        status: "ONLINE",
+        sessionActive: true,
+        isPast: false,
+      }),
+    ).toBe(true);
+  });
+
   it("refuses a non-member", () => {
     expect(
       canSelfJoin({

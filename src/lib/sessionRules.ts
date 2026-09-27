@@ -5,11 +5,13 @@
 // sessionConflict.ts.
 
 import type { PlayerStatusValue } from "@/lib/calendarService";
+import { isAvailableResponse } from "@/lib/viability";
 
 /**
  * Decides whether a member may self-join a confirmed session right now — the
  * locked #22 rejoin rule: a member who is not already attending, answered
- * `YES` for the day, and the session is still active and not in the past.
+ * `YES` (or `ONLINE`, a remote yes) for the day, and the session is still
+ * active and not in the past.
  *
  * @param {object} input
  * @param {boolean} input.isMember - Whether the user belongs to the campaign.
@@ -29,7 +31,7 @@ export function canSelfJoin(input: {
   return (
     input.isMember &&
     !input.isAttendee &&
-    input.status === "YES" &&
+    isAvailableResponse(input.status) &&
     input.sessionActive &&
     !input.isPast
   );

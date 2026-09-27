@@ -17,14 +17,16 @@ export const availabilityDateSchema = z
   .refine(isValidIsoDate, { error: "availability.errors.invalidDate" });
 
 /**
- * Body for setting an availability response. YES, NO and MAYBE ("Tal vez") are
- * all valid stored answers; only the pending state stays derived from the
- * absence of a row (clearing deletes it). The UI can only ever send one of the
- * three, so a malformed status maps to the generic unknown error rather than a
- * dedicated key.
+ * Body for setting an availability response. YES, NO, MAYBE ("Tal vez") and
+ * ONLINE ("Sí (Online)") are all valid stored answers; only the pending state
+ * stays derived from the absence of a row (clearing deletes it). The UI can only
+ * ever send one of the four, so a malformed status maps to the generic unknown
+ * error rather than a dedicated key.
  */
 export const availabilityBodySchema = z.object({
-  status: z.enum(["YES", "NO", "MAYBE"], { error: "availability.errors.unknown" }),
+  status: z.enum(["YES", "NO", "MAYBE", "ONLINE"], {
+    error: "availability.errors.unknown",
+  }),
 });
 
 export type AvailabilityBodyInput = z.infer<typeof availabilityBodySchema>;

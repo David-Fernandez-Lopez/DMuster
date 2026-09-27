@@ -7,15 +7,19 @@ import { addDays, isEligible, toIsoDate, toUtcDate } from "@/lib/date";
 import { todayIso } from "@/lib/today";
 import { prisma } from "@/lib/prisma";
 import { canSelfJoin } from "@/lib/sessionRules";
-import { computeViability, type Viability } from "@/lib/viability";
+import {
+  computeViability,
+  type ResponseStatus,
+  type Viability,
+} from "@/lib/viability";
 
 /**
  * A single member's resolved response for a day, as consumed by the calendar UI.
- * `null` is the derived pending state (no stored row). Declared as a plain string
- * union (not the Prisma enum) so client components can import this type without
- * pulling Prisma into the browser bundle.
+ * `null` is the derived pending state (no stored row). Built on the plain string
+ * union from `viability.ts` (not the Prisma enum) so client components can import
+ * this type without pulling Prisma into the browser bundle.
  */
-export type PlayerStatusValue = "YES" | "NO" | "MAYBE" | null;
+export type PlayerStatusValue = ResponseStatus | null;
 
 /** A campaign member's status for a day, for the day-detail breakdown. */
 export type PlayerDayStatus = {

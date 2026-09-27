@@ -11,12 +11,13 @@ import ResponderFilter, {
   type ResponderFilterValue,
 } from "@/components/availability/ResponderFilter";
 import { groupDaysByMonth, toUtcDate } from "@/lib/date";
+import type { ResponseStatus as StoredResponseStatus } from "@/lib/viability";
 
 interface AvailabilityListProps {
   /** Upcoming eligible days to show, ascending ("YYYY-MM-DD"). */
   days: string[];
   /** The user's stored responses in range, keyed by day. */
-  initialResponses: Record<string, "YES" | "NO" | "MAYBE">;
+  initialResponses: Record<string, StoredResponseStatus>;
   /** Tags of the user's campaigns (the "Afecta a" line on each card). */
   tags: string[];
 }
@@ -50,11 +51,11 @@ export default function AvailabilityList({
   const { t, i18n } = useTranslation();
   const [filter, setFilter] = useState<ResponderFilterValue>("pending");
   const [responses, setResponses] =
-    useState<Record<string, "YES" | "NO" | "MAYBE">>(initialResponses);
+    useState<Record<string, StoredResponseStatus>>(initialResponses);
 
   /**
-   * Reconciles the answered-days map after a card persists a change: a YES/NO
-   * records the day as answered; clearing (`null`) drops it back to pending.
+   * Reconciles the answered-days map after a card persists a change: any stored
+   * answer records the day as answered; clearing (`null`) drops it back to pending.
    *
    * @param {string} date - The day that changed, "YYYY-MM-DD".
    * @param {ResponseStatus} status - The persisted status, or `null` if cleared.

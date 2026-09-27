@@ -67,7 +67,7 @@ async function resolveEligibleRequest(
 
 /**
  * PUT /api/availability/[date] — sets the session user's own response for the
- * day. Body `{ status: "YES" | "NO" | "MAYBE" }`. Ladder: 401 → 400 invalid date → 400
+ * day. Body `{ status: "YES" | "NO" | "MAYBE" | "ONLINE" }`. Ladder: 401 → 400 invalid date → 400
  * not eligible → 400 invalid body. The proxy excludes `/api`, so this handler
  * guards itself.
  *

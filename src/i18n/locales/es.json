@@ -53,6 +53,7 @@
   "date": {
     "status": {
       "yes": "Sí",
+      "online": "Sí (Online)",
       "maybe": "Tal vez",
       "no": "No",
       "none": "Sin responder"
@@ -67,6 +68,7 @@
       "all": "Todas"
     },
     "yes": "Sí",
+    "online": "Sí (Online)",
     "maybe": "Tal vez",
     "no": "No",
     "affects": "Afecta a: {{tags}}",
@@ -202,7 +204,7 @@
       "dmMustAttend": "La partida debe tener siempre un máster entre los jugadores.",
       "attendeesRequired": "Elige quién juega para forzar la partida.",
       "alreadyAttending": "Ya está en la partida.",
-      "requiresYes": "Solo puedes sumarte si has respondido Sí ese día.",
+      "requiresYes": "Solo puedes sumarte si has respondido Sí o Sí (Online) ese día.",
       "attendeeConflict": "Ya hay partida ese día con {{campaign}}.",
       "attendeeConflictOther": "Esa persona ya tiene partida ese día en otra campaña.",
       "playerConflictOther": "Ya tienen partida ese día en otra campaña: {{players}}.",

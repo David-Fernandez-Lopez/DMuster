@@ -13,8 +13,8 @@ export type AvailabilityMutationResult =
 
 /**
  * Fetches a user's own stored availability responses within an inclusive date
- * range, as a map keyed by calendar day ("YYYY-MM-DD"). Rows hold YES, NO or
- * MAYBE; a missing key means the user has not responded — the derived pending
+ * range, as a map keyed by calendar day ("YYYY-MM-DD"). Rows hold YES, NO, MAYBE
+ * or ONLINE; a missing key means the user has not responded — the derived pending
  * "T" state, which is never stored. Both bounds are built at UTC midnight to
  * match how the dates are stored.
  *
@@ -51,7 +51,7 @@ export async function getUserAvailability(
  *
  * @param {string} userId - Id of the responding user.
  * @param {string} dateIso - The day being answered, "YYYY-MM-DD".
- * @param {AvailabilityStatus} status - The stored response (YES, NO or MAYBE).
+ * @param {AvailabilityStatus} status - The stored response (YES, NO, MAYBE or ONLINE).
  * @returns {Promise<AvailabilityMutationResult>} Success, or an error key
  *   (`availability.errors.unknown`).
  */

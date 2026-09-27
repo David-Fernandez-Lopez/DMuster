@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { SessionMemberDto } from "@/lib/confirmedSessionService";
+import type { ResponseStatus } from "@/lib/viability";
 
 /** One member of a session's campaign, with whether they currently attend it. */
 export type AttendeeListMember = SessionMemberDto & { isAttending: boolean };
@@ -20,10 +21,11 @@ interface AttendeeControlsProps {
 
 /** Soft-pill classes + label key per response value (null = pending). */
 const STATUS_STYLE: Record<
-  "YES" | "NO" | "MAYBE" | "NONE",
+  ResponseStatus | "NONE",
   { className: string; labelKey: string }
 > = {
   YES: { className: "bg-s-soft text-s", labelKey: "date.status.yes" },
+  ONLINE: { className: "bg-o-soft text-o", labelKey: "date.status.online" },
   MAYBE: { className: "bg-t-soft text-t", labelKey: "date.status.maybe" },
   NO: { className: "bg-n-soft text-n", labelKey: "date.status.no" },
   NONE: {

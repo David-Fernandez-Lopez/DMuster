@@ -1,8 +1,12 @@
-import { computeViability } from "@/lib/viability";
+import { computeViability, isAvailableResponse } from "@/lib/viability";
 
 describe("computeViability", () => {
   it("returns S when every member confirms (all YES)", () => {
     expect(computeViability(["YES", "YES", "YES"])).toBe("S");
+  });
+
+  it("counts ONLINE as a confirmation", () => {
+    expect(computeViability(["YES", "ONLINE"])).toBe("S");
   });
 
   it("returns N when any member responds NO", () => {
@@ -24,5 +28,19 @@ describe("computeViability", () => {
 
   it("returns S for an empty campaign (vacuously all confirmed)", () => {
     expect(computeViability([])).toBe("S");
+  });
+});
+
+describe("isAvailableResponse", () => {
+  it("accepts YES and ONLINE", () => {
+    expect(isAvailableResponse("YES")).toBe(true);
+    expect(isAvailableResponse("ONLINE")).toBe(true);
+  });
+
+  it("rejects MAYBE, NO and a missing answer", () => {
+    expect(isAvailableResponse("MAYBE")).toBe(false);
+    expect(isAvailableResponse("NO")).toBe(false);
+    expect(isAvailableResponse(null)).toBe(false);
+    expect(isAvailableResponse(undefined)).toBe(false);
   });
 });

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { PlayerDayStatus } from "@/lib/calendarService";
+import { isAvailableResponse } from "@/lib/viability";
 
 /** Duration preloaded once a start time is set, per the locked #21/#22 decision. */
 const DEFAULT_DURATION_MINUTES = 240;
@@ -29,7 +30,7 @@ interface ForceSessionFormProps {
  * distinct from `ConfirmSessionForm`'s primary confirm button) sits under the
  * existing "not viable" note. Tapping it opens a two-step panel: a warning
  * naming who said No and who hasn't answered, plus a checklist of every
- * member (prechecked Sí/Tal vez, the confirming DM's own row locked); then
+ * member (prechecked Sí/Sí (Online)/Tal vez, the confirming DM's own row locked); then
  * the same optional start time + duration fields as `ConfirmSessionForm`.
  * Submits `POST /api/sessions` with the chosen `attendeeIds` and refreshes on
  * success. A blocked confirmation (e.g. a conflicting campaign) renders its
@@ -57,11 +58,14 @@ export default function ForceSessionForm({
     Record<string, string> | undefined
   >();
 
-  /** Opens the warning step, preselecting Sí/Tal vez plus the confirming DM. */
+  /** Opens the warning step, preselecting Sí/Sí (Online)/Tal vez plus the confirming DM. */
   function openWarning() {
     const preselected = new Set(
       players
-        .filter((player) => player.status === "YES" || player.status === "MAYBE")
+        .filter(
+          (player) =>
+            isAvailableResponse(player.status) || player.status === "MAYBE",
+        )
         .map((player) => player.userId),
     );
     preselected.add(currentUserId);
