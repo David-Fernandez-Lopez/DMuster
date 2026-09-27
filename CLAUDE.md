@@ -3,7 +3,7 @@
 ## 1. What is DMuster
 
 Web application for managing player availability across multiple tabletop RPG campaigns.
-Replaces a manual Google Sheets workflow. Players respond to proposed session dates with one of three statuses — S (yes), N (no), T (maybe) — and the app computes a viability result per campaign for each date.
+Replaces a manual Google Sheets workflow. Players respond to proposed session dates with one of four statuses — S (yes), Sí (Online) (yes, remotely), N (no), T (maybe) — and the app computes a viability result per campaign for each date.
 
 ## 2. Stack
 
@@ -24,7 +24,7 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 | `Campaign` | id, name, tag (2-letter chip label), description, createdById, timestamps |
 | `CampaignPlayer` | campaignId, userId, role (DM/PLAYER) *(M:N join table)* |
 | `Holiday` | id, date (unique), createdById, createdAt |
-| `Availability` | id, date, userId, status (YES/NO/MAYBE), timestamps — unique per (date, user) |
+| `Availability` | id, date, userId, status (YES/NO/MAYBE/ONLINE), timestamps — unique per (date, user) |
 
 Role is **per campaign**, stored on `CampaignPlayer.role`: the same user can be DM in one
 campaign and player in another. `User` has no global role. `Campaign.createdById` records
@@ -34,11 +34,12 @@ that campaign (see §4). A campaign may have **several DMs**.
 ### Availability model
 
 Nobody proposes specific session dates. Every **eligible day** is automatically respondable by
-every player, and a player's response is **global per day** — a single Sí/Tal vez/No that applies
-to **all** campaigns that player belongs to, not scoped to any campaign or proposed session.
+every player, and a player's response is **global per day** — a single Sí/Sí (Online)/Tal vez/No
+that applies to **all** campaigns that player belongs to, not scoped to any campaign or proposed
+session.
 
-`YES`, `NO` and `MAYBE` ("Tal vez") are all stored in `Availability` — "Tal vez" is a real answer
-the player taps. Only the **pending** state stays *derived* from the *absence* of a response for a
+`YES`, `ONLINE` ("Sí (Online)" — can play, remotely), `NO` and `MAYBE` ("Tal vez") are all stored
+in `Availability` — each is a real answer the player taps. Only the **pending** state stays *derived* from the *absence* of a response for a
 `(date, user)` pair; clearing an answer deletes the row. For viability, the **T** tier covers both
 a stored `MAYBE` and a missing response (see below).
 
@@ -55,7 +56,11 @@ apply in priority order:
 
 1. Any player responds **N** → result **N**
 2. Any player responds **T** (stored `MAYBE`, or no stored response) → result **T**
-3. All players respond **S** → result **S**
+3. Any player responds **Sí (Online)** (the rest `YES`) → result **O**
+4. All players respond **S** → result **S**
+
+**S** and **O** are both *viable*: a DM confirms either without forcing, and `ONLINE` counts as a
+yes for the session rules (self-join, attendee preselection and warnings).
 
 ## 4. Roles & Permissions
 
@@ -75,8 +80,8 @@ apply in priority order:
 - **Mobile-first** responsive design (players respond primarily from mobile)
 - Main view: monthly calendar with color-coded viability indicators per campaign per day
 - Only **eligible days** (weekends + holidays) are interactive; non-eligible days are dimmed and non-interactive
-- Tapping an eligible day opens a **modal** to set the player's own Sí/Tal vez/No for that day (no page navigation); the per-campaign breakdown (#18) also lives in that modal
-- Status colors: green (S — all confirmed), red (N — someone cannot), amber (T — pending/no response)
+- Tapping an eligible day opens a **modal** to set the player's own Sí/Sí (Online)/Tal vez/No for that day (no page navigation); the per-campaign breakdown (#18) also lives in that modal
+- Status colors: green (S — all confirmed), blue (O — all can play, someone online), red (N — someone cannot), amber (T — pending/no response)
 - **Design reference**: the authoritative visual spec lives in `design/README.md` and `design/screenshots/` (local, gitignored — a Claude design handoff). Follow it for layout, tokens, and flows
 
 ## 6. Conventions

@@ -13,6 +13,7 @@ import type { Viability } from "@/lib/viability";
 /** Vellum status-chip variant per viability tier for the availability toggles. */
 const VIABILITY_CHIP_CLASS: Record<Viability, string> = {
   S: "btn-yes",
+  O: "btn-online",
   T: "btn-maybe",
   N: "btn-no",
 };
@@ -42,7 +43,7 @@ interface CalendarFiltersProps {
  * The body of the calendar filters modal: three dimensions that narrow which
  * per-campaign chips the grid shows. Campaigns and Masters are dropdown
  * multi-selects (`MultiSelectFilter`); Availability is a row of viability-tinted
- * toggle chips (Sí / Tal vez / No → tiers S / T / N). All selected in a
+ * toggle chips (Sí / Sí (Online) / Tal vez / No → tiers S / O / T / N). All selected in a
  * dimension means it is off; the three combine with AND upstream in
  * `CalendarGrid`. A "Clear filters" action resets everything.
  *
@@ -93,7 +94,7 @@ export default function CalendarFilters({
         <div
           role="group"
           aria-label={t("calendar.filter.availability")}
-          className="grid grid-cols-3 gap-2"
+          className="grid grid-cols-2 gap-2 sm:grid-cols-4"
         >
           {ALL_VIABILITIES.map((viability) => {
             const isActive = activeViabilities.has(viability);

@@ -27,11 +27,13 @@
     "legend": {
       "note": "Solo fines de semana y festivos",
       "yes": "Sí",
+      "online": "Sí (Online)",
       "no": "No",
       "maybe": "Tal vez"
     },
     "viability": {
       "S": "Sí",
+      "O": "Sí (Online)",
       "N": "No",
       "T": "Tal vez"
     },

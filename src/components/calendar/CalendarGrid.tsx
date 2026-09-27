@@ -10,6 +10,7 @@ import DayCell, {
   MOBILE_MAX_CHIPS,
   type DayIndicator,
 } from "@/components/calendar/DayCell";
+import { ALL_VIABILITIES } from "@/lib/calendarFilterStorage";
 import type {
   CalendarCampaign,
   CalendarMaster,
@@ -21,8 +22,8 @@ import type {
   Viability,
 } from "@/lib/viability";
 
-/** Chip ordering priority: available first, then maybe, then unavailable. */
-const VIABILITY_ORDER: Record<Viability, number> = { S: 0, T: 1, N: 2 };
+/** Chip ordering priority: available (in person, then online) first, then maybe, then unavailable. */
+const VIABILITY_ORDER: Record<Viability, number> = { S: 0, O: 1, T: 2, N: 3 };
 
 type CalendarGridProps = {
   /** The visible month, "YYYY-MM". */
@@ -138,7 +139,7 @@ export default function CalendarGrid({
 
   const campaignsAll = activeCampaignIds.size === campaigns.length;
   const mastersAll = activeMasterIds.size === masters.length;
-  const viabilitiesAll = activeViabilities.size === 3;
+  const viabilitiesAll = activeViabilities.size === ALL_VIABILITIES.length;
 
   /**
    * Builds a cell's viability chips after applying the active filters

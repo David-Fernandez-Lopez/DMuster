@@ -25,8 +25,8 @@ interface ForceSessionFormProps {
 }
 
 /**
- * The master-override flow (roadmap #22): confirming a session on a non-`S`
- * day. Collapsed, a single warning-styled "Forzar partida" trigger (visually
+ * The master-override flow (roadmap #22): confirming a session on a
+ * non-viable (neither `S` nor `O`) day. Collapsed, a single warning-styled "Forzar partida" trigger (visually
  * distinct from `ConfirmSessionForm`'s primary confirm button) sits under the
  * existing "not viable" note. Tapping it opens a two-step panel: a warning
  * naming who said No and who hasn't answered, plus a checklist of every

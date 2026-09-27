@@ -1,6 +1,7 @@
 // Pure viability logic for DMuster: given the resolved responses of a single
 // campaign's members for one eligible day, decide whether that day is viable
-// (S), not viable (N) or pending (T). Free of Prisma/Next imports so it stays
+// (S), viable with someone playing online (O), not viable (N) or pending (T).
+// Free of Prisma/Next imports so it stays
 // trivially unit-testable (see roadmap #17) and reusable from the calendar
 // service in #18.
 
@@ -13,8 +14,11 @@
  */
 export type ResponseStatus = "YES" | "NO" | "MAYBE" | "ONLINE";
 
-/** The computed viability tier for a campaign on a given day. */
-export type Viability = "S" | "N" | "T";
+/**
+ * The computed viability tier for a campaign on a given day. `O` is a viable
+ * day like `S`, flagged because at least one member plays online.
+ */
+export type Viability = "S" | "O" | "N" | "T";
 
 /**
  * Computes a campaign's viability for a single day from its members' resolved
@@ -24,14 +28,15 @@ export type Viability = "S" | "N" | "T";
  *
  * 1. any `NO` ⇒ `N` (someone cannot make it)
  * 2. else any `MAYBE` **or** missing response (`undefined`) ⇒ `T` (pending)
- * 3. else all `YES` ⇒ `S` (everyone confirmed; `ONLINE` counts as `YES`)
+ * 3. else any `ONLINE` ⇒ `O` (everyone can play, someone remotely)
+ * 4. else all `YES` ⇒ `S` (everyone confirmed in person)
  *
  * An empty input yields `S` (vacuously "all confirmed"); real campaigns always
  * have members, so this edge case does not arise in practice.
  *
  * @param {Array<ResponseStatus | undefined>} statuses - The campaign members'
  *   responses for the day; `undefined` marks a member who has not answered.
- * @returns {Viability} `N`, `T` or `S` per the priority above.
+ * @returns {Viability} `N`, `T`, `O` or `S` per the priority above.
  */
 export function computeViability(
   statuses: Array<ResponseStatus | undefined>,
@@ -42,7 +47,22 @@ export function computeViability(
   if (statuses.some((status) => status === "MAYBE" || status === undefined)) {
     return "T";
   }
+  if (statuses.some((status) => status === "ONLINE")) {
+    return "O";
+  }
   return "S";
+}
+
+/**
+ * Whether a viability tier means the campaign can play that day: `S`, or `O`
+ * (everyone can play, someone online). This is what lets a DM confirm a
+ * session without forcing it.
+ *
+ * @param {Viability} viability - The computed tier.
+ * @returns {boolean} True for `S` and `O`.
+ */
+export function isViable(viability: Viability): boolean {
+  return viability === "S" || viability === "O";
 }
 
 /**

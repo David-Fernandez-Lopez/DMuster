@@ -10,9 +10,10 @@ export type DayIndicator = {
   confirmed: boolean;
 };
 
-/** Dot color per viability tier (S→green, N→red, T→amber). */
+/** Dot color per viability tier (S→green, O→blue, N→red, T→amber). */
 const DOT_CLASS: Record<Viability, string> = {
   S: "bg-s",
+  O: "bg-o",
   N: "bg-n",
   T: "bg-t",
 };

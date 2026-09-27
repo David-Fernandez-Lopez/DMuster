@@ -11,7 +11,11 @@ import ConfirmSessionForm from "@/components/sessions/ConfirmSessionForm";
 import ForceSessionForm from "@/components/sessions/ForceSessionForm";
 import SelfJoinButton from "@/components/sessions/SelfJoinButton";
 import type { CampaignDayViability } from "@/lib/calendarService";
-import { isAvailableResponse, type Viability } from "@/lib/viability";
+import {
+  isAvailableResponse,
+  isViable,
+  type Viability,
+} from "@/lib/viability";
 
 interface CampaignViabilityCardProps {
   /** The selected day, "YYYY-MM-DD" — needed to confirm a new session. */
@@ -26,6 +30,7 @@ interface CampaignViabilityCardProps {
 const VIABILITY_STYLE: Record<Viability, { className: string; labelKey: string }> =
   {
     S: { className: "bg-s-soft text-s", labelKey: "calendar.viability.S" },
+    O: { className: "bg-o-soft text-o", labelKey: "calendar.viability.O" },
     N: { className: "bg-n-soft text-n", labelKey: "calendar.viability.N" },
     T: { className: "bg-t-soft text-t", labelKey: "calendar.viability.T" },
   };
@@ -77,10 +82,11 @@ function ConfirmedBadgeIcon() {
 /**
  * A collapsible card for one of the user's campaigns inside the day modal. The
  * summary (always visible) shows the campaign name with its viability badge (Sí /
- * No / Tal vez), a checkmark when a session is confirmed, and a chevron.
+ * Sí (Online) / No / Tal vez), a checkmark when a session is confirmed, and a
+ * chevron.
  * Expanding an **unconfirmed** day reveals the alphabetically ordered member
  * rows with each member's response (`PlayerStatusRow`), followed by either a
- * DM's confirm action (viable `S` day) or the master override, "Forzar
+ * DM's confirm action (viable `S`/`O` day) or the master override, "Forzar
  * partida" (non-viable day, roadmap #22, `ForceSessionForm`). Expanding a
  * **confirmed** day skips that member list — it would just duplicate the
  * attendee list below — and shows the session block directly: its time
@@ -223,7 +229,7 @@ export default function CampaignViabilityCard({
             ) : null}
           </div>
         ) : viewerIsDm ? (
-          campaign.viability === "S" ? (
+          isViable(campaign.viability) ? (
             <ConfirmSessionForm campaignId={campaign.campaignId} date={date} />
           ) : (
             <ForceSessionForm

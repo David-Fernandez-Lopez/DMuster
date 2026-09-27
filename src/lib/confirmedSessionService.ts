@@ -21,6 +21,7 @@ import { canRemoveAttendee, canSelfJoin } from "@/lib/sessionRules";
 import {
   computeViability,
   isAvailableResponse,
+  isViable,
   type Viability,
 } from "@/lib/viability";
 
@@ -200,7 +201,7 @@ async function describeConflict(
  *
  * @param {string[]} memberIds - Every member's user id.
  * @param {string} dateIso - The calendar day to check, "YYYY-MM-DD".
- * @returns {Promise<Viability>} `S`, `N` or `T`.
+ * @returns {Promise<Viability>} `S`, `O`, `N` or `T`.
  */
 async function computeCampaignViabilityOnDate(
   memberIds: string[],
@@ -426,12 +427,12 @@ export async function listUpcomingSessions(
  * "not found", mirroring `api/campaigns/[id]/players/route.ts`'s
  * `authorizeDm`, so a stranger cannot probe campaign existence), the date is
  * eligible, and no other active session that day shares an attendee. Without
- * `attendeeIds`, the campaign's viability must be `S` and the whole
- * membership becomes the attendee set (roadmap #21 — a viable day means
- * everyone plays). With `attendeeIds` (a DM override, roadmap #22), every id
- * must be a campaign member and the confirming DM must be among them; the
- * viability requirement is lifted, and the session is flagged `forced`
- * whenever it wasn't actually `S`. Session + attendee rows are created inside
+ * `attendeeIds`, the campaign's viability must be viable (`S`, or `O` when
+ * someone plays online) and the whole membership becomes the attendee set
+ * (roadmap #21 — a viable day means everyone plays). With `attendeeIds` (a DM
+ * override, roadmap #22), every id must be a campaign member and the confirming
+ * DM must be among them; the viability requirement is lifted, and the session
+ * is flagged `forced` whenever it wasn't actually viable. Session + attendee rows are created inside
  * a transaction so one is never created without the other.
  *
  * @param {object} input
@@ -490,7 +491,7 @@ export async function confirmSession({
 
   let attendees: string[];
   if (attendeeIds === undefined) {
-    if (viability !== "S") {
+    if (!isViable(viability)) {
       return { ok: false, error: "sessions.errors.attendeesRequired" };
     }
     attendees = memberIds;
@@ -515,9 +516,10 @@ export async function confirmSession({
     };
   }
 
-  // Tracks whether this confirmation happened on a non-S day (a DM override),
-  // regardless of the attendee set chosen — internal data only, never rendered.
-  const forced = viability !== "S";
+  // Tracks whether this confirmation happened on a non-viable day (a DM
+  // override), regardless of the attendee set chosen — internal data only,
+  // never rendered.
+  const forced = !isViable(viability);
 
   try {
     const date = toUtcDate(dateIso);

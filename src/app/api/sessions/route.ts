@@ -17,7 +17,7 @@ const FORBIDDEN_ERRORS = new Set(["sessions.errors.forbidden"]);
  * Maps a failed session mutation to its HTTP status: unknown/missing campaign
  * is 404, a member-but-not-DM is 403, an unexpected failure is 500, and every
  * other key (validation and business-rule errors — invalid date/time,
- * ineligible day, non-`S` viability without an explicit attendee list, a
+ * ineligible day, non-viable (not `S`/`O`) day without an explicit attendee list, a
  * double-submit, a shared-attendee conflict, and the DM-override checks
  * `notMember`/`dmMustAttend`/`attendeesRequired`, roadmap #22) is 400.
  *
