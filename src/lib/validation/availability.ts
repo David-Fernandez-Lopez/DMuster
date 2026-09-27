@@ -7,9 +7,9 @@ import { isValidIsoDate } from "@/lib/date";
 
 /**
  * A single availability date, taken from the `[date]` route segment. It must be
- * a real "YYYY-MM-DD" calendar day. Eligibility (weekend or holiday) is *not*
- * checked here — it needs the holiday set from the database — so the API route
- * enforces it separately before writing.
+ * a real "YYYY-MM-DD" calendar day. Eligibility (Friday, weekend or holiday) is
+ * *not* checked here — it needs the holiday set from the database — so the API
+ * route enforces it separately before writing.
  */
 export const availabilityDateSchema = z
   .string()

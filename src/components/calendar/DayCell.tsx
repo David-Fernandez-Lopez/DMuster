@@ -52,7 +52,7 @@ function ConfirmedIcon({ className }: { className?: string }) {
 type DayCellProps = {
   /** The cell's calendar day, "YYYY-MM-DD". */
   iso: string;
-  /** Whether the day is playable (weekend or holiday) — interactive if so. */
+  /** Whether the day is playable (Friday, weekend or holiday) — interactive if so. */
   eligible: boolean;
   /** Whether the day is today (drawn with a brand-colored ring). */
   today: boolean;

@@ -45,9 +45,9 @@ a stored `MAYBE` and a missing response (see below).
 
 ### Day eligibility
 
-A day is eligible (playable / respondable) if it is a **Saturday**, a **Sunday**, or its date
-is present in the `Holiday` table. Weekends are always eligible and are never stored; `Holiday`
-only holds the extra weekday dates.
+A day is eligible (playable / respondable) if it is a **Friday**, a **Saturday**, a **Sunday**,
+or its date is present in the `Holiday` table. Fridays and weekends are always eligible and are
+never stored; `Holiday` only holds the extra Monday–Thursday dates.
 
 ### Viability logic
 
@@ -79,7 +79,7 @@ yes for the session rules (self-join, attendee preselection and warnings).
 - Visual style: minimalist with RPG/fantasy touches (medieval-style headings, thematic icons, clean layout)
 - **Mobile-first** responsive design (players respond primarily from mobile)
 - Main view: monthly calendar with color-coded viability indicators per campaign per day
-- Only **eligible days** (weekends + holidays) are interactive; non-eligible days are dimmed and non-interactive
+- Only **eligible days** (Fridays + weekends + holidays) are interactive; non-eligible days are dimmed and non-interactive
 - Tapping an eligible day opens a **modal** to set the player's own Sí/Sí (Online)/Tal vez/No for that day (no page navigation); the per-campaign breakdown (#18) also lives in that modal
 - Status colors: green (S — all confirmed), blue (O — all can play, someone online), red (N — someone cannot), amber (T — pending/no response)
 - **Design reference**: the authoritative visual spec lives in `design/README.md` and `design/screenshots/` (local, gitignored — a Claude design handoff). Follow it for layout, tokens, and flows

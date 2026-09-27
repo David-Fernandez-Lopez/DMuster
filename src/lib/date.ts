@@ -193,8 +193,8 @@ export function monthDays(month: string): string[] {
 
 /**
  * Lists the eligible (playable) days of a "YYYY-MM" month — every Friday,
- * weekend or listed holiday in it. Used by the monthly availability reminder (roadmap
- * #23.4) to decide whether next month is fully answered.
+ * weekend or listed holiday in it. Used by the monthly availability reminder
+ * (roadmap #23.4) to decide whether next month is fully answered.
  *
  * @param {string} month - A valid "YYYY-MM" month.
  * @param {Set<string>} holidays - Set of holiday dates as "YYYY-MM-DD" strings.

@@ -174,8 +174,9 @@ model CampaignPlayer {
   @@map("campaign_players")
 }
 
-// Weekday dates that are eligible for play in addition to weekends.
-// Weekends (Sat/Sun) are always eligible and are not stored here.
+// Monday–Thursday dates that are eligible for play in addition to Fridays and
+// weekends. Fridays and weekends (Fri/Sat/Sun) are always eligible and are not
+// stored here.
 model Holiday {
   id          String   @id @default(cuid())
   date        DateTime @unique @db.Date
