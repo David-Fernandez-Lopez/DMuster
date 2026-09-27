@@ -1,0 +1,110 @@
+# Production stack — the file to point Coolify at (Build Pack: Docker Compose,
+# "Docker Compose Location": /docker-compose.prod.yml).
+#
+# Everything is built from the repository; there are no bind mounts, so a clean
+# git checkout is all the host needs. Start order on every deploy:
+#   db (healthy) -> migrate (runs `prisma migrate deploy`, exits 0) -> app -> cron
+#
+# Required variables (Coolify lists them in the Environment Variables tab):
+#   MYSQL_ROOT_PASSWORD, MYSQL_PASSWORD, AUTH_SECRET, AUTH_URL
+# Passwords end up inside DATABASE_URL, so keep them URL-safe (letters and
+# digits; `openssl rand -hex 24`). See .env.example for every other key.
+#
+# Local smoke test:
+#   docker compose -f docker-compose.prod.yml --env-file .env up --build
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    # No `ports:` — Coolify's proxy routes the domain configured for this
+    # service to container port 3000 (set the domain as https://example.com:3000
+    # if Coolify does not pick up the exposed port on its own).
+    expose:
+      - "3000"
+    environment:
+      DATABASE_URL: "mysql://${MYSQL_USER:-dmuster}:${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}@db:3306/${MYSQL_DATABASE:-dmuster}"
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET must be set}
+      # Public URL the app is served at, e.g. https://dmuster.example.com
+      AUTH_URL: ${AUTH_URL:?AUTH_URL must be set}
+      # Coolify's proxy sits in front of the app; trust its forwarded host.
+      AUTH_TRUST_HOST: "true"
+      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-es}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Madrid}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-}
+      CRON_SECRET: ${CRON_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # The slim image has no curl/wget; Node's fetch does the job.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/auth/csrf').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # One-shot: applies migrations (and the bootstrap seed while SEED_USER_EMAIL
+  # is set), then exits. See docker/migrate/entrypoint.sh.
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    environment:
+      DATABASE_URL: "mysql://${MYSQL_USER:-dmuster}:${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}@db:3306/${MYSQL_DATABASE:-dmuster}"
+      SEED_USER_EMAIL: ${SEED_USER_EMAIL:-}
+      SEED_USER_NAME: ${SEED_USER_NAME:-}
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-}
+      SEED_CAMPAIGN_NAME: ${SEED_CAMPAIGN_NAME:-}
+      SEED_CAMPAIGN_TAG: ${SEED_CAMPAIGN_TAG:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  # Fires the CRON_SECRET-protected /api/cron/* routes on a schedule. Inert
+  # (just sleeps) when CRON_SECRET is unset — see docker/cron/entrypoint.sh.
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: cron
+    environment:
+      CRON_SECRET: ${CRON_SECRET:-}
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.4
+    # No `ports:`: the database is only reachable on the stack's network.
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-dmuster}
+      MYSQL_USER: ${MYSQL_USER:-dmuster}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      # Pings over TCP (127.0.0.1, not the `localhost` socket): on first boot the
+      # image runs a temporary init server with networking disabled, and a socket
+      # ping would report healthy before the real server is reachable by `migrate`.
+      # `$$` defers expansion to the container, so the password is not
+      # interpolated into the compose file Coolify stores and displays.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
