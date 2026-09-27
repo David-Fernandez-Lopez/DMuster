@@ -146,6 +146,42 @@ SELECT kind, action, trigger, success, googleEventId,
 indefinitely; `cron_runs` gains a row on every sweep tick (as often as every 15 minutes) and is
 pruned after 90 days.
 
+## Deployment
+
+Production runs on [Coolify](https://coolify.io) from `docker-compose.prod.yml` (Build Pack:
+Docker Compose); the file's header lists the variables it needs. Coolify builds the whole stack
+from source, so a deploy is just "build this commit".
+
+### Releasing
+
+Pushing a `v*` tag deploys it: `.github/workflows/deploy.yml` pins the Coolify application to the
+tag's commit and triggers a deployment through the Coolify API. Creating the tag from a GitHub
+release works the same way.
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+One-time setup:
+
+1. In Coolify, make sure the API is enabled (Settings → Advanced) and create an API token
+   (Keys & Tokens → API tokens) with the `write` and `deploy` permissions.
+2. In the application's settings, turn **Auto Deploy** off so pushes to `main` stop deploying
+   on their own — tags become the only trigger.
+3. In GitHub (Settings → Secrets and variables → Actions), add the repository **variables**
+   `COOLIFY_BASE_URL` (e.g. `https://coolify.example.com`) and `COOLIFY_APP_UUID` (the last id in
+   the application's Coolify URL), and the repository **secret** `COOLIFY_API_TOKEN`.
+
+Notes:
+
+- The Coolify instance must be reachable from GitHub-hosted runners, and the tagged commit must be
+  on `main` (the branch Coolify clones).
+- A green run means Coolify *accepted* the deployment, not that the build succeeded — follow it in
+  Coolify's deployment log.
+- The pinned commit sticks: a manual *Redeploy* in Coolify rebuilds the last released tag. To roll
+  back, re-run an older tag's workflow run from the Actions tab.
+
 ## License
 
 MIT

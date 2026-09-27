@@ -1,0 +1,41 @@
+name: Deploy
+
+# Pushing a `v*` tag deploys that exact commit to production. Coolify builds the stack from source
+# (docker-compose.prod.yml), so nothing is published here: the Coolify deploy endpoint takes no
+# commit, so the job first pins the application's git_commit_sha to the tag's commit and then
+# triggers the deployment. Setup (repo variables/secret, Coolify token): README → Deployment.
+on:
+  push:
+    tags: ['v*']
+
+permissions: {}
+
+# Serializes deploys so two tags pushed back to back can't interleave their PATCH + deploy calls.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Point Coolify at this tag's commit and deploy
+        env:
+          COOLIFY_BASE_URL: ${{ vars.COOLIFY_BASE_URL }}
+          COOLIFY_APP_UUID: ${{ vars.COOLIFY_APP_UUID }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          if [ -z "$COOLIFY_BASE_URL" ] || [ -z "$COOLIFY_APP_UUID" ] || [ -z "$COOLIFY_API_TOKEN" ]; then
+            echo "::error::Coolify deploy is not configured: set the COOLIFY_BASE_URL and COOLIFY_APP_UUID repository variables and the COOLIFY_API_TOKEN repository secret (see README → Deployment)."
+            exit 1
+          fi
+          api="${COOLIFY_BASE_URL%/}/api/v1"
+          curl --fail-with-body -sS -X PATCH "$api/applications/$COOLIFY_APP_UUID" \
+            -H "Authorization: Bearer $COOLIFY_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"git_commit_sha\":\"$GIT_SHA\"}"
+          echo
+          curl --fail-with-body -sS -X POST "$api/deploy?uuid=$COOLIFY_APP_UUID&force=false" \
+            -H "Authorization: Bearer $COOLIFY_API_TOKEN"
