@@ -10,6 +10,7 @@ import {
 import ResponderFilter, {
   type ResponderFilterValue,
 } from "@/components/availability/ResponderFilter";
+import { groupDaysByMonth, toUtcDate } from "@/lib/date";
 
 interface AvailabilityListProps {
   /** Upcoming eligible days to show, ascending ("YYYY-MM-DD"). */
@@ -23,7 +24,10 @@ interface AvailabilityListProps {
 /**
  * Client owner of the "Mi disponibilidad" list. Holds the Pendientes/Todas
  * filter and a live map of answered days so a card can leave the "Pendientes"
- * view the moment its response is persisted, without a server refetch.
+ * view the moment its response is persisted, without a server refetch. Cards
+ * are grouped into one section per month, each rendering its own grid, so the
+ * list makes better use of the width on desktop while staying a single column
+ * on mobile.
  *
  * That map — not the server-rendered prop it starts from — is what seeds each
  * card. Answering a day removes it from the "Pendientes" list, which unmounts
@@ -43,7 +47,7 @@ export default function AvailabilityList({
   initialResponses,
   tags,
 }: AvailabilityListProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [filter, setFilter] = useState<ResponderFilterValue>("pending");
   const [responses, setResponses] =
     useState<Record<string, "YES" | "NO" | "MAYBE">>(initialResponses);
@@ -69,6 +73,7 @@ export default function AvailabilityList({
 
   const visibleDays =
     filter === "pending" ? days.filter((day) => !(day in responses)) : days;
+  const monthGroups = groupDaysByMonth(visibleDays);
 
   return (
     <div className="mt-6">
@@ -79,17 +84,39 @@ export default function AvailabilityList({
           {t("availability.allDone")}
         </p>
       ) : (
-        <ul className="mt-4 flex flex-col gap-3">
-          {visibleDays.map((day) => (
-            <AvailabilityDayCard
-              key={day}
-              date={day}
-              tags={tags}
-              initialStatus={responses[day] ?? null}
-              onPersisted={handlePersisted}
-            />
-          ))}
-        </ul>
+        <div className="mt-4 flex flex-col gap-6">
+          {monthGroups.map((group) => {
+            const monthLabel = new Intl.DateTimeFormat(i18n.language, {
+              month: "long",
+              year: "numeric",
+              timeZone: "UTC",
+            }).format(toUtcDate(`${group.month}-01`));
+            const capitalizedLabel =
+              monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+
+            return (
+              <section key={group.month} aria-labelledby={`month-${group.month}`}>
+                <h2
+                  id={`month-${group.month}`}
+                  className="font-display text-lg font-semibold text-ink"
+                >
+                  {capitalizedLabel}
+                </h2>
+                <ul className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {group.days.map((day) => (
+                    <AvailabilityDayCard
+                      key={day}
+                      date={day}
+                      tags={tags}
+                      initialStatus={responses[day] ?? null}
+                      onPersisted={handlePersisted}
+                    />
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
       )}
     </div>
   );

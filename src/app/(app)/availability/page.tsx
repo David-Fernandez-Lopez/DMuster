@@ -51,7 +51,7 @@ export default async function AvailabilityPage() {
   const tags = campaigns.map((campaign) => campaign.tag);
 
   return (
-    <main className="mx-auto w-full max-w-[420px] flex-1 px-6 py-8">
+    <main className="mx-auto w-full max-w-[420px] flex-1 px-6 py-8 md:max-w-[1100px]">
       <h1 className="font-display text-3xl font-semibold text-ink">
         {t("availability.title")}
       </h1>
