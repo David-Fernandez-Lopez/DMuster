@@ -6,25 +6,36 @@ Web application for managing player availability across multiple tabletop RPG ca
 
 Tabletop RPG groups often struggle to coordinate session dates across multiple campaigns and players with different schedules. DMuster replaces the typical "Google Sheets workaround" with a purpose-built tool.
 
-Players respond to proposed session dates with one of three statuses:
+Nobody proposes dates: every **eligible day** — every Saturday and Sunday, plus any weekday a DM
+has marked as a holiday — is open for answers. Each player answers once per day, and that answer
+applies to every campaign they belong to:
 
 - **S** — Yes, I can make it
+- **Sí (Online)** — Yes, but remotely
 - **N** — No, I cannot make it
 - **T** — Maybe / not sure yet
 
-The app automatically computes a **viability result** per campaign for each proposed date:
+The app automatically computes a **viability result** per campaign for each eligible day, from
+the answers of that campaign's members, in this priority order:
 
 | Result | Condition |
 |--------|-----------|
-| Green (S) | All players confirmed |
-| Red (N) | At least one player cannot attend |
-| Amber (T) | At least one player is undecided or has not responded |
+| Red (N) | At least one member cannot attend |
+| Amber (T) | Otherwise, at least one member answered *maybe* or has not answered yet |
+| Blue (O) | Otherwise, everyone can play and at least one member plays online |
+| Green (S) | Everyone can play in person |
+
+Green and blue days are both viable: a DM can confirm a session on them directly.
 
 ## Features
 
 - Monthly calendar view with color-coded session viability per campaign
 - Role-based access: **DM** manages campaigns; **Players** set their own availability
 - A user can be DM of some campaigns and player in others simultaneously
+- Confirmed sessions: a DM confirms a session on a viable day (or forces one on a day that is
+  not), adjusts who attends, and can cancel it; players who can play that day may join an
+  already confirmed session themselves
+- Holidays: any DM can add extra weekday dates that become eligible like a weekend
 - Multi-campaign support from a single account
 - **Invitation-only access:** there is no public sign-up. A DM of any campaign sends a
   single-use, email-bound link (valid 7 days) from `/profile`, optionally pre-joining the
@@ -37,7 +48,7 @@ The app automatically computes a **viability result** per campaign for each prop
 
 | Layer | Technology |
 |-------|------------|
-| Framework | Next.js 15 (App Router, fullstack) |
+| Framework | Next.js 16 (App Router, fullstack) |
 | Database | MySQL / MariaDB + Prisma ORM |
 | Auth | Auth.js v5 (credentials provider, database sessions) |
 | Styles | Tailwind CSS |
@@ -57,12 +68,18 @@ docker compose up
 
 The app will be available at `http://localhost:3000`.
 
-To run database migrations and create the first account:
+Before opening it, generate the Prisma client, run the database migrations and create the first
+account:
 
 ```bash
+docker compose exec app npx prisma generate
 docker compose exec app npx prisma migrate deploy
 docker compose exec app npx prisma db seed
 ```
+
+The Prisma client is generated into `src/generated/`, which is gitignored and not built by the
+development image, so a fresh clone has none until you run `prisma generate`. Both the app and
+the seed import it. Run it again whenever `prisma/schema.prisma` changes.
 
 > **Bootstrap:** there is no public sign-up (see *Features*) — creating an account requires an
 > invitation, and sending one requires already being a DM of a campaign. On a fresh deployment
@@ -92,8 +109,8 @@ To set it up, in [Google Cloud Console](https://console.cloud.google.com):
    player's email under **Test users**.
    > The app stays in **Testing** status — publishing to production would require Google's
    > verification review. Testing supports up to 100 test users, but Google expires each
-   > `refresh_token` after **7 days** in this mode; a user seeing a "reconnect" prompt in
-   > `/profile` after a week of inactivity is expected, not a bug.
+   > `refresh_token` **7 days** after it is issued in this mode, however much it is used; a user
+   > seeing a "reconnect" prompt in `/profile` a week after connecting is expected, not a bug.
 3. **Credentials** → Create credentials → **OAuth client ID** → Web application. Add
    `<your-app-url>/api/integrations/google/callback` as an authorized redirect URI — it must
    match `GOOGLE_OAUTH_REDIRECT_URI` character-for-character.
@@ -111,8 +128,9 @@ and both entirely inert (404) when it is unset:
   from `/profile` works without it.
 - `POST /api/cron/availability-reminders` runs once a day: for every user with Google Calendar
   sync enabled, it checks whether *next* month still has an eligible day they have not answered
-  and creates an all-day "REVISAR CALENDARIO ROL" event on the last day of the *current* month if
-  so — clearing it again once they finish answering. Only affects users who both have Google
+  and creates an all-day reminder event on the last day of the *current* month if so — titled
+  "REVISAR CALENDARIO ROL", or "REVIEW RPG CALENDAR" for users with English as their language —
+  clearing it again once they finish answering. Only affects users who both have Google
   connected and belong to at least one campaign.
 
 A `cron` service is already wired into `docker-compose.yml` (`docker/cron/entrypoint.sh`,
@@ -137,10 +155,14 @@ SELECT job, status, startedAt, finishedAt, durationMs, processed, failed, detail
   FROM cron_runs ORDER BY startedAt DESC LIMIT 10;
 
 -- Recent Google Calendar writes (converted to a local timezone for reading).
-SELECT kind, action, trigger, success, googleEventId,
-       CONVERT_TZ(executedAt, '+00:00', '+02:00') AS executedLocal
+-- `trigger` is a reserved word in MySQL, so it must stay backquoted.
+SELECT kind, action, `trigger`, success, googleEventId,
+       CONVERT_TZ(executedAt, '+00:00', 'Europe/Madrid') AS executedLocal
   FROM calendar_event_logs ORDER BY executedAt DESC LIMIT 10;
 ```
+
+Timestamps are stored in UTC. The `mysql` image loads the time zone tables, so a zone name
+converts with daylight saving time taken into account.
 
 `calendar_event_logs` only gains a row per real Google API call (insert/patch/delete) and is kept
 indefinitely; `cron_runs` gains a row on every sweep tick (as often as every 15 minutes) and is
@@ -151,6 +173,12 @@ pruned after 90 days.
 Production runs on [Coolify](https://coolify.io) from `docker-compose.prod.yml` (Build Pack:
 Docker Compose); the file's header lists the variables it needs. Coolify builds the whole stack
 from source, so a deploy is just "build this commit".
+
+Every deploy starts a one-shot `migrate` service before the app. It applies pending migrations
+and, while `SEED_USER_EMAIL` is set, also tries the bootstrap seed. The production image has no
+Prisma CLI, so this is also how the first account gets created there: set the `SEED_*` variables
+in Coolify for the first deploy, and remove them once that account exists. On later deploys the
+seed refuses to run, logs why, and the app starts anyway.
 
 ### Releasing
 
