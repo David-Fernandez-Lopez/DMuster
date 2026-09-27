@@ -1,5 +1,6 @@
 import {
   eligibleDaysOfMonth,
+  groupByYear,
   groupDaysByMonth,
   isEligible,
   isValidIsoDate,
@@ -172,6 +173,27 @@ describe("groupDaysByMonth", () => {
       { month: "2026-12", days: ["2026-12-26", "2026-12-27"] },
       { month: "2027-01", days: ["2027-01-02"] },
     ]);
+  });
+});
+
+describe("groupByYear", () => {
+  it("returns an empty array for an empty input", () => {
+    expect(groupByYear([])).toEqual([]);
+  });
+
+  it("groups dated items by year, keeping order and the original objects", () => {
+    const dec8 = { id: "a", date: "2026-12-08" };
+    const dec25 = { id: "b", date: "2026-12-25" };
+    const jan1 = { id: "c", date: "2027-01-01" };
+
+    const groups = groupByYear([dec8, dec25, jan1]);
+
+    expect(groups).toHaveLength(2);
+    expect(groups[0].year).toBe("2026");
+    expect(groups[0].items[0]).toBe(dec8);
+    expect(groups[0].items[1]).toBe(dec25);
+    expect(groups[1].year).toBe("2027");
+    expect(groups[1].items).toEqual([jan1]);
   });
 });
 

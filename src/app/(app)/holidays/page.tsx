@@ -6,7 +6,7 @@ import RemoveHolidayButton from "@/components/holidays/RemoveHolidayButton";
 import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
 import { isDmOfAnyCampaign } from "@/lib/authz";
-import { toUtcDate } from "@/lib/date";
+import { groupByYear, toUtcDate } from "@/lib/date";
 import { listHolidays } from "@/lib/holidayService";
 
 /**
@@ -15,11 +15,13 @@ import { listHolidays } from "@/lib/holidayService";
  * `/login`, and authenticated non-DMs are redirected home. This mirrors the API
  * guard as defense-in-depth — the mutations still return 401/403 regardless.
  *
- * Lists the extra weekday holidays (weekends are eligible automatically and are
- * never listed) with a long localized date and a remove control, plus a form to
- * add a new one. Reads go straight through the service layer; mutations go
- * through the API. Reached from the "Gestionar festivos" link in the calendar
- * header (shown only to DMs).
+ * Shows a form to add a holiday at the top, then the extra weekday holidays
+ * (weekends are eligible automatically and are never listed) grouped into one
+ * section per year — a grid on desktop, a single column on mobile — each with
+ * its localized date (the year lives in the section heading) and a remove
+ * control. Reads go straight through the service layer; mutations go through
+ * the API. Reached from the "Gestionar festivos" link in the calendar header
+ * (shown only to DMs).
  *
  * @returns {Promise<JSX.Element>}
  */
@@ -37,17 +39,17 @@ export default async function HolidaysPage() {
   const holidays = await listHolidays();
 
   // Dates are stored at UTC midnight, so format them in UTC to keep the
-  // rendered calendar day from shifting in negative-offset timezones.
+  // rendered calendar day from shifting in negative-offset timezones. No year:
+  // each date sits under its year's heading.
   const dateFormatter = new Intl.DateTimeFormat(locale, {
     weekday: "long",
     day: "numeric",
     month: "long",
-    year: "numeric",
     timeZone: "UTC",
   });
 
   return (
-    <main className="mx-auto w-full max-w-[480px] flex-1 px-6 py-8">
+    <main className="mx-auto w-full max-w-[480px] flex-1 px-6 py-8 md:max-w-[1100px]">
       <Link
         href="/"
         className="text-sm font-semibold text-brand hover:underline"
@@ -64,27 +66,39 @@ export default async function HolidaysPage() {
           is never only the editor's own. */}
       <p className="mt-2 text-sm text-ink-muted">{t("holidays.scope")}</p>
 
+      <AddHolidayForm />
+
       {holidays.length === 0 ? (
-        <p className="mt-6 rounded-[var(--radius-card)] border border-border bg-bg-elevated p-6 text-center text-sm text-ink-muted">
+        <p className="mt-8 rounded-[var(--radius-card)] border border-border bg-bg-elevated p-6 text-center text-sm text-ink-muted">
           {t("holidays.empty")}
         </p>
       ) : (
-        <ul className="mt-6 flex flex-col gap-3">
-          {holidays.map((holiday) => (
-            <li
-              key={holiday.id}
-              className="flex items-center gap-3 rounded-[var(--radius-card)] border border-border bg-bg-elevated p-3"
-            >
-              <p className="min-w-0 flex-1 truncate font-semibold text-ink first-letter:uppercase">
-                {dateFormatter.format(toUtcDate(holiday.date))}
-              </p>
-              <RemoveHolidayButton holidayId={holiday.id} />
-            </li>
+        <div className="mt-8 flex flex-col gap-6">
+          {groupByYear(holidays).map((group) => (
+            <section key={group.year} aria-labelledby={`year-${group.year}`}>
+              <h2
+                id={`year-${group.year}`}
+                className="font-display text-lg font-semibold text-ink"
+              >
+                {group.year}
+              </h2>
+              <ul className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {group.items.map((holiday) => (
+                  <li
+                    key={holiday.id}
+                    className="flex flex-wrap items-center gap-3 rounded-[var(--radius-card)] border border-border bg-bg-elevated p-3"
+                  >
+                    <p className="min-w-0 flex-1 truncate font-semibold text-ink first-letter:uppercase">
+                      {dateFormatter.format(toUtcDate(holiday.date))}
+                    </p>
+                    <RemoveHolidayButton holidayId={holiday.id} />
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       )}
-
-      <AddHolidayForm />
     </main>
   );
 }

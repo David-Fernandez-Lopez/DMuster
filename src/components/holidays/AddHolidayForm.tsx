@@ -57,7 +57,7 @@ export default function AddHolidayForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-6 rounded-[var(--radius-card)] border border-border bg-bg-elevated p-4"
+      className="mt-6 rounded-[var(--radius-card)] border border-border bg-bg-elevated p-4 md:max-w-md"
     >
       <label
         htmlFor={inputId}

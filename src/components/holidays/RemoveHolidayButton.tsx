@@ -23,6 +23,10 @@ interface RemoveHolidayButtonProps {
  * lost mid-session → 403, already deleted → 404) shows the translated reason
  * and keeps the row.
  *
+ * While confirming, the control takes the full width so that, in the row's
+ * wrapping flex layout, it drops onto its own line under the date instead of
+ * overflowing a narrow grid card.
+ *
  * @param {RemoveHolidayButtonProps} props - The holiday to remove.
  * @returns {JSX.Element} The remove control.
  */
@@ -76,7 +80,7 @@ export default function RemoveHolidayButton({
   }
 
   return (
-    <div className="flex shrink-0 flex-col items-end gap-2">
+    <div className="flex w-full flex-col items-end gap-2">
       <p className="text-right text-sm text-ink">{t("holidays.confirmRemove")}</p>
       <div className="flex items-center gap-2">
         <button

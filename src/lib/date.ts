@@ -325,6 +325,34 @@ export function upcomingEligibleDaysThroughMonth(
 }
 
 /**
+ * Splits an ordered list into consecutive runs whose items share the same key,
+ * preserving order. Items are only grouped with their neighbors, so the input
+ * must already be sorted by that key (ascending dates are, for any prefix).
+ *
+ * @param {T[]} items - Items, already ordered by their key.
+ * @param {(item: T) => string} keyOf - Derives an item's group key.
+ * @returns {{ key: string; items: T[] }[]} One group per run, in input order.
+ */
+function groupConsecutive<T>(
+  items: T[],
+  keyOf: (item: T) => string,
+): { key: string; items: T[] }[] {
+  const groups: { key: string; items: T[] }[] = [];
+
+  for (const item of items) {
+    const key = keyOf(item);
+    const current = groups[groups.length - 1];
+    if (current && current.key === key) {
+      current.items.push(item);
+    } else {
+      groups.push({ key, items: [item] });
+    }
+  }
+
+  return groups;
+}
+
+/**
  * Groups an ascending list of "YYYY-MM-DD" days into consecutive runs sharing
  * the same "YYYY-MM" month, preserving order. Used by the "Mi disponibilidad"
  * screen to render one section per month.
@@ -336,17 +364,25 @@ export function upcomingEligibleDaysThroughMonth(
 export function groupDaysByMonth(
   days: string[],
 ): { month: string; days: string[] }[] {
-  const groups: { month: string; days: string[] }[] = [];
+  return groupConsecutive(days, (day) => day.slice(0, 7)).map((group) => ({
+    month: group.key,
+    days: group.items,
+  }));
+}
 
-  for (const day of days) {
-    const month = day.slice(0, 7);
-    const current = groups[groups.length - 1];
-    if (current && current.month === month) {
-      current.days.push(day);
-    } else {
-      groups.push({ month, days: [day] });
-    }
-  }
-
-  return groups;
+/**
+ * Groups items dated "YYYY-MM-DD", ascending, into consecutive runs sharing the
+ * same year, preserving order and the original objects. Used by the holidays
+ * screen to render one section per year.
+ *
+ * @param {T[]} items - Items with a `date` ("YYYY-MM-DD"), ascending by date.
+ * @returns {{ year: string; items: T[] }[]} One group per year ("YYYY"), in
+ *   the order years first appear.
+ */
+export function groupByYear<T extends { date: string }>(
+  items: T[],
+): { year: string; items: T[] }[] {
+  return groupConsecutive(items, (item) => item.date.slice(0, 4)).map(
+    (group) => ({ year: group.key, items: group.items }),
+  );
 }
