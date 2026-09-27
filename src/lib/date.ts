@@ -280,3 +280,73 @@ export function upcomingEligibleDays(
   }
   return days;
 }
+
+/**
+ * Like `upcomingEligibleDays`, but avoids cutting the last month short: after
+ * collecting at least `minDays` eligible days, it keeps scanning forward
+ * through the end of the last day's month (never past the `windowDays`
+ * window), so the result always covers whole months — the shape the "Mi
+ * disponibilidad" screen needs to group days by month without an incomplete
+ * trailing group.
+ *
+ * @param {string} startIso - First day of the window, "YYYY-MM-DD" (inclusive).
+ * @param {number} windowDays - How many consecutive days to scan from the start.
+ * @param {number} minDays - Minimum number of eligible days to return.
+ * @param {Set<string>} holidays - Set of holiday dates as "YYYY-MM-DD" strings.
+ * @returns {string[]} At least `minDays` eligible days (fewer if the window is
+ *   exhausted first), extended through the end of the last day's month.
+ */
+export function upcomingEligibleDaysThroughMonth(
+  startIso: string,
+  windowDays: number,
+  minDays: number,
+  holidays: Set<string>,
+): string[] {
+  const days = upcomingEligibleDays(startIso, windowDays, minDays, holidays);
+  if (days.length === 0) {
+    return days;
+  }
+
+  const lastDay = days[days.length - 1];
+  const windowEnd = addDays(startIso, windowDays - 1);
+  const monthEnd = lastDayOfMonth(lastDay.slice(0, 7));
+  const end = monthEnd < windowEnd ? monthEnd : windowEnd;
+
+  for (
+    let iso = addDays(lastDay, 1);
+    iso <= end;
+    iso = addDays(iso, 1)
+  ) {
+    if (isEligible(iso, holidays)) {
+      days.push(iso);
+    }
+  }
+  return days;
+}
+
+/**
+ * Groups an ascending list of "YYYY-MM-DD" days into consecutive runs sharing
+ * the same "YYYY-MM" month, preserving order. Used by the "Mi disponibilidad"
+ * screen to render one section per month.
+ *
+ * @param {string[]} days - Calendar days, ascending, "YYYY-MM-DD".
+ * @returns {{ month: string; days: string[] }[]} One group per month, in the
+ *   order months first appear.
+ */
+export function groupDaysByMonth(
+  days: string[],
+): { month: string; days: string[] }[] {
+  const groups: { month: string; days: string[] }[] = [];
+
+  for (const day of days) {
+    const month = day.slice(0, 7);
+    const current = groups[groups.length - 1];
+    if (current && current.month === month) {
+      current.days.push(day);
+    } else {
+      groups.push({ month, days: [day] });
+    }
+  }
+
+  return groups;
+}

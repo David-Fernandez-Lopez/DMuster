@@ -5,22 +5,24 @@ import { getServerTranslation } from "@/i18n/server";
 import { getUserAvailability } from "@/lib/availabilityService";
 import { auth } from "@/lib/auth";
 import { listCampaignsForUser } from "@/lib/campaignService";
-import { addDays, upcomingEligibleDays } from "@/lib/date";
+import { addDays, upcomingEligibleDaysThroughMonth } from "@/lib/date";
 import { todayIso } from "@/lib/today";
 import { listHolidays } from "@/lib/holidayService";
 
 /** How many days ahead the responding window scans for eligible days. */
 const WINDOW_DAYS = 90;
 
-/** Maximum number of upcoming eligible days shown at once. */
-const MAX_DAYS = 16;
+/** Minimum number of upcoming eligible days shown at once. */
+const MIN_DAYS = 16;
 
 /**
  * "Mi disponibilidad" page (`/availability`) — the primary flow for a player to
- * respond YES/NO on upcoming eligible days. Lists up to MAX_DAYS eligible days
- * within the next WINDOW_DAYS, each showing the campaigns it affects and a
- * Sí/No toggle. The response is global per day (it applies to every campaign
- * the player belongs to). Requires an authenticated session.
+ * respond Sí/Tal vez/No on upcoming eligible days, grouped by month. Lists at
+ * least MIN_DAYS eligible days within the next WINDOW_DAYS, extended through
+ * the end of the last day's month so no month group is cut short, each day
+ * showing the campaigns it affects and a Sí/Tal vez/No toggle. The response is
+ * global per day (it applies to every campaign the player belongs to).
+ * Requires an authenticated session.
  *
  * @returns {Promise<JSX.Element>}
  */
@@ -40,7 +42,12 @@ export default async function AvailabilityPage() {
   ]);
 
   const holidaySet = new Set(holidays.map((holiday) => holiday.date));
-  const days = upcomingEligibleDays(start, WINDOW_DAYS, MAX_DAYS, holidaySet);
+  const days = upcomingEligibleDaysThroughMonth(
+    start,
+    WINDOW_DAYS,
+    MIN_DAYS,
+    holidaySet,
+  );
   const tags = campaigns.map((campaign) => campaign.tag);
 
   return (

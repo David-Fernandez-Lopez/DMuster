@@ -1,5 +1,6 @@
 import {
   eligibleDaysOfMonth,
+  groupDaysByMonth,
   isEligible,
   isValidIsoDate,
   isWeekend,
@@ -9,6 +10,7 @@ import {
   toIsoDateIn,
   todayIsoIn,
   toUtcDate,
+  upcomingEligibleDaysThroughMonth,
 } from "@/lib/date";
 
 // Seed holidays (extra weekday-eligible dates, CLAUDE.md §7). 2026-07-15 is a
@@ -99,6 +101,77 @@ describe("eligibleDaysOfMonth", () => {
   it("includes a weekday listed as a holiday", () => {
     const eligible = eligibleDaysOfMonth("2026-08", SEED_HOLIDAYS);
     expect(eligible).toContain("2026-08-06"); // Thursday, seed holiday
+  });
+});
+
+describe("upcomingEligibleDaysThroughMonth", () => {
+  it("extends past minDays to cover the rest of the last day's month", () => {
+    // 2026-09-27 is a Sunday; the 16th weekend/holiday day from there lands on
+    // 2026-11-15, mid-November. The result should keep going through the rest
+    // of November's eligible days instead of cutting the month in half.
+    const holidays = new Set(["2026-10-12"]); // Monday, made eligible
+    const days = upcomingEligibleDaysThroughMonth(
+      "2026-09-27",
+      90,
+      16,
+      holidays,
+    );
+
+    expect(days.length).toBeGreaterThan(16);
+    expect(days[15]).toBe("2026-11-15"); // the original 16th day, unchanged
+    expect(days[days.length - 1]).toBe("2026-11-29"); // November's last weekend
+    expect(days).not.toContain("2026-11-30"); // Monday, not eligible
+  });
+
+  it("adds nothing when the minDays cut already lands on the month's last eligible day", () => {
+    // Starting on Sunday 2026-11-01 with minDays=9 collects every weekend
+    // through 2026-11-29; November's only later day, 2026-11-30, is a Monday
+    // and not eligible, so there is nothing left to extend.
+    const days = upcomingEligibleDaysThroughMonth(
+      "2026-11-01",
+      90,
+      9,
+      new Set(),
+    );
+
+    expect(days).toHaveLength(9);
+    expect(days[days.length - 1]).toBe("2026-11-29");
+  });
+
+  it("never scans past the window even if the month is not finished", () => {
+    const days = upcomingEligibleDaysThroughMonth(
+      "2026-09-27",
+      10, // window ends 2026-10-06
+      2,
+      new Set(),
+    );
+
+    expect(days).toEqual(["2026-09-27", "2026-10-03", "2026-10-04"]);
+  });
+
+  it("returns an empty list unchanged when no eligible day exists in the window", () => {
+    expect(upcomingEligibleDaysThroughMonth("2026-09-28", 3, 5, new Set())).toEqual(
+      [],
+    );
+  });
+});
+
+describe("groupDaysByMonth", () => {
+  it("returns an empty array for an empty input", () => {
+    expect(groupDaysByMonth([])).toEqual([]);
+  });
+
+  it("groups consecutive days by month, including across a year boundary", () => {
+    const groups = groupDaysByMonth([
+      "2026-12-26",
+      "2026-12-27",
+      "2027-01-02",
+    ]);
+
+    expect(groups).toEqual([
+      { month: "2026-12", days: ["2026-12-26", "2026-12-27"] },
+      { month: "2027-01", days: ["2027-01-02"] },
+    ]);
   });
 });
 
