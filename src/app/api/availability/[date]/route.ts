@@ -7,6 +7,7 @@ import {
 } from "@/lib/availabilityService";
 import { auth } from "@/lib/auth";
 import { isEligible } from "@/lib/date";
+import { scheduleSyncSweep } from "@/lib/google/calendarSyncService";
 import { listHolidays } from "@/lib/holidayService";
 import { firstFieldErrors } from "@/lib/validation/auth";
 import {
@@ -69,7 +70,9 @@ async function resolveEligibleRequest(
  * PUT /api/availability/[date] — sets the session user's own response for the
  * day. Body `{ status: "YES" | "NO" | "MAYBE" | "ONLINE" }`. Ladder: 401 → 400 invalid date → 400
  * not eligible → 400 invalid body. The proxy excludes `/api`, so this handler
- * guards itself.
+ * guards itself. When the answer switched to or from ONLINE on a day the user
+ * has a confirmed session, the refreshed Google events are synced after the
+ * response is sent.
  *
  * @param {Request} request - The incoming request with the JSON body.
  * @param {RouteContext} context - Route context with the async `params`.
@@ -106,6 +109,10 @@ export async function PUT(
     return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
+  if (result.calendarQueued) {
+    scheduleSyncSweep();
+  }
+
   return NextResponse.json({
     data: { date: resolved.date, status: parsed.data.status },
   });
@@ -114,7 +121,8 @@ export async function PUT(
 /**
  * DELETE /api/availability/[date] — clears the session user's own response for
  * the day. Idempotent: clearing an unanswered day still succeeds. Ladder: 401 →
- * 400 invalid date → 400 not eligible.
+ * 400 invalid date → 400 not eligible. Clearing an ONLINE answer on a day with
+ * a confirmed session syncs the refreshed Google events after responding.
  *
  * @param {Request} _request - The incoming request (unused).
  * @param {RouteContext} context - Route context with the async `params`.
@@ -132,6 +140,10 @@ export async function DELETE(
   const result = await clearAvailability(resolved.userId, resolved.date);
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 500 });
+  }
+
+  if (result.calendarQueued) {
+    scheduleSyncSweep();
   }
 
   return NextResponse.json({ data: { date: resolved.date } });

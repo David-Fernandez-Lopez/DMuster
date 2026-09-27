@@ -279,6 +279,8 @@
       "broken": "The connection with Google was interrupted.",
       "reconnect": "Reconnect",
       "eventDescription": "Playing: {{players}}",
+      "eventDescriptionOnline": "Online: {{players}}",
+      "eventOnlineSuffix": "(Online)",
       "reminderTitle": "REVIEW RPG CALENDAR",
       "reminderDescription": "You have unanswered days in {{month}}. Open DMuster and fill in your availability.",
       "errors": {

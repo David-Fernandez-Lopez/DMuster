@@ -1,6 +1,8 @@
 // Drives the Google Calendar sync ledger (`SessionCalendarEvent`, roadmap
 // #23): `enqueue*` functions are called by `confirmedSessionService.ts` right
-// after a session mutation commits, and only ever write PENDING/FAILED rows —
+// after a session mutation commits (and by `availabilityService.ts` when an
+// attendee's answer switches to or from "Sí (Online)"), and only ever write
+// PENDING/FAILED rows —
 // they never call Google themselves, so a confirmation can never fail because
 // Google is unreachable. `processPending` is the only function that actually
 // talks to Google, walking due rows and advancing them to SYNCED or DELETED
@@ -16,6 +18,7 @@ import { toIsoDate, toUtcDate } from "@/lib/date";
 import { todayIso } from "@/lib/today";
 import { env } from "@/lib/env";
 import {
+  AvailabilityStatus,
   CalendarEventAction,
   CalendarEventKind,
   SyncOperation,
@@ -68,6 +71,8 @@ type SessionSyncData = {
   startTime: string | null;
   durationMinutes: number | null;
   attendeeNames: string[];
+  /** The attendees who answered "Sí (Online)" for the session's day. */
+  onlineAttendeeNames: string[];
 };
 
 /**
@@ -174,6 +179,40 @@ export async function enqueueUpdateForSession(sessionId: string): Promise<void> 
     where: { sessionId, status: SyncStatus.SYNCED },
     data: { status: SyncStatus.PENDING, operation: SyncOperation.UPSERT, attempts: 0, lastError: null },
   });
+}
+
+/**
+ * Queues a refresh of the events for every active session a user attends on
+ * one day — called when that user's answer for the day switches to or from
+ * "Sí (Online)", which flips the events' "(Online)" title and description
+ * line. Goes through `enqueueUpdateForSession`, so only SYNCED rows are
+ * touched: every attendee's copy is refreshed (the description lists who plays
+ * online, so it changes for everyone), and PENDING/FAILED rows pick up the new
+ * answer on their own when next processed.
+ *
+ * @param {string} userId - The user whose answer changed.
+ * @param {string} dateIso - The day of the changed answer, "YYYY-MM-DD".
+ * @returns {Promise<boolean>} Whether the user attends any active session that
+ *   day — i.e. whether a sync sweep is worth scheduling.
+ */
+export async function enqueueUpdateForAttendeeOnDate(
+  userId: string,
+  dateIso: string,
+): Promise<boolean> {
+  const sessions = await prisma.confirmedSession.findMany({
+    where: {
+      cancelledAt: null,
+      date: toUtcDate(dateIso),
+      attendees: { some: { userId } },
+    },
+    select: { id: true },
+  });
+
+  for (const session of sessions) {
+    await enqueueUpdateForSession(session.id);
+  }
+
+  return sessions.length > 0;
 }
 
 /**
@@ -288,12 +327,13 @@ export async function enqueueDeletionForCampaign(campaignId: string): Promise<st
 
 /**
  * Loads the plain data `buildCalendarEvent` needs for a session's UPSERT
- * rows: campaign name, schedule, and every current attendee's display name
- * (event descriptions list everyone playing, not just the row's own
- * recipient). Returns null for a session that no longer exists — should not
- * happen in practice, since sessions are never hard-deleted, but this reads
- * across a foreign key at a later point in time than when the row was
- * enqueued, so it stays defensive.
+ * rows: campaign name, schedule, every current attendee's display name (event
+ * descriptions list everyone playing, not just the row's own recipient), and
+ * which of them answered "Sí (Online)" for the day — a second query, since the
+ * availability rows are keyed on the session's date. Returns null for a
+ * session that no longer exists — should not happen in practice, since
+ * sessions are never hard-deleted, but this reads across a foreign key at a
+ * later point in time than when the row was enqueued, so it stays defensive.
  *
  * @param {string} sessionId - The session to load.
  * @returns {Promise<SessionSyncData | null>} The data, or null if the session is gone.
@@ -306,7 +346,7 @@ async function loadSessionSyncData(sessionId: string): Promise<SessionSyncData |
       startTime: true,
       durationMinutes: true,
       campaign: { select: { name: true } },
-      attendees: { select: { user: { select: { name: true } } } },
+      attendees: { select: { userId: true, user: { select: { name: true } } } },
     },
   });
 
@@ -314,12 +354,28 @@ async function loadSessionSyncData(sessionId: string): Promise<SessionSyncData |
     return null;
   }
 
+  const onlineRows =
+    session.attendees.length === 0
+      ? []
+      : await prisma.availability.findMany({
+          where: {
+            date: session.date,
+            userId: { in: session.attendees.map((attendee) => attendee.userId) },
+            status: AvailabilityStatus.ONLINE,
+          },
+          select: { userId: true },
+        });
+  const onlineUserIds = new Set(onlineRows.map((row) => row.userId));
+
   return {
     campaignName: session.campaign.name,
     dateIso: toIsoDate(session.date),
     startTime: session.startTime,
     durationMinutes: session.durationMinutes,
     attendeeNames: session.attendees.map((attendee) => attendee.user.name),
+    onlineAttendeeNames: session.attendees
+      .filter((attendee) => onlineUserIds.has(attendee.userId))
+      .map((attendee) => attendee.user.name),
   };
 }
 
@@ -522,6 +578,7 @@ async function processRow(
     startTime: sessionData.startTime,
     durationMinutes: sessionData.durationMinutes,
     attendeeNames: sessionData.attendeeNames,
+    onlineAttendeeNames: sessionData.onlineAttendeeNames,
     locale: recipient?.locale ?? DEFAULT_LOCALE,
     timezone: env.APP_TIMEZONE,
     appUrl: env.AUTH_URL ?? null,
@@ -712,7 +769,8 @@ const AFTER_RESPONSE_PROCESS_LIMIT = 25;
  * already been sent (`next/server`'s `after()`), so a caller's HTTP response
  * is never delayed by a call to Google. Called from a session-mutation route
  * right after a successful confirm/update/cancel/add-attendee/remove-
- * attendee — it does not scope to what that specific mutation enqueued, it
+ * attendee, and from the availability route when an answer switched to or
+ * from "Sí (Online)" — it does not scope to what that specific mutation enqueued, it
  * just picks up whatever across the whole ledger is due, which is cheap and
  * keeps every route's wiring identical.
  *

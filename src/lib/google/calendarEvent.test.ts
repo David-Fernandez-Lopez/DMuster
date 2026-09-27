@@ -5,6 +5,7 @@ const BASE_INPUT = {
   campaignName: "La Orden del Alba",
   dateIso: "2026-09-05",
   attendeeNames: ["Ana", "David", "Paola"],
+  onlineAttendeeNames: [] as string[],
   locale: "es" as const,
   timezone: "Europe/Madrid",
   appUrl: "https://dmuster.example",
@@ -69,5 +70,47 @@ describe("buildCalendarEvent", () => {
     const event = buildCalendarEvent({ ...BASE_INPUT, startTime: "20:00", durationMinutes: 120 });
 
     expect(event).not.toHaveProperty("attendees");
+  });
+
+  it("keeps a plain title and no online line when nobody plays online", () => {
+    const event = buildCalendarEvent({ ...BASE_INPUT, startTime: null, durationMinutes: null });
+
+    expect(event.summary).toBe("La Orden del Alba");
+    expect(event.description).not.toContain("Online");
+  });
+
+  it("marks the title and names the online players when someone plays online", () => {
+    const es = buildCalendarEvent({
+      ...BASE_INPUT,
+      startTime: null,
+      durationMinutes: null,
+      onlineAttendeeNames: ["David", "Paola"],
+    });
+    const en = buildCalendarEvent({
+      ...BASE_INPUT,
+      startTime: null,
+      durationMinutes: null,
+      onlineAttendeeNames: ["David"],
+      locale: "en",
+    });
+
+    expect(es.summary).toBe("La Orden del Alba (Online)");
+    expect(es.description).toBe(
+      "Juegan: Ana, David, Paola\nOnline: David, Paola\nhttps://dmuster.example/sessions",
+    );
+    expect(en.summary).toBe("La Orden del Alba (Online)");
+    expect(en.description).toContain("Online: David");
+  });
+
+  it("does not HTML-escape the campaign name in an online title", () => {
+    const event = buildCalendarEvent({
+      ...BASE_INPUT,
+      campaignName: "Rol & Dados",
+      startTime: null,
+      durationMinutes: null,
+      onlineAttendeeNames: ["David"],
+    });
+
+    expect(event.summary).toBe("Rol & Dados (Online)");
   });
 });

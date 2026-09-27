@@ -279,6 +279,8 @@
       "broken": "La conexión con Google se ha interrumpido.",
       "reconnect": "Reconectar",
       "eventDescription": "Juegan: {{players}}",
+      "eventDescriptionOnline": "Online: {{players}}",
+      "eventOnlineSuffix": "(Online)",
       "reminderTitle": "REVISAR CALENDARIO ROL",
       "reminderDescription": "Tienes días sin responder en {{month}}. Entra en DMuster y completa tu disponibilidad.",
       "errors": {

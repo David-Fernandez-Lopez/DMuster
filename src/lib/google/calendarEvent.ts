@@ -7,7 +7,7 @@
 // never converts to UTC — the `timeZone` field lets Google resolve the
 // correct instant itself, DST included.
 
-import { createInstance } from "i18next";
+import { createInstance, type TFunction } from "i18next";
 
 import { type AppLocale, getOptions } from "@/i18n/settings";
 import { addDays } from "@/lib/date";
@@ -73,6 +73,12 @@ export type CalendarEventInput = {
   durationMinutes: number | null;
   /** Display names of everyone attending, listed in the event description. */
   attendeeNames: string[];
+  /**
+   * The attendees who answered "Sí (Online)" for the day (a subset of
+   * `attendeeNames`). Non-empty marks the event as online: an "(Online)" title
+   * suffix plus a description line naming them.
+   */
+  onlineAttendeeNames: string[];
   /** Locale of the event's OWNER (the calendar it is written to), not the confirming DM. */
   locale: AppLocale;
   /** IANA timezone name (`env.APP_TIMEZONE`) attached to every timed boundary. */
@@ -82,25 +88,18 @@ export type CalendarEventInput = {
 };
 
 /**
- * Builds the localized "who's playing" description line and appends a link
- * to the app's sessions list when a base URL is configured. A fresh i18next
- * instance is created per call (mirrors `getServerTranslation`) so concurrent
- * calls for different recipients' locales never share state; resolution is
- * synchronous because `getOptions` bundles resources statically and disables
- * `initAsync` — the same guarantee `src/i18n/client.ts` relies on.
+ * Creates the translator for one event's texts. A fresh i18next instance is
+ * created per call (mirrors `getServerTranslation`) so concurrent calls for
+ * different recipients' locales never share state; resolution is synchronous
+ * because `getOptions` bundles resources statically and disables `initAsync` —
+ * the same guarantee `src/i18n/client.ts` relies on.
  *
- * @param {string[]} attendeeNames - Display names of everyone attending.
- * @param {AppLocale} locale - Locale to translate the description into.
- * @param {string | null} appUrl - Base app URL, or null to omit the link line.
- * @returns {string} The finished event description.
+ * @param {AppLocale} locale - Locale of the event's owner.
+ * @returns {TFunction} A translator fixed to that locale, with escaping on.
  */
-function buildDescription(
-  attendeeNames: string[],
-  locale: AppLocale,
-  appUrl: string | null,
-): string {
+function createEventTranslator(locale: AppLocale): TFunction {
   const i18n = createInstance();
-  // Escaping on, unlike the app-wide instance. This description is rendered by
+  // Escaping on, unlike the app-wide instance. The description is rendered by
   // Google Calendar, which interprets a subset of HTML in that field, and the
   // names interpolated here belong to other people — each attendee's name lands
   // in every campaign-mate's calendar. The character set is already restricted
@@ -108,13 +107,43 @@ function buildDescription(
   // the module that does the interpolating. The instance is created per call
   // precisely so changing this shares nothing with the rest of the app.
   i18n.init({ ...getOptions(locale), interpolation: { escapeValue: true } });
-  const t = i18n.getFixedT(locale);
+  return i18n.getFixedT(locale);
+}
 
-  const line = t("integrations.google.eventDescription", {
-    players: attendeeNames.join(", "),
-  });
+/**
+ * Builds the localized "who's playing" description line, adds a line naming
+ * who plays online when anyone does, and appends a link to the app's sessions
+ * list when a base URL is configured.
+ *
+ * @param {TFunction} t - The event's translator (`createEventTranslator`).
+ * @param {string[]} attendeeNames - Display names of everyone attending.
+ * @param {string[]} onlineAttendeeNames - The attendees playing online.
+ * @param {string | null} appUrl - Base app URL, or null to omit the link line.
+ * @returns {string} The finished event description.
+ */
+function buildDescription(
+  t: TFunction,
+  attendeeNames: string[],
+  onlineAttendeeNames: string[],
+  appUrl: string | null,
+): string {
+  const lines = [
+    t("integrations.google.eventDescription", {
+      players: attendeeNames.join(", "),
+    }),
+  ];
+  if (onlineAttendeeNames.length > 0) {
+    lines.push(
+      t("integrations.google.eventDescriptionOnline", {
+        players: onlineAttendeeNames.join(", "),
+      }),
+    );
+  }
+  if (appUrl) {
+    lines.push(`${appUrl}/sessions`);
+  }
 
-  return appUrl ? `${line}\n${appUrl}/sessions` : line;
+  return lines.join("\n");
 }
 
 /**
@@ -152,7 +181,9 @@ function addWallClockMinutes(
  * spanning `durationMinutes` (or 4 hours by default); a session without one
  * becomes an all-day event. Google's all-day `end.date` is exclusive, so a
  * single-day all-day session must end the day *after* it starts —
- * `addDays(dateIso, 1)`, not `dateIso` again.
+ * `addDays(dateIso, 1)`, not `dateIso` again. When any attendee plays online,
+ * the title gets an "(Online)" suffix; the campaign name is concatenated, not
+ * interpolated, so the escaping translator never HTML-escapes it in the title.
  *
  * @param {CalendarEventInput} input - Already-resolved session + recipient data.
  * @returns {GoogleCalendarEventBody} The event body ready to POST/PATCH to Google.
@@ -165,10 +196,14 @@ export function buildCalendarEvent(input: CalendarEventInput): GoogleCalendarEve
     startTime,
     durationMinutes,
     attendeeNames,
+    onlineAttendeeNames,
     locale,
     timezone,
     appUrl,
   } = input;
+
+  const t = createEventTranslator(locale);
+  const isOnline = onlineAttendeeNames.length > 0;
 
   let start: GoogleCalendarEventBoundary;
   let end: GoogleCalendarEventBoundary;
@@ -187,8 +222,10 @@ export function buildCalendarEvent(input: CalendarEventInput): GoogleCalendarEve
   }
 
   return {
-    summary: campaignName,
-    description: buildDescription(attendeeNames, locale, appUrl),
+    summary: isOnline
+      ? `${campaignName} ${t("integrations.google.eventOnlineSuffix")}`
+      : campaignName,
+    description: buildDescription(t, attendeeNames, onlineAttendeeNames, appUrl),
     start,
     end,
     extendedProperties: {
