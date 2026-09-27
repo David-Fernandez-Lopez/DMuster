@@ -6,9 +6,9 @@ Web application for managing player availability across multiple tabletop RPG ca
 
 Tabletop RPG groups often struggle to coordinate session dates across multiple campaigns and players with different schedules. DMuster replaces the typical "Google Sheets workaround" with a purpose-built tool.
 
-Nobody proposes dates: every **eligible day** — every Saturday and Sunday, plus any weekday a DM
-has marked as a holiday — is open for answers. Each player answers once per day, and that answer
-applies to every campaign they belong to:
+Nobody proposes dates: every **eligible day** — every Friday, Saturday and Sunday, plus any
+Monday–Thursday date a DM has marked as a holiday — is open for answers. Each player answers once
+per day, and that answer applies to every campaign they belong to:
 
 - **S** — Yes, I can make it
 - **Sí (Online)** — Yes, but remotely
@@ -35,7 +35,8 @@ Green and blue days are both viable: a DM can confirm a session on them directly
 - Confirmed sessions: a DM confirms a session on a viable day (or forces one on a day that is
   not), adjusts who attends, and can cancel it; players who can play that day may join an
   already confirmed session themselves
-- Holidays: any DM can add extra weekday dates that become eligible like a weekend
+- Holidays: any DM can add extra Monday–Thursday dates that become eligible like a Friday or
+  weekend
 - Multi-campaign support from a single account
 - **Invitation-only access:** there is no public sign-up. A DM of any campaign sends a
   single-use, email-bound link (valid 7 days) from `/profile`, optionally pre-joining the
