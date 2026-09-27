@@ -55,18 +55,6 @@ export function isValidIsoDate(iso: string): boolean {
 }
 
 /**
- * Reports whether a calendar date falls on a Saturday or Sunday. Weekends are
- * always eligible for play and are never stored as holidays.
- *
- * @param {string} iso - A valid "YYYY-MM-DD" calendar date.
- * @returns {boolean} True when the date is a Saturday or Sunday.
- */
-export function isWeekend(iso: string): boolean {
-  const day = toUtcDate(iso).getUTCDay(); // 0 = Sunday, 6 = Saturday
-  return day === 0 || day === 6;
-}
-
-/**
  * Reports whether a calendar date falls on a Friday, Saturday or Sunday — the
  * days of the week that are always eligible for play and are never stored as
  * holidays.

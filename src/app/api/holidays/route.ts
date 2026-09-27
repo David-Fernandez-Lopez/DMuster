@@ -39,9 +39,9 @@ export async function GET(): Promise<NextResponse> {
  * POST /api/holidays — adds an extra weekday holiday. Restricted to a user who
  * is DM of at least one campaign (no global admin role — CLAUDE.md §4).
  * Authorization runs before body validation: 401 → 403 (not DM-of-any) → 400.
- * A weekend or malformed date fails validation; a duplicate date is 400. The
- * validation error collapses to the specific field key so the single-field form
- * shows `invalidDate` / `weekend` directly.
+ * A Friday, weekend or malformed date fails validation; a duplicate date is
+ * 400. The validation error collapses to the specific field key so the
+ * single-field form shows `invalidDate` / `regularPlayDay` directly.
  *
  * @param {Request} request - The incoming request with the JSON body.
  * @returns {Promise<NextResponse>} 201, 400, 401, 403, or 500.

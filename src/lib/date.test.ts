@@ -5,7 +5,6 @@ import {
   isEligible,
   isRegularPlayDay,
   isValidIsoDate,
-  isWeekend,
   lastDayOfMonth,
   monthDays,
   toIsoDate,
@@ -18,17 +17,6 @@ import {
 // Seed holidays (extra weekday-eligible dates, CLAUDE.md §7). 2026-07-15 is a
 // Wednesday, so it exercises the "weekday but eligible via holiday" path.
 const SEED_HOLIDAYS = new Set(["2026-07-15", "2026-08-06"]);
-
-describe("isWeekend", () => {
-  it("is true on Saturday and Sunday", () => {
-    expect(isWeekend("2026-07-18")).toBe(true); // Saturday
-    expect(isWeekend("2026-07-19")).toBe(true); // Sunday
-  });
-
-  it("is false on a weekday", () => {
-    expect(isWeekend("2026-07-20")).toBe(false); // Monday
-  });
-});
 
 describe("isRegularPlayDay", () => {
   it("is true on Friday, Saturday and Sunday", () => {

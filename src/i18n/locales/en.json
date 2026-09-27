@@ -152,7 +152,7 @@
     "confirmRemoveYes": "Yes, remove",
     "errors": {
       "invalidDate": "Enter a valid date.",
-      "weekend": "Weekends are already playable; add weekdays only.",
+      "regularPlayDay": "Fridays and weekends are already playable; add Monday to Thursday dates only.",
       "duplicate": "This holiday already exists.",
       "notFound": "Holiday not found.",
       "hasSessions": "A session is confirmed that day. Cancel it before removing the holiday.",

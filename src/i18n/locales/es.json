@@ -152,7 +152,7 @@
     "confirmRemoveYes": "Sí, quitar",
     "errors": {
       "invalidDate": "Introduce una fecha válida.",
-      "weekend": "Los fines de semana ya son jugables; añade solo días entre semana.",
+      "regularPlayDay": "Los viernes y fines de semana ya son jugables; añade solo días de lunes a jueves.",
       "duplicate": "Este festivo ya existe.",
       "notFound": "Festivo no encontrado.",
       "hasSessions": "Hay una partida confirmada ese día. Cancélala antes de quitar el festivo.",

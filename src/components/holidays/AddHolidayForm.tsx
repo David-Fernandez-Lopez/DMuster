@@ -7,9 +7,9 @@ import { useTranslation } from "react-i18next";
 /**
  * DM control for adding an extra weekday holiday. A native date input (its value
  * is already "YYYY-MM-DD") plus an add button; on success the server-rendered
- * list refreshes and the input clears. A failed add — a weekend, a duplicate, or
- * an invalid date — surfaces the translated error returned by the API and keeps
- * the chosen date so it can be corrected.
+ * list refreshes and the input clears. A failed add — a Friday or weekend, a
+ * duplicate, or an invalid date — surfaces the translated error returned by the
+ * API and keeps the chosen date so it can be corrected.
  *
  * @returns {JSX.Element} The add-holiday form.
  */

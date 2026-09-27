@@ -42,8 +42,8 @@ export async function listHolidays(): Promise<HolidayDto[]> {
 /**
  * Adds an extra weekday holiday, stored at UTC midnight so the calendar day
  * never shifts with the host timezone. The date must already be Zod-validated
- * (real day, not a weekend). A duplicate date (unique constraint) surfaces as a
- * friendly i18n error key rather than throwing.
+ * (real day, not a Friday or weekend). A duplicate date (unique constraint)
+ * surfaces as a friendly i18n error key rather than throwing.
  *
  * @param {string} dateIso - The holiday's calendar day, "YYYY-MM-DD".
  * @param {string} userId - Id of the DM adding it (recorded as `createdById`).

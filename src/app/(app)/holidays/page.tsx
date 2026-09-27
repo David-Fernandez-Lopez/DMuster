@@ -16,12 +16,12 @@ import { listHolidays } from "@/lib/holidayService";
  * guard as defense-in-depth — the mutations still return 401/403 regardless.
  *
  * Shows a form to add a holiday at the top, then the extra weekday holidays
- * (weekends are eligible automatically and are never listed) grouped into one
- * section per year — a grid on desktop, a single column on mobile — each with
- * its localized date (the year lives in the section heading) and a remove
- * control. Reads go straight through the service layer; mutations go through
- * the API. Reached from the "Gestionar festivos" link in the calendar header
- * (shown only to DMs).
+ * (Fridays and weekends are eligible automatically and are never listed)
+ * grouped into one section per year — a grid on desktop, a single column on
+ * mobile — each with its localized date (the year lives in the section
+ * heading) and a remove control. Reads go straight through the service layer;
+ * mutations go through the API. Reached from the "Gestionar festivos" link in
+ * the calendar header (shown only to DMs).
  *
  * @returns {Promise<JSX.Element>}
  */
