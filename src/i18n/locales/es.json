@@ -25,7 +25,7 @@
     "nextMonth": "Mes siguiente",
     "today": "Hoy",
     "legend": {
-      "note": "Solo fines de semana y festivos",
+      "note": "Solo viernes, fines de semana y festivos",
       "yes": "Sí",
       "online": "Sí (Online)",
       "no": "No",
@@ -64,7 +64,7 @@
   },
   "availability": {
     "title": "Mi disponibilidad",
-    "help": "Marca los fines de semana y festivos en los que puedes jugar. Tu respuesta se aplica a todas tus campañas.",
+    "help": "Marca los viernes, fines de semana y festivos en los que puedes jugar. Tu respuesta se aplica a todas tus campañas.",
     "filter": {
       "pending": "Pendientes",
       "all": "Todas"
