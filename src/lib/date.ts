@@ -8,6 +8,9 @@
 /** Matches a strict "YYYY-MM-DD" calendar date. */
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+/** Days of the week that are always eligible, as `getUTCDay()` values: Fri, Sat, Sun. */
+const REGULAR_PLAY_DAYS = new Set([5, 6, 0]);
+
 /**
  * Parses a "YYYY-MM-DD" string into a Date pinned to UTC midnight, so values
  * stored in `@db.Date` columns land on the intended calendar day regardless of
@@ -64,16 +67,28 @@ export function isWeekend(iso: string): boolean {
 }
 
 /**
- * Reports whether a calendar date is eligible (playable/respondable): a weekend,
- * or an extra weekday listed in the holiday set. Mirrors the seed's eligibility
- * rule and the business logic in CLAUDE.md §3.
+ * Reports whether a calendar date falls on a Friday, Saturday or Sunday — the
+ * days of the week that are always eligible for play and are never stored as
+ * holidays.
+ *
+ * @param {string} iso - A valid "YYYY-MM-DD" calendar date.
+ * @returns {boolean} True when the date is a Friday, Saturday or Sunday.
+ */
+export function isRegularPlayDay(iso: string): boolean {
+  return REGULAR_PLAY_DAYS.has(toUtcDate(iso).getUTCDay());
+}
+
+/**
+ * Reports whether a calendar date is eligible (playable/respondable): a Friday
+ * or weekend, or an extra weekday listed in the holiday set. Mirrors the
+ * business logic in CLAUDE.md §3.
  *
  * @param {string} iso - A valid "YYYY-MM-DD" calendar date.
  * @param {Set<string>} holidays - Set of holiday dates as "YYYY-MM-DD" strings.
  * @returns {boolean} True when the date is eligible for play.
  */
 export function isEligible(iso: string, holidays: Set<string>): boolean {
-  return isWeekend(iso) || holidays.has(iso);
+  return isRegularPlayDay(iso) || holidays.has(iso);
 }
 
 /**
@@ -189,8 +204,8 @@ export function monthDays(month: string): string[] {
 }
 
 /**
- * Lists the eligible (playable) days of a "YYYY-MM" month — every weekend or
- * listed holiday in it. Used by the monthly availability reminder (roadmap
+ * Lists the eligible (playable) days of a "YYYY-MM" month — every Friday,
+ * weekend or listed holiday in it. Used by the monthly availability reminder (roadmap
  * #23.4) to decide whether next month is fully answered.
  *
  * @param {string} month - A valid "YYYY-MM" month.
@@ -255,7 +270,7 @@ export function addDays(iso: string, delta: number): string {
 /**
  * Collects the eligible (playable) calendar days within a forward window: it
  * scans `windowDays` consecutive days starting at `startIso` (inclusive) and
- * keeps those that are eligible — a weekend or a listed holiday (see
+ * keeps those that are eligible — a Friday, a weekend or a listed holiday (see
  * `isEligible`) — stopping once `max` have been found. Used by the "Mi
  * disponibilidad" screen to build its upcoming-days list (roadmap #16).
  *

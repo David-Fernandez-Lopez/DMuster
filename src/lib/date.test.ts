@@ -3,6 +3,7 @@ import {
   groupByYear,
   groupDaysByMonth,
   isEligible,
+  isRegularPlayDay,
   isValidIsoDate,
   isWeekend,
   lastDayOfMonth,
@@ -29,9 +30,26 @@ describe("isWeekend", () => {
   });
 });
 
+describe("isRegularPlayDay", () => {
+  it("is true on Friday, Saturday and Sunday", () => {
+    expect(isRegularPlayDay("2026-07-17")).toBe(true); // Friday
+    expect(isRegularPlayDay("2026-07-18")).toBe(true); // Saturday
+    expect(isRegularPlayDay("2026-07-19")).toBe(true); // Sunday
+  });
+
+  it("is false from Monday to Thursday", () => {
+    expect(isRegularPlayDay("2026-07-20")).toBe(false); // Monday
+    expect(isRegularPlayDay("2026-07-16")).toBe(false); // Thursday
+  });
+});
+
 describe("isEligible", () => {
   it("is eligible on a weekend not listed as a holiday", () => {
     expect(isEligible("2026-07-18", SEED_HOLIDAYS)).toBe(true);
+  });
+
+  it("is eligible on a Friday not listed as a holiday", () => {
+    expect(isEligible("2026-07-17", SEED_HOLIDAYS)).toBe(true);
   });
 
   it("is eligible on a weekday listed as a holiday", () => {
@@ -91,11 +109,13 @@ describe("monthDays", () => {
 });
 
 describe("eligibleDaysOfMonth", () => {
-  it("includes weekends and excludes plain weekdays", () => {
-    // August 2026: Saturdays 1, 8, 15, 22, 29; Sundays 2, 9, 16, 23, 30.
+  it("includes Fridays and weekends and excludes plain weekdays", () => {
+    // August 2026: Fridays 7, 14, 21, 28; Saturdays 1, 8, 15, 22, 29;
+    // Sundays 2, 9, 16, 23, 30.
     const eligible = eligibleDaysOfMonth("2026-08", new Set());
     expect(eligible).toContain("2026-08-01");
     expect(eligible).toContain("2026-08-02");
+    expect(eligible).toContain("2026-08-07"); // Friday
     expect(eligible).not.toContain("2026-08-03"); // Monday
   });
 
@@ -107,35 +127,35 @@ describe("eligibleDaysOfMonth", () => {
 
 describe("upcomingEligibleDaysThroughMonth", () => {
   it("extends past minDays to cover the rest of the last day's month", () => {
-    // 2026-09-27 is a Sunday; the 16th weekend/holiday day from there lands on
-    // 2026-11-15, mid-November. The result should keep going through the rest
-    // of November's eligible days instead of cutting the month in half.
+    // 2026-09-27 is a Sunday; the 10th Friday/weekend/holiday day from there
+    // lands on 2026-10-17, mid-October. The result should keep going through
+    // the rest of October's eligible days instead of cutting the month in half.
     const holidays = new Set(["2026-10-12"]); // Monday, made eligible
     const days = upcomingEligibleDaysThroughMonth(
       "2026-09-27",
       90,
-      16,
+      10,
       holidays,
     );
 
-    expect(days.length).toBeGreaterThan(16);
-    expect(days[15]).toBe("2026-11-15"); // the original 16th day, unchanged
-    expect(days[days.length - 1]).toBe("2026-11-29"); // November's last weekend
-    expect(days).not.toContain("2026-11-30"); // Monday, not eligible
+    expect(days.length).toBeGreaterThan(10);
+    expect(days[9]).toBe("2026-10-17"); // the original 10th day, unchanged
+    expect(days[days.length - 1]).toBe("2026-10-31"); // October's last Saturday
+    expect(days).not.toContain("2026-11-01"); // Sunday, but past the month
   });
 
   it("adds nothing when the minDays cut already lands on the month's last eligible day", () => {
-    // Starting on Sunday 2026-11-01 with minDays=9 collects every weekend
-    // through 2026-11-29; November's only later day, 2026-11-30, is a Monday
-    // and not eligible, so there is nothing left to extend.
+    // Starting on Sunday 2026-11-01 with minDays=13 collects every Friday and
+    // weekend through 2026-11-29; November's only later day, 2026-11-30, is a
+    // Monday and not eligible, so there is nothing left to extend.
     const days = upcomingEligibleDaysThroughMonth(
       "2026-11-01",
       90,
-      9,
+      13,
       new Set(),
     );
 
-    expect(days).toHaveLength(9);
+    expect(days).toHaveLength(13);
     expect(days[days.length - 1]).toBe("2026-11-29");
   });
 
@@ -147,7 +167,7 @@ describe("upcomingEligibleDaysThroughMonth", () => {
       new Set(),
     );
 
-    expect(days).toEqual(["2026-09-27", "2026-10-03", "2026-10-04"]);
+    expect(days).toEqual(["2026-09-27", "2026-10-02", "2026-10-03", "2026-10-04"]);
   });
 
   it("returns an empty list unchanged when no eligible day exists in the window", () => {
