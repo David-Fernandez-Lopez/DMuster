@@ -29,13 +29,15 @@
       "yes": "Yes",
       "online": "Yes (Online)",
       "no": "No",
-      "maybe": "Maybe"
+      "maybe": "Maybe",
+      "busy": "Busy"
     },
     "viability": {
       "S": "Yes",
       "O": "Yes (Online)",
       "N": "No",
-      "T": "Maybe"
+      "T": "Maybe",
+      "B": "Busy"
     },
     "moreChips": "+{{count}}",
     "filter": {

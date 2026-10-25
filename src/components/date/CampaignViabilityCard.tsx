@@ -33,6 +33,7 @@ const VIABILITY_STYLE: Record<Viability, { className: string; labelKey: string }
     O: { className: "bg-o-soft text-o", labelKey: "calendar.viability.O" },
     N: { className: "bg-n-soft text-n", labelKey: "calendar.viability.N" },
     T: { className: "bg-t-soft text-t", labelKey: "calendar.viability.T" },
+    B: { className: "bg-b-soft text-b", labelKey: "calendar.viability.B" },
   };
 
 /**

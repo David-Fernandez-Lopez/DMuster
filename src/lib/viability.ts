@@ -1,9 +1,9 @@
 // Pure viability logic for DMuster: given the resolved responses of a single
 // campaign's members for one eligible day, decide whether that day is viable
-// (S), viable with someone playing online (O), not viable (N) or pending (T).
-// Free of Prisma/Next imports so it stays
-// trivially unit-testable (see roadmap #17) and reusable from the calendar
-// service in #18.
+// (S), viable with someone playing online (O), not viable (N), pending (T) or
+// taken by another campaign's session (B). Free of Prisma/Next imports so it
+// stays trivially unit-testable (see roadmap #17) and reusable from the
+// calendar service in #18.
 
 /**
  * A stored availability response. Mirrors the values of Prisma's
@@ -16,31 +16,45 @@ export type ResponseStatus = "YES" | "NO" | "MAYBE" | "ONLINE";
 
 /**
  * The computed viability tier for a campaign on a given day. `O` is a viable
- * day like `S`, flagged because at least one member plays online.
+ * day like `S`, flagged because at least one member plays online. `B`
+ * ("Ocupado") means at least one member already attends another campaign's
+ * active session that day.
  */
-export type Viability = "S" | "O" | "N" | "T";
+export type Viability = "S" | "O" | "N" | "T" | "B";
+
+/**
+ * A member's resolved state for one day, as fed to `computeViability`: their
+ * stored answer, `"BUSY"` when they already attend another campaign's active
+ * session that day (which overrides any answer), or `undefined` when they have
+ * not responded (the derived pending state).
+ */
+export type MemberAvailability = ResponseStatus | "BUSY" | undefined;
 
 /**
  * Computes a campaign's viability for a single day from its members' resolved
- * responses. Each entry is a member's stored answer, or `undefined` when that
- * member has not responded (the derived pending state). Applies the priority in
- * CLAUDE.md §3:
+ * states. Each entry is a member's stored answer, `"BUSY"` when they already
+ * play another campaign's session that day, or `undefined` when they have not
+ * responded (the derived pending state). Applies the priority in CLAUDE.md §3:
  *
- * 1. any `NO` ⇒ `N` (someone cannot make it)
- * 2. else any `MAYBE` **or** missing response (`undefined`) ⇒ `T` (pending)
- * 3. else any `ONLINE` ⇒ `O` (everyone can play, someone remotely)
- * 4. else all `YES` ⇒ `S` (everyone confirmed in person)
+ * 1. any `BUSY` ⇒ `B` (someone already plays another session that day)
+ * 2. else any `NO` ⇒ `N` (someone cannot make it)
+ * 3. else any `MAYBE` **or** missing response (`undefined`) ⇒ `T` (pending)
+ * 4. else any `ONLINE` ⇒ `O` (everyone can play, someone remotely)
+ * 5. else all `YES` ⇒ `S` (everyone confirmed in person)
  *
  * An empty input yields `S` (vacuously "all confirmed"); real campaigns always
  * have members, so this edge case does not arise in practice.
  *
- * @param {Array<ResponseStatus | undefined>} statuses - The campaign members'
- *   responses for the day; `undefined` marks a member who has not answered.
- * @returns {Viability} `N`, `T`, `O` or `S` per the priority above.
+ * @param {ReadonlyArray<MemberAvailability>} statuses - The campaign members'
+ *   resolved states for the day.
+ * @returns {Viability} `B`, `N`, `T`, `O` or `S` per the priority above.
  */
 export function computeViability(
-  statuses: Array<ResponseStatus | undefined>,
+  statuses: ReadonlyArray<MemberAvailability>,
 ): Viability {
+  if (statuses.some((status) => status === "BUSY")) {
+    return "B";
+  }
   if (statuses.some((status) => status === "NO")) {
     return "N";
   }
@@ -54,9 +68,30 @@ export function computeViability(
 }
 
 /**
+ * Resolves one member's state for `computeViability`: being busy in another
+ * campaign's session that day overrides whatever they answered, and a missing
+ * answer (`null`/`undefined`) becomes the pending `undefined`.
+ *
+ * @param {ResponseStatus | null | undefined} status - The member's stored
+ *   response, or `null`/`undefined` when they have not answered.
+ * @param {boolean} isBusy - Whether the member attends another campaign's
+ *   active session that day.
+ * @returns {MemberAvailability} `"BUSY"`, the stored answer, or `undefined`.
+ */
+export function resolveMemberAvailability(
+  status: ResponseStatus | null | undefined,
+  isBusy: boolean,
+): MemberAvailability {
+  if (isBusy) {
+    return "BUSY";
+  }
+  return status ?? undefined;
+}
+
+/**
  * Whether a viability tier means the campaign can play that day: `S`, or `O`
  * (everyone can play, someone online). This is what lets a DM confirm a
- * session without forcing it.
+ * session without forcing it. `T`, `N` and `B` are not viable.
  *
  * @param {Viability} viability - The computed tier.
  * @returns {boolean} True for `S` and `O`.

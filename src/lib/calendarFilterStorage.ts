@@ -14,11 +14,11 @@ import type { Viability } from "@/lib/viability";
 const STORAGE_KEY = "dmuster.calendarFilters.v1";
 
 /**
- * The four viability tiers, the fixed universe of the availability filter.
- * Stored filters keep exclusions, so a tier added later (like `O`) shows by
- * default for anyone with a saved selection.
+ * The five viability tiers, the fixed universe of the availability filter.
+ * Stored filters keep exclusions, so a tier added later (like `O` or `B`) shows
+ * by default for anyone with a saved selection.
  */
-export const ALL_VIABILITIES: readonly Viability[] = ["S", "O", "T", "N"];
+export const ALL_VIABILITIES: readonly Viability[] = ["S", "O", "T", "N", "B"];
 
 /** The active (shown) selection for each filter dimension. */
 export type CalendarFilterSelection = {

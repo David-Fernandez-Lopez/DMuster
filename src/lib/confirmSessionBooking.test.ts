@@ -1,0 +1,140 @@
+import { confirmSession } from "@/lib/confirmedSessionService";
+import { listHolidays } from "@/lib/holidayService";
+import { prisma } from "@/lib/prisma";
+
+/** A Saturday, so it is eligible without any holiday. */
+const DATE = "2026-10-31";
+
+jest.mock("@/lib/today", () => ({ todayIso: () => "2026-10-25" }));
+
+// The generated Prisma client is ESM and uses `import.meta.url`, which ts-jest
+// cannot parse under the current CommonJS setup — same stand-in as
+// addAttendeeDate.test.ts, only the error class is needed.
+jest.mock("@/generated/prisma/client", () => ({
+  Prisma: { PrismaClientKnownRequestError: class extends Error {} },
+}));
+jest.mock("@/lib/prisma", () => ({
+  prisma: {
+    campaign: { findUnique: jest.fn() },
+    availability: { findMany: jest.fn() },
+    confirmedSession: { findMany: jest.fn() },
+    $transaction: jest.fn(),
+  },
+}));
+jest.mock("@/lib/authz", () => ({ getCampaignRole: jest.fn() }));
+jest.mock("@/lib/google/calendarSyncService", () => ({
+  enqueueDeletion: jest.fn(),
+  enqueueForSession: jest.fn(),
+  enqueueUpdateForSession: jest.fn(),
+}));
+jest.mock("@/lib/holidayService", () => ({ listHolidays: jest.fn() }));
+
+const holidays = listHolidays as jest.Mock;
+const findCampaign = prisma.campaign.findUnique as jest.Mock;
+const findAvailability = prisma.availability.findMany as jest.Mock;
+const findSessions = prisma.confirmedSession.findMany as jest.Mock;
+const transaction = prisma.$transaction as jest.Mock;
+
+/** The transaction client handed to the `$transaction` callback. */
+const tx = {
+  confirmedSession: { create: jest.fn() },
+  confirmedSessionAttendee: { createMany: jest.fn() },
+};
+
+/**
+ * Registers Academia's active session on `DATE` with the given attendees, in
+ * the shape `listActiveSessions` selects from Prisma.
+ */
+function academiaPlaying(attendeeIds: string[]): void {
+  findSessions.mockResolvedValue([
+    {
+      id: "session-ac",
+      campaignId: "academia",
+      date: new Date(`${DATE}T00:00:00.000Z`),
+      startTime: "17:00",
+      durationMinutes: 240,
+      campaign: { name: "Academia Arcana", tag: "AC" },
+      attendees: attendeeIds.map((userId) => ({ userId, user: { name: userId } })),
+    },
+  ]);
+}
+
+/** Confirms Poulard on `DATE` as its DM, Ana. */
+function confirmPoulard(attendeeIds?: string[]) {
+  return confirmSession({
+    campaignId: "poulard",
+    dateIso: DATE,
+    startTime: null,
+    durationMinutes: null,
+    userId: "ana",
+    attendeeIds,
+  });
+}
+
+describe("confirmSession — members busy in another campaign's session", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    holidays.mockResolvedValue([]);
+    findCampaign.mockResolvedValue({
+      name: "Poulard",
+      tag: "PO",
+      players: [
+        { userId: "ana", role: "DM" },
+        { userId: "paola", role: "PLAYER" },
+        { userId: "tucho", role: "PLAYER" },
+      ],
+    });
+    // Everyone answered Sí: on answers alone, Poulard would be viable (S).
+    findAvailability.mockResolvedValue([
+      { userId: "ana", status: "YES" },
+      { userId: "paola", status: "YES" },
+      { userId: "tucho", status: "YES" },
+    ]);
+
+    transaction.mockImplementation((fn: (client: typeof tx) => unknown) => fn(tx));
+    tx.confirmedSession.create.mockResolvedValue({ id: "session-po" });
+  });
+
+  it("treats the day as not viable (B) when a member already plays Academia", async () => {
+    academiaPlaying(["paola"]);
+
+    await expect(confirmPoulard()).resolves.toEqual({
+      ok: false,
+      error: "sessions.errors.attendeesRequired",
+    });
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("lets the DM force the session without the busy member, flagged as forced", async () => {
+    academiaPlaying(["paola"]);
+
+    const result = await confirmPoulard(["ana", "tucho"]);
+
+    expect(result.ok).toBe(true);
+    expect(tx.confirmedSession.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ forced: true }) }),
+    );
+  });
+
+  it("stays viable when the other session's attendees are not Poulard members", async () => {
+    // The lock follows attendees: Academia playing without any Poulard member
+    // leaves Poulard free.
+    academiaPlaying(["sergio"]);
+
+    const result = await confirmPoulard();
+
+    expect(result.ok).toBe(true);
+    expect(tx.confirmedSession.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ forced: false }) }),
+    );
+  });
+
+  it("loads the day's sessions once, for both the viability and the conflict check", async () => {
+    academiaPlaying(["sergio"]);
+
+    await confirmPoulard();
+
+    expect(findSessions).toHaveBeenCalledTimes(1);
+  });
+});

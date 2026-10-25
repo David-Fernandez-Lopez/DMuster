@@ -22,8 +22,11 @@ import type {
   Viability,
 } from "@/lib/viability";
 
-/** Chip ordering priority: available (in person, then online) first, then maybe, then unavailable. */
-const VIABILITY_ORDER: Record<Viability, number> = { S: 0, O: 1, T: 2, N: 3 };
+/**
+ * Chip ordering priority: available (in person, then online) first, then maybe,
+ * then unavailable, then busy in another campaign's session.
+ */
+const VIABILITY_ORDER: Record<Viability, number> = { S: 0, O: 1, T: 2, N: 3, B: 4 };
 
 type CalendarGridProps = {
   /** The visible month, "YYYY-MM". */

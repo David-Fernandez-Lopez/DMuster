@@ -13,6 +13,8 @@ import { listHolidays } from "@/lib/holidayService";
 import { prisma } from "@/lib/prisma";
 import { lockRow } from "@/lib/rowLock";
 import {
+  buildBusyIndex,
+  findBusySession,
   findConflictingSessions,
   type SessionAttendance,
   type SessionConflict,
@@ -22,6 +24,7 @@ import {
   computeViability,
   isAvailableResponse,
   isViable,
+  resolveMemberAvailability,
   type Viability,
 } from "@/lib/viability";
 
@@ -105,30 +108,55 @@ export type AttendeeMutationResult =
   | { ok: false; error: string; params?: Record<string, string> };
 
 /**
- * Fetches every active session's attendees on a calendar day, as the shape
- * `findConflictingSessions` (src/lib/sessionConflict.ts) expects. One batched
- * query; already filtered to active sessions, so `cancelled` is always `false`.
- *
- * @param {string} dateIso - The calendar day to check, "YYYY-MM-DD".
- * @returns {Promise<SessionAttendance[]>} Every active session's attendees on that day.
+ * An active confirmed session with everything both the calendar and the
+ * conflict check need: the DTO fields plus its attendees (ids and names) in the
+ * `SessionAttendance` shape that `sessionConflict.ts` consumes.
  */
-async function loadActiveAttendanceForDate(
-  dateIso: string,
-): Promise<SessionAttendance[]> {
+export type ActiveSessionRecord = ConfirmedSessionDto & SessionAttendance;
+
+/**
+ * Lists every active session, across **all** campaigns, within an inclusive
+ * date range, ordered by date then start time (MySQL sorts `NULL` first in
+ * `ASC`, so all-day sessions lead their day). One batched query backed by the
+ * `@@index([date])`; already filtered to active sessions, so `cancelled` is
+ * always `false`. It is the single source for everything that has to look past
+ * the viewer's own campaigns: the shared-attendee conflict check (a one-day
+ * range), the busy members behind the `B` viability tier, and the calendar.
+ *
+ * @param {string} startIso - Range start, "YYYY-MM-DD" (inclusive).
+ * @param {string} endIso - Range end, "YYYY-MM-DD" (inclusive).
+ * @returns {Promise<ActiveSessionRecord[]>} Every active session in range.
+ */
+export async function listActiveSessions(
+  startIso: string,
+  endIso: string,
+): Promise<ActiveSessionRecord[]> {
   const sessions = await prisma.confirmedSession.findMany({
-    where: { date: toUtcDate(dateIso), ...ACTIVE_SESSION },
+    where: {
+      date: { gte: toUtcDate(startIso), lte: toUtcDate(endIso) },
+      ...ACTIVE_SESSION,
+    },
     select: {
       id: true,
       campaignId: true,
-      campaign: { select: { name: true } },
+      date: true,
+      startTime: true,
+      durationMinutes: true,
+      campaign: { select: { name: true, tag: true } },
       attendees: { select: { userId: true, user: { select: { name: true } } } },
     },
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
   });
 
   return sessions.map((session) => ({
+    id: session.id,
     sessionId: session.id,
     campaignId: session.campaignId,
     campaignName: session.campaign.name,
+    campaignTag: session.campaign.tag,
+    date: toIsoDate(session.date),
+    startTime: session.startTime,
+    durationMinutes: session.durationMinutes,
     cancelled: false,
     attendeeIds: session.attendees.map((attendee) => attendee.userId),
     attendeeNames: Object.fromEntries(
@@ -154,7 +182,7 @@ export async function findConflicts(
   attendeeIds: string[],
   excludeSessionId?: string,
 ): Promise<SessionConflict[]> {
-  const attendance = await loadActiveAttendanceForDate(dateIso);
+  const attendance = await listActiveSessions(dateIso, dateIso);
   return findConflictingSessions(attendeeIds, attendance, excludeSessionId);
 }
 
@@ -196,16 +224,23 @@ async function describeConflict(
 
 /**
  * Recomputes a campaign's viability for one day server-side, never trusting a
- * client-claimed value. Reuses `computeViability` (src/lib/viability.ts) —
- * same rule as the calendar (`getCalendarViability`).
+ * client-claimed value. Same rule as the calendar (`getCalendarViability`):
+ * each member's stored answer, overridden by "busy" when they already attend
+ * another campaign's active session that day (`findBusySession`), resolved by
+ * `computeViability` (src/lib/viability.ts).
  *
+ * @param {string} campaignId - The campaign being checked.
  * @param {string[]} memberIds - Every member's user id.
  * @param {string} dateIso - The calendar day to check, "YYYY-MM-DD".
- * @returns {Promise<Viability>} `S`, `O`, `N` or `T`.
+ * @param {readonly SessionAttendance[]} attendance - Every active session that
+ *   day across all campaigns, from `listActiveSessions`.
+ * @returns {Promise<Viability>} `S`, `O`, `N`, `T` or `B`.
  */
 async function computeCampaignViabilityOnDate(
+  campaignId: string,
   memberIds: string[],
   dateIso: string,
+  attendance: readonly SessionAttendance[],
 ): Promise<Viability> {
   if (memberIds.length === 0) {
     return "S";
@@ -217,74 +252,15 @@ async function computeCampaignViabilityOnDate(
   });
 
   const statusByUser = new Map(rows.map((row) => [row.userId, row.status]));
-  return computeViability(memberIds.map((id) => statusByUser.get(id)));
-}
-
-/**
- * A confirmed session with its attendee ids only (no names/statuses) —
- * an internal shape between `listConfirmedSessionsForCampaigns` and
- * `getCalendarViability`, which already has every member's name/status in
- * memory and does the full `ConfirmedSessionDetailDto` enrichment itself.
- */
-export type ConfirmedSessionWithAttendeeIds = ConfirmedSessionDto & {
-  attendeeIds: string[];
-};
-
-/**
- * Lists every active confirmed session for a set of campaigns within an
- * inclusive date range, keyed by `"campaignId|YYYY-MM-DD"` for O(1) lookup
- * while the calendar builds its per-day, per-campaign viability map. One
- * batched query — no N+1 per day or per campaign. Includes attendee ids
- * (roadmap #22) so the calendar can render the attendee list and self-join
- * affordance without a second query.
- *
- * @param {string[]} campaignIds - Campaigns to fetch sessions for.
- * @param {string} startIso - Range start, "YYYY-MM-DD" (inclusive).
- * @param {string} endIso - Range end, "YYYY-MM-DD" (inclusive).
- * @returns {Promise<Map<string, ConfirmedSessionWithAttendeeIds>>} Sessions keyed by campaign + day.
- */
-export async function listConfirmedSessionsForCampaigns(
-  campaignIds: string[],
-  startIso: string,
-  endIso: string,
-): Promise<Map<string, ConfirmedSessionWithAttendeeIds>> {
-  const byCampaignAndDate = new Map<string, ConfirmedSessionWithAttendeeIds>();
-  if (campaignIds.length === 0) {
-    return byCampaignAndDate;
-  }
-
-  const sessions = await prisma.confirmedSession.findMany({
-    where: {
-      campaignId: { in: campaignIds },
-      date: { gte: toUtcDate(startIso), lte: toUtcDate(endIso) },
-      ...ACTIVE_SESSION,
-    },
-    select: {
-      id: true,
-      campaignId: true,
-      date: true,
-      startTime: true,
-      durationMinutes: true,
-      campaign: { select: { name: true, tag: true } },
-      attendees: { select: { userId: true } },
-    },
-  });
-
-  for (const session of sessions) {
-    const dateIso = toIsoDate(session.date);
-    byCampaignAndDate.set(`${session.campaignId}|${dateIso}`, {
-      id: session.id,
-      campaignId: session.campaignId,
-      campaignName: session.campaign.name,
-      campaignTag: session.campaign.tag,
-      date: dateIso,
-      startTime: session.startTime,
-      durationMinutes: session.durationMinutes,
-      attendeeIds: session.attendees.map((attendee) => attendee.userId),
-    });
-  }
-
-  return byCampaignAndDate;
+  const busyIndex = buildBusyIndex(attendance);
+  return computeViability(
+    memberIds.map((id) =>
+      resolveMemberAvailability(
+        statusByUser.get(id),
+        findBusySession(busyIndex, id, campaignId) !== null,
+      ),
+    ),
+  );
 }
 
 /**
@@ -428,7 +404,8 @@ export async function listUpcomingSessions(
  * `authorizeDm`, so a stranger cannot probe campaign existence), the date is
  * eligible, and no other active session that day shares an attendee. Without
  * `attendeeIds`, the campaign's viability must be viable (`S`, or `O` when
- * someone plays online) and the whole membership becomes the attendee set
+ * someone plays online — a member already attending another campaign's session
+ * that day makes it `B`, never viable) and the whole membership becomes the attendee set
  * (roadmap #21 — a viable day means everyone plays). With `attendeeIds` (a DM
  * override, roadmap #22), every id must be a campaign member and the confirming
  * DM must be among them; the viability requirement is lifted, and the session
@@ -487,7 +464,16 @@ export async function confirmSession({
   }
 
   const memberIds = campaign.players.map((player) => player.userId);
-  const viability = await computeCampaignViabilityOnDate(memberIds, dateIso);
+  // Every active session that day, across all campaigns — loaded once and
+  // shared by the viability check (busy members make it `B`) and the conflict
+  // check below.
+  const attendance = await listActiveSessions(dateIso, dateIso);
+  const viability = await computeCampaignViabilityOnDate(
+    campaignId,
+    memberIds,
+    dateIso,
+    attendance,
+  );
 
   let attendees: string[];
   if (attendeeIds === undefined) {
@@ -507,7 +493,7 @@ export async function confirmSession({
     attendees = deduped;
   }
 
-  const conflicts = await findConflicts(dateIso, attendees);
+  const conflicts = findConflictingSessions(attendees, attendance);
   if (conflicts.length > 0) {
     const [conflict] = conflicts;
     return {
@@ -739,7 +725,7 @@ export async function cancelSession(
  * member; the self path additionally requires the actor to have answered `YES`
  * or `ONLINE` for the session's date. Both paths then reject an attendee already on the
  * list and a conflicting same-day session the target already attends elsewhere,
- * via the same `findConflicts` used by `confirmSession`.
+ * via `findConflicts` — the same shared-attendee rule `confirmSession` applies.
  *
  * @param {string} sessionId - The active session being joined.
  * @param {string} targetUserId - The user being added.

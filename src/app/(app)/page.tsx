@@ -75,6 +75,10 @@ export default async function CalendarPage({
           <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-t" />
           {t("calendar.legend.maybe")}
         </span>
+        <span className="flex items-center gap-1.5">
+          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-b" />
+          {t("calendar.legend.busy")}
+        </span>
         <span className="italic">{t("calendar.legend.note")}</span>
       </div>
 

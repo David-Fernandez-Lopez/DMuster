@@ -2,9 +2,20 @@ import {
   computeViability,
   isAvailableResponse,
   isViable,
+  resolveMemberAvailability,
 } from "@/lib/viability";
 
 describe("computeViability", () => {
+  it("returns B when a member already plays another session that day", () => {
+    expect(computeViability(["YES", "BUSY"])).toBe("B");
+    expect(computeViability(["ONLINE", "BUSY"])).toBe("B");
+    expect(computeViability(["MAYBE", undefined, "BUSY"])).toBe("B");
+  });
+
+  it("prioritises B over N (a confirmed session elsewhere outranks a NO)", () => {
+    expect(computeViability(["NO", "BUSY"])).toBe("B");
+  });
+
   it("returns S when every member confirms (all YES)", () => {
     expect(computeViability(["YES", "YES", "YES"])).toBe("S");
   });
@@ -51,9 +62,28 @@ describe("isViable", () => {
     expect(isViable("O")).toBe(true);
   });
 
-  it("rejects T and N", () => {
+  it("rejects T, N and B", () => {
     expect(isViable("T")).toBe(false);
     expect(isViable("N")).toBe(false);
+    expect(isViable("B")).toBe(false);
+  });
+});
+
+describe("resolveMemberAvailability", () => {
+  it("lets being busy override any answer", () => {
+    expect(resolveMemberAvailability("YES", true)).toBe("BUSY");
+    expect(resolveMemberAvailability("NO", true)).toBe("BUSY");
+    expect(resolveMemberAvailability(null, true)).toBe("BUSY");
+  });
+
+  it("keeps the stored answer when the member is free", () => {
+    expect(resolveMemberAvailability("ONLINE", false)).toBe("ONLINE");
+    expect(resolveMemberAvailability("MAYBE", false)).toBe("MAYBE");
+  });
+
+  it("maps a missing answer to the pending undefined", () => {
+    expect(resolveMemberAvailability(null, false)).toBeUndefined();
+    expect(resolveMemberAvailability(undefined, false)).toBeUndefined();
   });
 });
 

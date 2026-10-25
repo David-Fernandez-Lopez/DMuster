@@ -1,4 +1,6 @@
 import {
+  buildBusyIndex,
+  findBusySession,
   findConflictingSessions,
   type SessionAttendance,
 } from "@/lib/sessionConflict";
@@ -12,6 +14,7 @@ function attendance(overrides: Partial<SessionAttendance>): SessionAttendance {
     sessionId: "session-1",
     campaignId: "campaign-1",
     campaignName: "Orden del Alba",
+    campaignTag: "OR",
     cancelled: false,
     attendeeIds: [],
     attendeeNames: {},
@@ -205,5 +208,92 @@ describe("findConflictingSessions", () => {
 
       expect(conflict.campaignId).toBe("campaign-42");
     });
+  });
+});
+
+describe("buildBusyIndex / findBusySession", () => {
+  const academia = attendance({
+    sessionId: "session-ac",
+    campaignId: "academia",
+    campaignName: "Academia Arcana",
+    campaignTag: "AC",
+    attendeeIds: ["paola", "dm-david"],
+    attendeeNames: { paola: "Paola", "dm-david": "David" },
+  });
+
+  it("marks an attendee of another campaign's session as busy, with its name and tag", () => {
+    const index = buildBusyIndex([academia]);
+
+    expect(findBusySession(index, "paola", "poulard")).toEqual({
+      campaignId: "academia",
+      campaignName: "Academia Arcana",
+      campaignTag: "AC",
+    });
+  });
+
+  it("does not make an attendee busy for their own campaign's session", () => {
+    const index = buildBusyIndex([academia]);
+
+    expect(findBusySession(index, "paola", "academia")).toBeNull();
+  });
+
+  it("leaves a member who is not an attendee free (the lock follows attendees)", () => {
+    // A forced session that left "tucho" out: being a member of Academia is
+    // not enough to be busy for another campaign that day.
+    const index = buildBusyIndex([academia]);
+
+    expect(findBusySession(index, "tucho", "poulard")).toBeNull();
+  });
+
+  it("counts a DM attendee like any other", () => {
+    const index = buildBusyIndex([academia]);
+
+    expect(findBusySession(index, "dm-david", "poulard")?.campaignTag).toBe("AC");
+  });
+
+  it("ignores a cancelled session — its attendees are free again", () => {
+    const index = buildBusyIndex([{ ...academia, cancelled: true }]);
+
+    expect(findBusySession(index, "paola", "poulard")).toBeNull();
+  });
+
+  it("reports the other campaign when a race double-booked someone", () => {
+    const poulard = attendance({
+      sessionId: "session-po",
+      campaignId: "poulard",
+      campaignName: "Poulard",
+      campaignTag: "PO",
+      attendeeIds: ["paola"],
+    });
+    const index = buildBusyIndex([poulard, academia]);
+
+    expect(findBusySession(index, "paola", "poulard")?.campaignId).toBe("academia");
+    expect(findBusySession(index, "paola", "academia")?.campaignId).toBe("poulard");
+  });
+
+  it("agrees with findConflictingSessions for a single person", () => {
+    // Busy for C is exactly "adding them to C's session would conflict with a
+    // session of another campaign" — same rule, two call shapes.
+    const sessions = [
+      academia,
+      attendance({
+        sessionId: "session-cp",
+        campaignId: "cyberPunk",
+        campaignName: "Cyberpunk",
+        campaignTag: "CP",
+        attendeeIds: ["salgado"],
+      }),
+    ];
+    const index = buildBusyIndex(sessions);
+
+    for (const userId of ["paola", "dm-david", "salgado", "ana"]) {
+      for (const campaignId of ["academia", "cyberPunk", "poulard"]) {
+        const others = sessions.filter((session) => session.campaignId !== campaignId);
+        const conflicts = findConflictingSessions([userId], others);
+        expect(findBusySession(index, userId, campaignId) !== null).toBe(
+          conflicts.length > 0,
+        );
+      }
+    }
   });
 });

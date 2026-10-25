@@ -1,14 +1,21 @@
 import { CampaignRole } from "@/generated/prisma/enums";
 import {
+  type ActiveSessionRecord,
   type ConfirmedSessionDetailDto,
-  listConfirmedSessionsForCampaigns,
+  listActiveSessions,
 } from "@/lib/confirmedSessionService";
 import { addDays, isEligible, toIsoDate, toUtcDate } from "@/lib/date";
 import { todayIso } from "@/lib/today";
 import { prisma } from "@/lib/prisma";
+import {
+  buildBusyIndex,
+  type BusySession,
+  findBusySession,
+} from "@/lib/sessionConflict";
 import { canSelfJoin } from "@/lib/sessionRules";
 import {
   computeViability,
+  resolveMemberAvailability,
   type ResponseStatus,
   type Viability,
 } from "@/lib/viability";
@@ -28,6 +35,12 @@ export type PlayerDayStatus = {
   /** True when this member is a DM of the campaign (shows the "Máster" badge). */
   isDm: boolean;
   status: PlayerStatusValue;
+  /**
+   * The other campaign whose active session this member already attends that
+   * day, or `null` when they are free for this campaign. A busy member makes
+   * the campaign's viability `B`, whatever they answered.
+   */
+  busyIn: BusySession | null;
 };
 
 /** One campaign's viability for one day, with its per-member breakdown. */
@@ -65,12 +78,14 @@ export type CalendarViability = {
 /**
  * Computes, for every eligible day in an inclusive range, the viability of each
  * campaign the user belongs to (DM or player) together with the per-member
- * breakdown feeding the day modal. Scoped to the user's own campaigns only, per
- * the locked calendar-scope decision.
+ * breakdown feeding the day modal. Viability is scoped to the user's own
+ * campaigns only, per the locked calendar-scope decision — but it looks at the
+ * active sessions of **every** campaign, because a member already attending
+ * another campaign's session that day is busy, which makes the campaign `B`.
  *
  * All the data is fetched in **three batched queries** (the user's campaigns
  * with their members, every relevant member's availability rows in range, and
- * every active confirmed session for those campaigns in range) and combined in
+ * every active confirmed session in range across all campaigns) and combined in
  * memory — no per-day or per-campaign query, so there is no N+1.
  * `undefined`/missing responses collapse to the pending "T" tier via
  * `computeViability`.
@@ -121,11 +136,16 @@ export async function getCalendarViability(
           select: { userId: true, date: true, status: true },
         });
 
-  const confirmedSessionsByKey = await listConfirmedSessionsForCampaigns(
-    campaigns.map((campaign) => campaign.id),
-    startIso,
-    endIso,
-  );
+  // date -> every active session that day, across all campaigns.
+  const sessionsByDate = new Map<string, ActiveSessionRecord[]>();
+  for (const session of await listActiveSessions(startIso, endIso)) {
+    const daySessions = sessionsByDate.get(session.date);
+    if (daySessions) {
+      daySessions.push(session);
+    } else {
+      sessionsByDate.set(session.date, [session]);
+    }
+  }
 
   // date -> (userId -> stored status), for O(1) lookup while combining.
   const statusByDate = new Map<string, Map<string, PlayerStatusValue>>();
@@ -146,41 +166,43 @@ export async function getCalendarViability(
       continue;
     }
     const dayStatuses = statusByDate.get(iso);
+    const daySessions = sessionsByDate.get(iso) ?? [];
 
-    // Tracks, for this day, the name of the campaign the viewer already
-    // attends (the shared-attendee conflict rule guarantees at most one), so
-    // a second pass below can block self-join on every OTHER campaign's
-    // session the same day.
-    let viewerAttendsCampaign: string | null = null;
+    // Who attends which campaign's session this day, across every campaign:
+    // the source of each member's `busyIn` and of the viewer's self-join block.
+    const busyIndex = buildBusyIndex(daySessions);
+    const sessionByCampaign = new Map(
+      daySessions.map((session) => [session.campaignId, session]),
+    );
 
-    const dayCampaigns = campaigns.map((campaign) => {
+    byDate[iso] = campaigns.map((campaign) => {
       const players = campaign.players
         .map((player) => ({
           userId: player.userId,
           name: player.user.name,
           isDm: player.role === CampaignRole.DM,
           status: dayStatuses?.get(player.userId) ?? null,
+          busyIn: findBusySession(busyIndex, player.userId, campaign.id),
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
 
-      const sessionRecord = confirmedSessionsByKey.get(`${campaign.id}|${iso}`) ?? null;
+      const sessionRecord = sessionByCampaign.get(campaign.id) ?? null;
       let confirmedSession: ConfirmedSessionDetailDto | null = null;
       if (sessionRecord) {
         const attendeeIdSet = new Set(sessionRecord.attendeeIds);
         const attendees = players.filter((player) => attendeeIdSet.has(player.userId));
-        const isViewerAttendee = attendeeIdSet.has(userId);
-        if (isViewerAttendee) {
-          viewerAttendsCampaign = campaign.name;
-        }
 
         const viewerRow = players.find((player) => player.userId === userId);
-        const viewerCanSelfJoin = canSelfJoin({
+        const viewerCanJoin = canSelfJoin({
           isMember: viewerRow !== undefined,
-          isAttendee: isViewerAttendee,
+          isAttendee: attendeeIdSet.has(userId),
           status: viewerRow?.status ?? null,
           sessionActive: true,
           isPast: iso < today,
         });
+        // A viewer who already attends a different campaign's session this
+        // day cannot self-join here; the blocking campaign is named inline.
+        const viewerBusy = viewerRow?.busyIn ?? null;
 
         confirmedSession = {
           id: sessionRecord.id,
@@ -191,8 +213,9 @@ export async function getCalendarViability(
           startTime: sessionRecord.startTime,
           durationMinutes: sessionRecord.durationMinutes,
           attendees,
-          viewerCanSelfJoin,
-          viewerSelfJoinBlockedBy: null,
+          viewerCanSelfJoin: viewerCanJoin && viewerBusy === null,
+          viewerSelfJoinBlockedBy:
+            viewerCanJoin && viewerBusy ? viewerBusy.campaignName : null,
         };
       }
 
@@ -200,26 +223,13 @@ export async function getCalendarViability(
         campaignId: campaign.id,
         name: campaign.name,
         tag: campaign.tag,
-        viability: computeViability(players.map((p) => p.status ?? undefined)),
+        viability: computeViability(
+          players.map((p) => resolveMemberAvailability(p.status, p.busyIn !== null)),
+        ),
         players,
         confirmedSession,
       };
     });
-
-    // Now that every campaign's session for this day is known, block
-    // self-join wherever the viewer already attends a different campaign's
-    // session the same day, naming the blocking campaign inline.
-    if (viewerAttendsCampaign) {
-      for (const dayCampaign of dayCampaigns) {
-        const { confirmedSession } = dayCampaign;
-        if (confirmedSession?.viewerCanSelfJoin) {
-          confirmedSession.viewerCanSelfJoin = false;
-          confirmedSession.viewerSelfJoinBlockedBy = viewerAttendsCampaign;
-        }
-      }
-    }
-
-    byDate[iso] = dayCampaigns;
   }
 
   // The distinct DMs across the user's campaigns, deduped by userId and sorted

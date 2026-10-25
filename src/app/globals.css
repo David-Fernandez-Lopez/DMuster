@@ -3,7 +3,7 @@
 
 /*
  * Design tokens ported from the design handoff (design/README.md §Design Tokens).
- * Light theme: parchment/browns. Dark theme: greens. Status colors S/O/N/T are
+ * Light theme: parchment/browns. Dark theme: greens. Status colors S/O/N/T/B are
  * shared, with light/dark variants. Each token uses `light-dark()` so a single
  * definition covers both palettes; `color-scheme` selects which side applies.
  *
@@ -44,6 +44,11 @@
      S/N/T saturation. */
   --color-o: light-dark(#3f7cb8, #6ea6dc);
   --color-o-soft: light-dark(#cfdef0, #1f3243);
+  /* "Ocupado": the B viability tier (someone already plays another campaign's
+     session that day). Not in the design handoff — a slate-violet, less
+     saturated than O's blue so the two never read as the same state. */
+  --color-b: light-dark(#6a5d96, #a497d6);
+  --color-b-soft: light-dark(#e0daec, #2a2640);
 }
 
 :root[data-theme="light"] {
@@ -71,6 +76,8 @@
   --color-t-soft: var(--color-t-soft);
   --color-o: var(--color-o);
   --color-o-soft: var(--color-o-soft);
+  --color-b: var(--color-b);
+  --color-b-soft: var(--color-b-soft);
 
   --font-display: var(--font-cinzel), serif;
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
@@ -152,7 +159,7 @@ body {
     --btn-fillet: var(--color-border);
   }
 
-  /* Status chips: fillet and text take the S/O/T/N state colors. */
+  /* Status chips: fillet and text take the S/O/T/N/B state colors. */
   .btn-yes {
     --btn-fillet: var(--color-s);
     color: var(--color-s);
@@ -169,6 +176,10 @@ body {
     --btn-fillet: var(--color-n);
     color: var(--color-n);
   }
+  .btn-busy {
+    --btn-fillet: var(--color-b);
+    color: var(--color-b);
+  }
 
   /* Active/filled state: solid state color, white text, no paper texture.
      Triggered by aria-pressed (toggle chips) or the explicit .btn-filled modifier. */
@@ -176,6 +187,7 @@ body {
   .btn-online[aria-pressed="true"],
   .btn-maybe[aria-pressed="true"],
   .btn-no[aria-pressed="true"],
+  .btn-busy[aria-pressed="true"],
   .btn-filled {
     background-color: var(--btn-fillet);
     background-image: none;
@@ -186,6 +198,7 @@ body {
   .btn-online[aria-pressed="true"]:hover:not(:disabled),
   .btn-maybe[aria-pressed="true"]:hover:not(:disabled),
   .btn-no[aria-pressed="true"]:hover:not(:disabled),
+  .btn-busy[aria-pressed="true"]:hover:not(:disabled),
   .btn-filled:hover:not(:disabled) {
     background-color: color-mix(in oklab, var(--btn-fillet) 88%, black);
   }
