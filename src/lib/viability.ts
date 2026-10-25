@@ -68,6 +68,122 @@ export function computeViability(
 }
 
 /**
+ * One member's input to `computeCampaignViability`: their resolved state for
+ * the day, whether they are a DM of the campaign, and whether the campaign's
+ * requirements in force that day mark them optional (always `false` when the
+ * default "everyone is required" rule applies).
+ */
+export type ViabilityMember = {
+  availability: MemberAvailability;
+  isDm: boolean;
+  optional: boolean;
+};
+
+/** The non-viable tiers, ranked by how strongly they block: B > N > T. */
+const BLOCKING_RANK: Record<"B" | "N" | "T", number> = { B: 3, N: 2, T: 1 };
+
+/**
+ * Whether a member must be able to play for the campaign to be viable: every
+ * DM (DMs can never be optional), plus every player the requirements do not
+ * mark optional.
+ *
+ * @param {Pick<ViabilityMember, "isDm" | "optional">} member - The member.
+ * @returns {boolean} True when the member is required.
+ */
+export function isRequiredMember(
+  member: Pick<ViabilityMember, "isDm" | "optional">,
+): boolean {
+  return member.isDm || !member.optional;
+}
+
+/**
+ * Checks a campaign's minimum-players requirement for one day, counting only
+ * players (DMs never count towards the minimum) and returning how far it is
+ * from being met:
+ *
+ * - enough players can play (`YES`/`ONLINE`) ⇒ `null` (met)
+ * - else enough if the `MAYBE`/pending ones said yes ⇒ `T`
+ * - else enough if the busy ones were free ⇒ `B`
+ * - else not even then (too many `NO`) ⇒ `N`
+ *
+ * @param {ReadonlyArray<ViabilityMember>} members - Every campaign member.
+ * @param {number} minPlayers - The minimum number of players required.
+ * @returns {"T" | "B" | "N" | null} The tier the shortfall maps to, or `null`.
+ */
+function quorumShortfall(
+  members: ReadonlyArray<ViabilityMember>,
+  minPlayers: number,
+): "T" | "B" | "N" | null {
+  let available = 0;
+  let pending = 0;
+  let busy = 0;
+  for (const member of members) {
+    if (member.isDm) {
+      continue;
+    }
+    if (member.availability === "YES" || member.availability === "ONLINE") {
+      available += 1;
+    } else if (member.availability === "MAYBE" || member.availability === undefined) {
+      pending += 1;
+    } else if (member.availability === "BUSY") {
+      busy += 1;
+    }
+  }
+
+  if (available >= minPlayers) {
+    return null;
+  }
+  if (available + pending >= minPlayers) {
+    return "T";
+  }
+  if (available + pending + busy >= minPlayers) {
+    return "B";
+  }
+  return "N";
+}
+
+/**
+ * Computes a campaign's viability for a single day under its requirements
+ * (roadmap #25): the required members (every DM plus the players not marked
+ * optional) go through the regular priority of `computeViability`, and, when a
+ * minimum is set, enough players must be able to play (`quorumShortfall`).
+ * Optional members never block on their own; they only count towards the
+ * minimum. The result is the stronger block of the two (B > N > T); when both
+ * pass, it is `O` if any member who will play is online, else `S`.
+ *
+ * With no member optional and no minimum this is exactly
+ * `computeViability` over every member — the default rule.
+ *
+ * @param {ReadonlyArray<ViabilityMember>} members - Every campaign member.
+ * @param {number | null} minPlayers - The minimum number of players, or `null`
+ *   when the requirements set none.
+ * @returns {Viability} `B`, `N`, `T`, `O` or `S`.
+ */
+export function computeCampaignViability(
+  members: ReadonlyArray<ViabilityMember>,
+  minPlayers: number | null,
+): Viability {
+  const base = computeViability(
+    members.filter(isRequiredMember).map((member) => member.availability),
+  );
+  const shortfall =
+    minPlayers === null ? null : quorumShortfall(members, minPlayers);
+
+  const blocking = [base, shortfall].filter(
+    (tier): tier is "B" | "N" | "T" => tier === "B" || tier === "N" || tier === "T",
+  );
+  if (blocking.length > 0) {
+    return blocking.reduce((worst, tier) =>
+      BLOCKING_RANK[tier] > BLOCKING_RANK[worst] ? tier : worst,
+    );
+  }
+
+  // Every required member can play, so every `ONLINE` member — required or an
+  // available optional one — is someone who will play remotely.
+  return members.some((member) => member.availability === "ONLINE") ? "O" : "S";
+}
+
+/**
  * Resolves one member's state for `computeViability`: being busy in another
  * campaign's session that day overrides whatever they answered, and a missing
  * answer (`null`/`undefined`) becomes the pending `undefined`.

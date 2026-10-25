@@ -1,9 +1,28 @@
 import {
+  computeCampaignViability,
   computeViability,
   isAvailableResponse,
+  isRequiredMember,
   isViable,
   resolveMemberAvailability,
+  type MemberAvailability,
+  type ViabilityMember,
 } from "@/lib/viability";
+
+/** A DM's input to `computeCampaignViability` (always required). */
+function dm(availability: MemberAvailability): ViabilityMember {
+  return { availability, isDm: true, optional: false };
+}
+
+/** A required player's input to `computeCampaignViability`. */
+function required(availability: MemberAvailability): ViabilityMember {
+  return { availability, isDm: false, optional: false };
+}
+
+/** An optional player's input to `computeCampaignViability`. */
+function optional(availability: MemberAvailability): ViabilityMember {
+  return { availability, isDm: false, optional: true };
+}
 
 describe("computeViability", () => {
   it("returns B when a member already plays another session that day", () => {
@@ -53,6 +72,165 @@ describe("computeViability", () => {
 
   it("returns S for an empty campaign (vacuously all confirmed)", () => {
     expect(computeViability([])).toBe("S");
+  });
+});
+
+describe("computeCampaignViability", () => {
+  it("matches computeViability when everyone is required and there is no minimum", () => {
+    const cases: MemberAvailability[][] = [
+      ["YES", "BUSY"],
+      ["NO", "BUSY"],
+      ["YES", "YES", "YES"],
+      ["YES", "ONLINE"],
+      ["ONLINE", "MAYBE"],
+      ["ONLINE", undefined],
+      ["YES", "NO", "MAYBE"],
+      ["YES", undefined],
+      [],
+    ];
+    for (const statuses of cases) {
+      const members = statuses.map((status, index) =>
+        index === 0 ? dm(status) : required(status),
+      );
+      expect(computeCampaignViability(members, null)).toBe(computeViability(statuses));
+    }
+  });
+
+  it("ignores an optional player who cannot play (Salgado: only Cgoob is needed)", () => {
+    expect(
+      computeCampaignViability([dm("YES"), required("YES"), optional("NO")], null),
+    ).toBe("S");
+    expect(
+      computeCampaignViability([dm("YES"), required("YES"), optional("BUSY")], null),
+    ).toBe("S");
+    expect(
+      computeCampaignViability([dm("YES"), required("YES"), optional(undefined)], null),
+    ).toBe("S");
+  });
+
+  it("keeps blocking on a required player's answer", () => {
+    expect(
+      computeCampaignViability([dm("YES"), required("NO"), optional("YES")], null),
+    ).toBe("N");
+    expect(
+      computeCampaignViability([dm("YES"), required("MAYBE"), optional("YES")], null),
+    ).toBe("T");
+    expect(
+      computeCampaignViability([dm("YES"), required("BUSY"), optional("YES")], null),
+    ).toBe("B");
+  });
+
+  it("treats every DM as required, even if flagged optional", () => {
+    expect(
+      computeCampaignViability(
+        [{ availability: "NO", isDm: true, optional: true }, optional("YES")],
+        null,
+      ),
+    ).toBe("N");
+  });
+
+  it("is viable once enough players can play (Adri: any 3 will do)", () => {
+    expect(
+      computeCampaignViability(
+        [dm("YES"), optional("YES"), optional("YES"), optional("YES"), optional("NO")],
+        3,
+      ),
+    ).toBe("S");
+  });
+
+  it("returns T when the MAYBE/pending players could still reach the minimum", () => {
+    expect(
+      computeCampaignViability(
+        [dm("YES"), optional("YES"), optional("YES"), optional("MAYBE"), optional("NO")],
+        3,
+      ),
+    ).toBe("T");
+    expect(
+      computeCampaignViability(
+        [dm("YES"), optional("YES"), optional(undefined), optional(undefined)],
+        3,
+      ),
+    ).toBe("T");
+  });
+
+  it("returns B when only the busy players could reach the minimum", () => {
+    expect(
+      computeCampaignViability(
+        [dm("YES"), optional("YES"), optional("YES"), optional("BUSY"), optional("NO")],
+        3,
+      ),
+    ).toBe("B");
+  });
+
+  it("returns N when the minimum is out of reach even if everyone else said yes", () => {
+    expect(
+      computeCampaignViability(
+        [dm("YES"), optional("YES"), optional("BUSY"), optional("NO"), optional("NO")],
+        3,
+      ),
+    ).toBe("N");
+  });
+
+  it("never counts a DM towards the minimum", () => {
+    expect(
+      computeCampaignViability(
+        [dm("YES"), optional("YES"), optional("YES"), optional("NO")],
+        3,
+      ),
+    ).toBe("N");
+  });
+
+  it("counts required players towards the minimum too", () => {
+    expect(
+      computeCampaignViability(
+        [dm("YES"), required("YES"), optional("YES"), optional("YES"), optional("NO")],
+        3,
+      ),
+    ).toBe("S");
+  });
+
+  it("returns the stronger block when both the required players and the minimum fail", () => {
+    // Cgoob is pending (T) and the minimum only fails because of busy players (B).
+    expect(
+      computeCampaignViability(
+        [dm("YES"), required(undefined), optional("YES"), optional("BUSY"), optional("NO")],
+        3,
+      ),
+    ).toBe("B");
+    // Cgoob said no (N) while the minimum is still reachable (T).
+    expect(
+      computeCampaignViability(
+        [dm("YES"), required("NO"), optional("YES"), optional("MAYBE")],
+        2,
+      ),
+    ).toBe("N");
+  });
+
+  it("returns O when someone who will play is online, required or optional", () => {
+    expect(
+      computeCampaignViability([dm("YES"), required("ONLINE"), optional("NO")], null),
+    ).toBe("O");
+    expect(
+      computeCampaignViability([dm("YES"), required("YES"), optional("ONLINE")], null),
+    ).toBe("O");
+    expect(
+      computeCampaignViability(
+        [dm("YES"), optional("YES"), optional("ONLINE"), optional("NO")],
+        2,
+      ),
+    ).toBe("O");
+  });
+});
+
+describe("isRequiredMember", () => {
+  it("requires every DM and every non-optional player", () => {
+    expect(isRequiredMember({ isDm: true, optional: false })).toBe(true);
+    expect(isRequiredMember({ isDm: true, optional: true })).toBe(true);
+    expect(isRequiredMember({ isDm: false, optional: false })).toBe(true);
+  });
+
+  it("does not require an optional player", () => {
+    expect(isRequiredMember({ isDm: false, optional: true })).toBe(false);
   });
 });
 
