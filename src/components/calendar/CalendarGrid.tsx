@@ -9,12 +9,14 @@ import DayAvailabilityModal from "@/components/calendar/DayAvailabilityModal";
 import DayCell, {
   MOBILE_MAX_CHIPS,
   type DayIndicator,
+  type ForeignIndicator,
 } from "@/components/calendar/DayCell";
 import { ALL_VIABILITIES } from "@/lib/calendarFilterStorage";
 import type {
   CalendarCampaign,
   CalendarMaster,
   CampaignDayViability,
+  ForeignSessionDto,
 } from "@/lib/calendarService";
 import { isEligible, toUtcDate } from "@/lib/date";
 import type {
@@ -47,12 +49,16 @@ type CalendarGridProps = {
   masters: CalendarMaster[];
   /** Per eligible date, the viability of each of the user's campaigns. */
   viabilityByDate: Record<string, CampaignDayViability[]>;
+  /** Per eligible date, the sessions of campaigns the user is not in. */
+  foreignSessionsByDate: Record<string, ForeignSessionDto[]>;
   /** Selected campaign ids (owned by `CalendarBoard`; all selected = no filter). */
   activeCampaignIds: Set<string>;
   /** Selected master userIds (all selected = no filter). */
   activeMasterIds: Set<string>;
   /** Selected viability tiers (all selected = no filter). */
   activeViabilities: Set<Viability>;
+  /** Whether other campaigns' sessions show as muted chips in the cells. */
+  showForeignSessions: boolean;
   /** The logged-in user's id, threaded to the day modal for DM checks. */
   currentUserId: string;
 };
@@ -82,8 +88,10 @@ function capitalize(value: string): string {
  * breakdown) reflects the new answer. Filtering (campaigns, masters and
  * viability tiers) is owned by the parent `CalendarBoard`, which renders the
  * "Filtros" trigger and modal — this component only applies the three active
- * sets (all selected in a dimension means that dimension shows all). The parent
- * remounts it per month (`key={month}`).
+ * sets (all selected in a dimension means that dimension shows all) and the
+ * toggle for other campaigns' sessions, which only affects the cells: the day
+ * modal always lists those sessions, like it always lists every campaign. The
+ * parent remounts it per month (`key={month}`).
  *
  * @param {CalendarGridProps} props
  * @returns {JSX.Element}
@@ -98,9 +106,11 @@ export default function CalendarGrid({
   campaigns,
   masters,
   viabilityByDate,
+  foreignSessionsByDate,
   activeCampaignIds,
   activeMasterIds,
   activeViabilities,
+  showForeignSessions,
   currentUserId,
 }: CalendarGridProps) {
   const router = useRouter();
@@ -153,13 +163,16 @@ export default function CalendarGrid({
    * group. Also returns the mobile "+N" overflow label, counting only the
    * pending (non-confirmed) chips — a confirmed session always renders in
    * full on every viewport and never falls into the overflow (desktop shows
-   * every chip regardless).
+   * every chip regardless). Other campaigns' sessions come back separately as
+   * `foreign`, governed only by their toggle (the three filters are about the
+   * user's own campaigns), and never count toward the overflow either.
    *
    * @param {string} iso - The day, "YYYY-MM-DD".
-   * @returns {{ indicators: DayIndicator[]; moreLabel: string | null }}
+   * @returns {{ indicators: DayIndicator[]; foreign: ForeignIndicator[]; moreLabel: string | null }}
    */
   function cellIndicators(iso: string): {
     indicators: DayIndicator[];
+    foreign: ForeignIndicator[];
     moreLabel: string | null;
   } {
     const dayCampaigns = viabilityByDate[iso] ?? [];
@@ -194,10 +207,18 @@ export default function CalendarGrid({
         }
         return VIABILITY_ORDER[a.viability] - VIABILITY_ORDER[b.viability];
       });
+    const foreign = showForeignSessions
+      ? (foreignSessionsByDate[iso] ?? []).map((session) => ({
+          sessionId: session.id,
+          tag: session.campaignTag,
+          name: session.campaignName,
+        }))
+      : [];
     const pendingCount = indicators.filter((indicator) => !indicator.confirmed).length;
     const overflow = pendingCount - MOBILE_MAX_CHIPS;
     return {
       indicators,
+      foreign,
       moreLabel:
         overflow > 0 ? t("calendar.moreChips", { count: overflow }) : null,
     };
@@ -215,7 +236,7 @@ export default function CalendarGrid({
           </div>
         ))}
         {days.map((iso) => {
-          const { indicators, moreLabel } = cellIndicators(iso);
+          const { indicators, foreign, moreLabel } = cellIndicators(iso);
           return (
             <DayCell
               key={iso}
@@ -225,6 +246,7 @@ export default function CalendarGrid({
               outOfMonth={!iso.startsWith(month)}
               onSelect={setSelected}
               indicators={indicators}
+              foreign={foreign}
               moreLabel={moreLabel}
             />
           );
@@ -236,6 +258,7 @@ export default function CalendarGrid({
           date={selected}
           initialStatus={responses[selected] ?? null}
           detail={viabilityByDate[selected] ?? []}
+          foreignSessions={foreignSessionsByDate[selected] ?? []}
           currentUserId={currentUserId}
           onPersisted={handlePersisted}
           onClose={() => setSelected(null)}

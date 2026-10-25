@@ -16,3 +16,31 @@ describe("parseStoredSelection — viability tiers", () => {
     expect(selection.viabilities.size).toBe(5);
   });
 });
+
+describe("parseStoredSelection — other campaigns' sessions", () => {
+  it("shows them when nothing is stored", () => {
+    expect(parseStoredSelection(null, [], []).showForeignSessions).toBe(true);
+  });
+
+  it("shows them for a selection saved before the toggle existed", () => {
+    const selection = parseStoredSelection(
+      '{"campaigns":[],"masters":[],"viabilities":["N"]}',
+      [],
+      [],
+    );
+
+    expect(selection.showForeignSessions).toBe(true);
+  });
+
+  it("hides them only when the user turned them off", () => {
+    const selection = parseStoredSelection('{"hideForeignSessions":true}', [], []);
+
+    expect(selection.showForeignSessions).toBe(false);
+  });
+
+  it("ignores a hide flag that is not exactly true", () => {
+    const selection = parseStoredSelection('{"hideForeignSessions":"yes"}', [], []);
+
+    expect(selection.showForeignSessions).toBe(true);
+  });
+});

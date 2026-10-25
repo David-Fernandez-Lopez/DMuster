@@ -9,32 +9,10 @@ import CancelSessionButton from "@/components/sessions/CancelSessionButton";
 import SelfJoinButton from "@/components/sessions/SelfJoinButton";
 import type { UpcomingSessionDto } from "@/lib/confirmedSessionService";
 import { toUtcDate } from "@/lib/date";
+import { formatSessionTime } from "@/lib/sessionTime";
 
 interface SessionCardProps {
   session: UpcomingSessionDto;
-}
-
-/**
- * Formats a confirmed session's time summary: "HH:MM · N min" when both a
- * start time and a duration are set, just "HH:MM" for a timed session with no
- * duration (allowed by the data model though the confirm form never produces
- * it), or the translated all-day label when there is no start time at all.
- *
- * @param {UpcomingSessionDto} session - The session's time fields.
- * @param {(key: string) => string} t - Translation function.
- * @returns {string} The rendered time summary.
- */
-function formatSessionTime(
-  session: Pick<UpcomingSessionDto, "startTime" | "durationMinutes">,
-  t: (key: string) => string,
-): string {
-  if (!session.startTime) {
-    return t("sessions.allDay");
-  }
-  if (!session.durationMinutes) {
-    return session.startTime;
-  }
-  return `${session.startTime} · ${session.durationMinutes} ${t("sessions.durationUnit")}`;
 }
 
 /**

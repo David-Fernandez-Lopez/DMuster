@@ -16,7 +16,8 @@ import { listHolidays } from "@/lib/holidayService";
  * invalid or missing param falls back silently to the current month. Requires
  * an authenticated session (verified here; the proxy also gates anonymous
  * users). Per-campaign viability chips are computed server-side via
- * `getCalendarViability` and rendered on each eligible day.
+ * `getCalendarViability` and rendered on each eligible day, together with the
+ * sessions of campaigns the user is not in.
  *
  * @param {{ searchParams: Promise<{ month?: string }> }} props
  * @returns {Promise<JSX.Element>}
@@ -45,7 +46,7 @@ export default async function CalendarPage({
     getUserAvailability(session.user.id, rangeStart, rangeEnd),
   ]);
   const holidayDates = holidays.map((holiday) => holiday.date);
-  const { campaigns, masters, byDate } = await getCalendarViability(
+  const { campaigns, masters, byDate, foreignSessionsByDate } = await getCalendarViability(
     session.user.id,
     rangeStart,
     rangeEnd,
@@ -93,6 +94,7 @@ export default async function CalendarPage({
         campaigns={campaigns}
         masters={masters}
         viabilityByDate={byDate}
+        foreignSessionsByDate={foreignSessionsByDate}
         currentUserId={session.user.id}
       >
         <MonthNav

@@ -51,7 +51,12 @@
       "selectAll": "Seleccionar todo",
       "selectNone": "Quitar todo",
       "noResults": "Sin resultados",
-      "remove": "Quitar"
+      "remove": "Quitar",
+      "otherSessions": "Partidas de otras campañas"
+    },
+    "otherSessions": {
+      "title": "Otras partidas este día",
+      "players": "Juegan: {{players}}"
     }
   },
   "date": {

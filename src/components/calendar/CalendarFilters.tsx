@@ -30,12 +30,16 @@ interface CalendarFiltersProps {
   activeMasterIds: Set<string>;
   /** Selected viability tiers (shown). */
   activeViabilities: Set<Viability>;
+  /** Whether other campaigns' sessions show in the grid. */
+  showForeignSessions: boolean;
   /** Receives the full next campaign selection. */
   onChangeCampaigns: (next: Set<string>) => void;
   /** Receives the full next master selection. */
   onChangeMasters: (next: Set<string>) => void;
   /** Toggles a viability tier. */
   onToggleViability: (viability: Viability) => void;
+  /** Shows or hides other campaigns' sessions. */
+  onToggleForeignSessions: () => void;
   /** Resets every dimension to "all shown" (no filter). */
   onClear: () => void;
 }
@@ -46,7 +50,9 @@ interface CalendarFiltersProps {
  * multi-selects (`MultiSelectFilter`); Availability is a row of viability-tinted
  * toggle chips (Sí / Sí (Online) / Tal vez / No / Ocupado → tiers S / O / T / N / B). All selected in a
  * dimension means it is off; the three combine with AND upstream in
- * `CalendarGrid`. A "Clear filters" action resets everything.
+ * `CalendarGrid`. A separate checkbox-style toggle shows or hides other
+ * campaigns' sessions, independent of the three. A "Clear filters" action
+ * resets everything.
  *
  * @param {CalendarFiltersProps} props
  * @returns {JSX.Element}
@@ -57,9 +63,11 @@ export default function CalendarFilters({
   activeCampaignIds,
   activeMasterIds,
   activeViabilities,
+  showForeignSessions,
   onChangeCampaigns,
   onChangeMasters,
   onToggleViability,
+  onToggleForeignSessions,
   onClear,
 }: CalendarFiltersProps) {
   const { t } = useTranslation();
@@ -115,6 +123,25 @@ export default function CalendarFilters({
           })}
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={onToggleForeignSessions}
+        aria-pressed={showForeignSessions}
+        className="btn btn-secondary min-h-[44px] w-full justify-start gap-2 px-4 text-sm font-semibold"
+      >
+        <span
+          aria-hidden="true"
+          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border text-[10px] leading-none ${
+            showForeignSessions
+              ? "border-brand bg-brand text-bg-elevated"
+              : "border-border"
+          }`}
+        >
+          {showForeignSessions ? "✓" : ""}
+        </span>
+        {t("calendar.filter.otherSessions")}
+      </button>
 
       <button
         type="button"

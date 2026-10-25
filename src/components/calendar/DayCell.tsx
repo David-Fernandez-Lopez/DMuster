@@ -10,6 +10,13 @@ export type DayIndicator = {
   confirmed: boolean;
 };
 
+/** A muted chip for the session of a campaign the user is not in. */
+export type ForeignIndicator = {
+  sessionId: string;
+  tag: string;
+  name: string;
+};
+
 /** Dot color per viability tier (S→green, O→blue, N→red, T→amber, B→slate-violet). */
 const DOT_CLASS: Record<Viability, string> = {
   S: "bg-s",
@@ -21,8 +28,9 @@ const DOT_CLASS: Record<Viability, string> = {
 
 /**
  * Non-confirmed chips shown on mobile before the rest collapse into the "+N"
- * chip. Confirmed sessions are exempt from this cap — they always render in
- * full, each on its own row — so it only ever counts pending indicators.
+ * chip. Confirmed sessions — the user's own and other campaigns' — are exempt
+ * from this cap: they always render in full, each on its own row — so it only
+ * ever counts pending indicators.
  * Exported so `CalendarGrid` computes the matching "+N" count from the same
  * number instead of redeclaring it.
  */
@@ -63,6 +71,8 @@ type DayCellProps = {
   onSelect?: (iso: string) => void;
   /** Per-campaign viability chips (already filtered and ordered by the grid). */
   indicators?: DayIndicator[];
+  /** Sessions of campaigns the user is not in, ordered by start time. */
+  foreign?: ForeignIndicator[];
   /** Mobile-only "+N" label for chips past the cap; `null` when none overflow. */
   moreLabel?: string | null;
 };
@@ -96,6 +106,11 @@ type DayCellProps = {
  * (truncated). Confirmed chips are sorted first by the grid and rendered
  * ahead of the (capped) pending ones in both layouts.
  *
+ * A session of a campaign the user is **not** in (`foreign`) renders right
+ * after the user's own confirmed ones, with the same row layout and checkmark
+ * but muted (`text-ink-muted`, normal weight), and it does **not** tint the
+ * cell: the tint stays a signal about the user's own campaigns.
+ *
  * @param {DayCellProps} props
  * @returns {JSX.Element}
  */
@@ -106,6 +121,7 @@ export default function DayCell({
   outOfMonth,
   onSelect,
   indicators,
+  foreign = [],
   moreLabel,
 }: DayCellProps) {
   const dayNumber = Number(iso.slice(8));
@@ -113,6 +129,7 @@ export default function DayCell({
   const confirmed = indicators?.filter((indicator) => indicator.confirmed) ?? [];
   const pending = indicators?.filter((indicator) => !indicator.confirmed) ?? [];
   const hasConfirmedSession = confirmed.length > 0;
+  const hasChips = (indicators?.length ?? 0) + foreign.length > 0;
 
   const base = "min-h-[56px] p-1 md:min-h-[110px] md:p-2";
   const state = eligible
@@ -127,12 +144,13 @@ export default function DayCell({
   const content = (
     <>
       <span className="text-sm font-semibold text-ink">{dayNumber}</span>
-      {indicators && indicators.length > 0 ? (
+      {hasChips ? (
         <>
           {/* Mobile: every confirmed session first, each spanning its own full
-              row so no other campaign's dot shares its height; then the
-              pending campaigns as dots only, capped at MOBILE_MAX_CHIPS with
-              a "+N" overflow (confirmed sessions never count toward it). */}
+              row so no other campaign's dot shares its height (the user's own
+              in bold, then other campaigns' muted); then the pending campaigns
+              as dots only, capped at MOBILE_MAX_CHIPS with a "+N" overflow
+              (confirmed sessions never count toward it). */}
           <div className="mt-1 grid grid-cols-2 gap-x-1.5 gap-y-1 md:hidden">
             {confirmed.map((indicator) => (
               <span
@@ -141,6 +159,15 @@ export default function DayCell({
               >
                 <ConfirmedIcon className="h-3.5 w-3.5 shrink-0 text-brand" />
                 {indicator.tag}
+              </span>
+            ))}
+            {foreign.map((session) => (
+              <span
+                key={session.sessionId}
+                className="col-span-2 flex items-center gap-1 text-sm font-normal leading-none text-ink-muted"
+              >
+                <ConfirmedIcon className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
+                {session.tag}
               </span>
             ))}
             {pending.slice(0, MOBILE_MAX_CHIPS).map((indicator) => (
@@ -157,8 +184,9 @@ export default function DayCell({
             ) : null}
           </div>
           {/* Desktop: every confirmed session spans the full row with its
-              full name, at the day number's own size and weight; every
-              pending campaign is a dot + tag chip in up to 3 columns. */}
+              full name — the user's own at the day number's size and weight,
+              other campaigns' muted; every pending campaign is a dot + tag
+              chip in up to 3 columns. */}
           <div className="mt-1 hidden grid-cols-3 gap-x-1.5 gap-y-0.5 md:grid">
             {confirmed.map((indicator) => (
               <span
@@ -167,6 +195,15 @@ export default function DayCell({
               >
                 <ConfirmedIcon className="h-3.5 w-3.5 shrink-0 text-brand" />
                 <span className="truncate">{indicator.name}</span>
+              </span>
+            ))}
+            {foreign.map((session) => (
+              <span
+                key={session.sessionId}
+                className="col-span-3 flex min-w-0 items-center gap-1 text-sm font-normal leading-tight text-ink-muted"
+              >
+                <ConfirmedIcon className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
+                <span className="truncate">{session.name}</span>
               </span>
             ))}
             {pending.map((indicator) => (

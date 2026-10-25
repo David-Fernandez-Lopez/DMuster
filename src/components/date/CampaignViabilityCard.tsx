@@ -11,6 +11,7 @@ import ConfirmSessionForm from "@/components/sessions/ConfirmSessionForm";
 import ForceSessionForm from "@/components/sessions/ForceSessionForm";
 import SelfJoinButton from "@/components/sessions/SelfJoinButton";
 import type { CampaignDayViability } from "@/lib/calendarService";
+import { formatSessionTime } from "@/lib/sessionTime";
 import {
   isAvailableResponse,
   isViable,
@@ -35,29 +36,6 @@ const VIABILITY_STYLE: Record<Viability, { className: string; labelKey: string }
     T: { className: "bg-t-soft text-t", labelKey: "calendar.viability.T" },
     B: { className: "bg-b-soft text-b", labelKey: "calendar.viability.B" },
   };
-
-/**
- * Formats a confirmed session's time summary: "HH:MM · N min" when both a
- * start time and a duration are set, just "HH:MM" for a timed session with no
- * duration (allowed by the data model though the confirm form never produces
- * it), or the translated all-day label when there is no start time at all.
- *
- * @param {{ startTime: string | null; durationMinutes: number | null }} session - The session's time fields.
- * @param {(key: string) => string} t - Translation function.
- * @returns {string} The rendered time summary.
- */
-function formatSessionTime(
-  session: { startTime: string | null; durationMinutes: number | null },
-  t: (key: string) => string,
-): string {
-  if (!session.startTime) {
-    return t("sessions.allDay");
-  }
-  if (!session.durationMinutes) {
-    return session.startTime;
-  }
-  return `${session.startTime} · ${session.durationMinutes} ${t("sessions.durationUnit")}`;
-}
 
 /**
  * Small checkmark badge marking a confirmed session, shown next to the

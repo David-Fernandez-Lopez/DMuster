@@ -6,9 +6,11 @@ import type { Viability } from "@/lib/viability";
  * an SSR/hydration mismatch and without a set-state-in-effect. The selection is
  * stored as the **complement** (the excluded ids per dimension) rather than the
  * included ids, so campaigns/masters added since the last visit default to
- * visible and removed ones simply drop out. Storage is best-effort: absent,
- * unreadable or unwritable storage degrades to the "everything visible" (no
- * filter) default without throwing.
+ * visible and removed ones simply drop out. The "other campaigns' sessions"
+ * toggle follows the same idea: what is stored is the *hide* flag, so a
+ * selection saved before the toggle existed shows them. Storage is
+ * best-effort: absent, unreadable or unwritable storage degrades to the
+ * "everything visible" (no filter) default without throwing.
  */
 
 const STORAGE_KEY = "dmuster.calendarFilters.v1";
@@ -25,6 +27,8 @@ export type CalendarFilterSelection = {
   campaignIds: Set<string>;
   masterIds: Set<string>;
   viabilities: Set<Viability>;
+  /** Whether sessions of campaigns the user is not in show in the grid. */
+  showForeignSessions: boolean;
 };
 
 /** The persisted shape: the excluded (hidden) ids per dimension. */
@@ -32,6 +36,8 @@ type StoredExclusions = {
   campaigns: string[];
   masters: string[];
   viabilities: string[];
+  /** True only when the user turned other campaigns' sessions off. */
+  hideForeignSessions: boolean;
 };
 
 // Same-tab subscribers. The `storage` event only fires in OTHER tabs, so writes
@@ -100,7 +106,12 @@ export function getServerFiltersSnapshot(): null {
  * @returns {StoredExclusions} The excluded ids per dimension (empty when absent).
  */
 function parseExclusions(raw: string | null): StoredExclusions {
-  const empty: StoredExclusions = { campaigns: [], masters: [], viabilities: [] };
+  const empty: StoredExclusions = {
+    campaigns: [],
+    masters: [],
+    viabilities: [],
+    hideForeignSessions: false,
+  };
   if (!raw) {
     return empty;
   }
@@ -110,6 +121,7 @@ function parseExclusions(raw: string | null): StoredExclusions {
       campaigns: Array.isArray(parsed.campaigns) ? parsed.campaigns : [],
       masters: Array.isArray(parsed.masters) ? parsed.masters : [],
       viabilities: Array.isArray(parsed.viabilities) ? parsed.viabilities : [],
+      hideForeignSessions: parsed.hideForeignSessions === true,
     };
   } catch {
     return empty;
@@ -142,6 +154,7 @@ export function parseStoredSelection(
     viabilities: new Set(
       ALL_VIABILITIES.filter((tier) => !excludedViabilities.has(tier)),
     ),
+    showForeignSessions: !excluded.hideForeignSessions,
   };
 }
 
@@ -167,6 +180,7 @@ export function writeStoredSelection(
     viabilities: ALL_VIABILITIES.filter(
       (tier) => !selection.viabilities.has(tier),
     ),
+    hideForeignSessions: !selection.showForeignSessions,
   };
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(exclusions));

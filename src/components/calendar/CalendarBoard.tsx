@@ -18,6 +18,7 @@ import type {
   CalendarCampaign,
   CalendarMaster,
   CampaignDayViability,
+  ForeignSessionDto,
 } from "@/lib/calendarService";
 import type { ResponseStatus, Viability } from "@/lib/viability";
 
@@ -40,6 +41,8 @@ type CalendarBoardProps = {
   masters: CalendarMaster[];
   /** Per eligible date, the viability of each of the user's campaigns. */
   viabilityByDate: Record<string, CampaignDayViability[]>;
+  /** Per eligible date, the sessions of campaigns the user is not in. */
+  foreignSessionsByDate: Record<string, ForeignSessionDto[]>;
   /** The logged-in user's id, threaded down to the day modal for DM checks. */
   currentUserId: string;
   /** The server-rendered month selector, placed between the "Filtros" trigger and the grid. */
@@ -54,7 +57,8 @@ type CalendarBoardProps = {
  *
  * Three dimensions narrow which per-campaign chips the grid shows — campaigns,
  * masters (DMs) and viability tiers — each with the convention "all selected =
- * off". The selection is persisted to `localStorage` and read through
+ * off", plus a toggle (on by default) for the muted chips of other campaigns'
+ * sessions, which those three dimensions never touch. The selection is persisted to `localStorage` and read through
  * `useSyncExternalStore` (see `calendarFilterStorage`), so it survives both a
  * reload and the per-month remount (`key={month}`) without a hydration mismatch
  * or a set-state-in-effect: the server snapshot is the "all shown" default and
@@ -74,6 +78,7 @@ export default function CalendarBoard({
   campaigns,
   masters,
   viabilityByDate,
+  foreignSessionsByDate,
   currentUserId,
   children,
 }: CalendarBoardProps) {
@@ -98,6 +103,7 @@ export default function CalendarBoard({
     campaignIds: activeCampaignIds,
     masterIds: activeMasterIds,
     viabilities: activeViabilities,
+    showForeignSessions,
   } = useMemo(
     () => parseStoredSelection(raw, allCampaignIds, allMasterIds),
     [raw, allCampaignIds, allMasterIds],
@@ -107,18 +113,20 @@ export default function CalendarBoard({
    * Persists a full new selection, defaulting each dimension to its current
    * value so a caller need only pass the dimension it changed.
    *
-   * @param {Partial<{ campaignIds: Set<string>; masterIds: Set<string>; viabilities: Set<Viability> }>} next - The changed dimension(s).
+   * @param {Partial<{ campaignIds: Set<string>; masterIds: Set<string>; viabilities: Set<Viability>; showForeignSessions: boolean }>} next - The changed dimension(s).
    */
   function persist(next: {
     campaignIds?: Set<string>;
     masterIds?: Set<string>;
     viabilities?: Set<Viability>;
+    showForeignSessions?: boolean;
   }) {
     writeStoredSelection(
       {
         campaignIds: next.campaignIds ?? activeCampaignIds,
         masterIds: next.masterIds ?? activeMasterIds,
         viabilities: next.viabilities ?? activeViabilities,
+        showForeignSessions: next.showForeignSessions ?? showForeignSessions,
       },
       allCampaignIds,
       allMasterIds,
@@ -140,14 +148,17 @@ export default function CalendarBoard({
       campaignIds: new Set(allCampaignIds),
       masterIds: new Set(allMasterIds),
       viabilities: new Set(ALL_VIABILITIES),
+      showForeignSessions: true,
     });
   }
 
   // How many dimensions are narrowed — drives the trigger's active state/badge.
+  // Hiding other campaigns' sessions counts as one.
   const activeDimensions =
     (activeCampaignIds.size !== allCampaignIds.length ? 1 : 0) +
     (activeMasterIds.size !== allMasterIds.length ? 1 : 0) +
-    (activeViabilities.size !== ALL_VIABILITIES.length ? 1 : 0);
+    (activeViabilities.size !== ALL_VIABILITIES.length ? 1 : 0) +
+    (showForeignSessions ? 0 : 1);
 
   return (
     <>
@@ -179,9 +190,11 @@ export default function CalendarBoard({
           campaigns={campaigns}
           masters={masters}
           viabilityByDate={viabilityByDate}
+          foreignSessionsByDate={foreignSessionsByDate}
           activeCampaignIds={activeCampaignIds}
           activeMasterIds={activeMasterIds}
           activeViabilities={activeViabilities}
+          showForeignSessions={showForeignSessions}
           currentUserId={currentUserId}
         />
       </div>
@@ -197,9 +210,13 @@ export default function CalendarBoard({
             activeCampaignIds={activeCampaignIds}
             activeMasterIds={activeMasterIds}
             activeViabilities={activeViabilities}
+            showForeignSessions={showForeignSessions}
             onChangeCampaigns={(next) => persist({ campaignIds: next })}
             onChangeMasters={(next) => persist({ masterIds: next })}
             onToggleViability={toggleViability}
+            onToggleForeignSessions={() =>
+              persist({ showForeignSessions: !showForeignSessions })
+            }
             onClear={clearFilters}
           />
         </FiltersModal>

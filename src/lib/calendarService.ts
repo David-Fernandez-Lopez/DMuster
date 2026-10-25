@@ -2,6 +2,7 @@ import { CampaignRole } from "@/generated/prisma/enums";
 import {
   type ActiveSessionRecord,
   type ConfirmedSessionDetailDto,
+  type ConfirmedSessionDto,
   listActiveSessions,
 } from "@/lib/confirmedSessionService";
 import { addDays, isEligible, toIsoDate, toUtcDate } from "@/lib/date";
@@ -65,6 +66,16 @@ export type CalendarCampaign = { id: string; name: string; tag: string };
 /** A DM of one of the user's campaigns, for the calendar's master filter. */
 export type CalendarMaster = { userId: string; name: string };
 
+/**
+ * An active session of a campaign the user does **not** belong to, shown
+ * read-only in the calendar so the user can see why their own campaigns are
+ * busy that day. Carries the players' names only, never their ids.
+ */
+export type ForeignSessionDto = ConfirmedSessionDto & {
+  /** The attendees' names, sorted. */
+  playerNames: string[];
+};
+
 /** The calendar's viability model for a visible range (serializable to the client). */
 export type CalendarViability = {
   /** The user's campaigns, sorted by name — the filter chips. */
@@ -73,15 +84,46 @@ export type CalendarViability = {
   masters: CalendarMaster[];
   /** Per eligible date, the viability of each of the user's campaigns. */
   byDate: Record<string, CampaignDayViability[]>;
+  /**
+   * Per eligible date that has any, the active sessions of campaigns the user
+   * does not belong to, ordered by start time (all-day first).
+   */
+  foreignSessionsByDate: Record<string, ForeignSessionDto[]>;
 };
+
+/**
+ * Builds the client-facing view of another campaign's session: the DTO fields
+ * picked one by one (so the attendee ids that `ActiveSessionRecord` carries
+ * never reach the browser) plus the attendees' sorted names.
+ *
+ * @param {ActiveSessionRecord} session - An active session the user is not a
+ *   member of.
+ * @returns {ForeignSessionDto} The read-only session summary.
+ */
+function toForeignSession(session: ActiveSessionRecord): ForeignSessionDto {
+  return {
+    id: session.id,
+    campaignId: session.campaignId,
+    campaignName: session.campaignName,
+    campaignTag: session.campaignTag,
+    date: session.date,
+    startTime: session.startTime,
+    durationMinutes: session.durationMinutes,
+    playerNames: session.attendeeIds
+      .map((id) => session.attendeeNames[id])
+      .sort((a, b) => a.localeCompare(b)),
+  };
+}
 
 /**
  * Computes, for every eligible day in an inclusive range, the viability of each
  * campaign the user belongs to (DM or player) together with the per-member
- * breakdown feeding the day modal. Viability is scoped to the user's own
- * campaigns only, per the locked calendar-scope decision — but it looks at the
- * active sessions of **every** campaign, because a member already attending
- * another campaign's session that day is busy, which makes the campaign `B`.
+ * breakdown feeding the day modal. Viability is computed for the user's own
+ * campaigns only, but it looks at the active sessions of **every** campaign,
+ * because a member already attending another campaign's session that day is
+ * busy, which makes the campaign `B`. The sessions of campaigns the user is not
+ * in are also returned, in full (name, time, players), so the calendar can show
+ * what is taking those members.
  *
  * All the data is fetched in **three batched queries** (the user's campaigns
  * with their members, every relevant member's availability rows in range, and
@@ -95,7 +137,8 @@ export type CalendarViability = {
  * @param {string} endIso - Range end, "YYYY-MM-DD" (inclusive).
  * @param {Set<string>} holidays - Holiday dates ("YYYY-MM-DD") for eligibility.
  * @returns {Promise<CalendarViability>} The user's campaigns, the distinct DMs
- *   across them, and the per-date, per-campaign viability map.
+ *   across them, the per-date, per-campaign viability map, and the per-date
+ *   sessions of other campaigns.
  */
 export async function getCalendarViability(
   userId: string,
@@ -159,7 +202,9 @@ export async function getCalendarViability(
     dayMap.set(row.userId, row.status);
   }
 
+  const ownCampaignIds = new Set(campaigns.map((campaign) => campaign.id));
   const byDate: Record<string, CampaignDayViability[]> = {};
+  const foreignSessionsByDate: Record<string, ForeignSessionDto[]> = {};
   const today = todayIso();
   for (let iso = startIso; iso <= endIso; iso = addDays(iso, 1)) {
     if (!isEligible(iso, holidays)) {
@@ -174,6 +219,13 @@ export async function getCalendarViability(
     const sessionByCampaign = new Map(
       daySessions.map((session) => [session.campaignId, session]),
     );
+
+    const foreignSessions = daySessions
+      .filter((session) => !ownCampaignIds.has(session.campaignId))
+      .map(toForeignSession);
+    if (foreignSessions.length > 0) {
+      foreignSessionsByDate[iso] = foreignSessions;
+    }
 
     byDate[iso] = campaigns.map((campaign) => {
       const players = campaign.players
@@ -251,5 +303,6 @@ export async function getCalendarViability(
     campaigns: campaigns.map((c) => ({ id: c.id, name: c.name, tag: c.tag })),
     masters,
     byDate,
+    foreignSessionsByDate,
   };
 }

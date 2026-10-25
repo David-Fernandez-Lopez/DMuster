@@ -51,7 +51,12 @@
       "selectAll": "Select all",
       "selectNone": "Clear all",
       "noResults": "No results",
-      "remove": "Remove"
+      "remove": "Remove",
+      "otherSessions": "Other campaigns' sessions"
+    },
+    "otherSessions": {
+      "title": "Other sessions this day",
+      "players": "Playing: {{players}}"
     }
   },
   "date": {

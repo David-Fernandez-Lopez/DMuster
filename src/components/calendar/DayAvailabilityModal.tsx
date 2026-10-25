@@ -6,8 +6,12 @@ import { useTranslation } from "react-i18next";
 import AvailabilityToggle, {
   type ResponseStatus,
 } from "@/components/availability/AvailabilityToggle";
+import OtherSessionsList from "@/components/calendar/OtherSessionsList";
 import CampaignViabilityCard from "@/components/date/CampaignViabilityCard";
-import type { CampaignDayViability } from "@/lib/calendarService";
+import type {
+  CampaignDayViability,
+  ForeignSessionDto,
+} from "@/lib/calendarService";
 import { toUtcDate } from "@/lib/date";
 import { useReturnFocusTo } from "@/lib/useReturnFocus";
 
@@ -18,6 +22,8 @@ interface DayAvailabilityModalProps {
   initialStatus: ResponseStatus;
   /** The user's campaigns' viability for the day (the per-campaign breakdown). */
   detail: CampaignDayViability[];
+  /** The day's sessions of campaigns the user is not in ("Otras partidas"). */
+  foreignSessions: ForeignSessionDto[];
   /** The logged-in user's id, so each campaign card can tell if they're a DM. */
   currentUserId: string;
   /** Forwarded to the toggle; keeps the calendar's live map in sync. */
@@ -38,16 +44,19 @@ interface DayAvailabilityModalProps {
  * to the box on mount and is restored to the previously focused element on
  * unmount. `aria-modal="false"` reflects that the navbar is intentionally still
  * reachable (no focus trap). Responding does not auto-close, so the player can
- * adjust their answer.
+ * adjust their answer. Below the user's own campaign cards, a read-only
+ * "Otras partidas este día" section lists other campaigns' sessions that day.
  *
  * @param {DayAvailabilityModalProps} props - The day, current status, the
- *   per-campaign breakdown, and the persisted/close callbacks.
+ *   per-campaign breakdown, other campaigns' sessions, and the persisted/close
+ *   callbacks.
  * @returns {JSX.Element} The day availability modal.
  */
 export default function DayAvailabilityModal({
   date,
   initialStatus,
   detail,
+  foreignSessions,
   currentUserId,
   onPersisted,
   onClose,
@@ -152,6 +161,8 @@ export default function DayAvailabilityModal({
                 ))}
               </div>
             ) : null}
+
+            <OtherSessionsList sessions={foreignSessions} />
           </div>
         </div>
       </div>
