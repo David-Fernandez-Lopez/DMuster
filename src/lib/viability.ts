@@ -154,6 +154,10 @@ function quorumShortfall(
  * With no member optional and no minimum this is exactly
  * `computeViability` over every member — the default rule.
  *
+ * A campaign whose players are all optional with no minimum set (the last
+ * required player left a campaign of always-optional ones, roadmap #25.2)
+ * still needs one player who can play: the DM alone never makes a session.
+ *
  * @param {ReadonlyArray<ViabilityMember>} members - Every campaign member.
  * @param {number | null} minPlayers - The minimum number of players, or `null`
  *   when the requirements set none.
@@ -166,8 +170,12 @@ export function computeCampaignViability(
   const base = computeViability(
     members.filter(isRequiredMember).map((member) => member.availability),
   );
+  const players = members.filter((member) => !member.isDm);
+  const effectiveMin =
+    minPlayers ??
+    (players.length > 0 && !players.some(isRequiredMember) ? 1 : null);
   const shortfall =
-    minPlayers === null ? null : quorumShortfall(members, minPlayers);
+    effectiveMin === null ? null : quorumShortfall(members, effectiveMin);
 
   const blocking = [base, shortfall].filter(
     (tier): tier is "B" | "N" | "T" => tier === "B" || tier === "N" || tier === "T",

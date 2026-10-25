@@ -206,6 +206,23 @@ describe("computeCampaignViability", () => {
     ).toBe("N");
   });
 
+  it("still needs one player when every player is optional and there is no minimum", () => {
+    // The DM alone never makes a session, even if the last required player left.
+    expect(computeCampaignViability([dm("YES"), optional("NO"), optional("NO")], null)).toBe(
+      "N",
+    );
+    expect(
+      computeCampaignViability([dm("YES"), optional("MAYBE"), optional("NO")], null),
+    ).toBe("T");
+    expect(computeCampaignViability([dm("YES"), optional("YES"), optional("NO")], null)).toBe(
+      "S",
+    );
+  });
+
+  it("leaves a campaign with no players to its DM", () => {
+    expect(computeCampaignViability([dm("YES")], null)).toBe("S");
+  });
+
   it("returns O when someone who will play is online, required or optional", () => {
     expect(
       computeCampaignViability([dm("YES"), required("ONLINE"), optional("NO")], null),

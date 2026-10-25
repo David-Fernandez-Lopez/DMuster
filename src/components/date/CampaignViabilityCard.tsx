@@ -67,10 +67,11 @@ function ConfirmedBadgeIcon() {
  * rows with each member's response (`PlayerStatusRow`) — or "Juega en AC" for
  * a member already playing another campaign's session that day — followed by either a
  * DM's confirm action (viable `S`/`O` day) or the master override, "Forzar
- * partida" (non-viable day, roadmap #22, `ForceSessionForm`). When the
- * campaign's custom requirements govern the day (roadmap #25), a line above
- * the members names who is required and the minimum number of players, and
- * optional players carry an "Opcional" badge. Expanding a
+ * partida" (non-viable day, roadmap #22, `ForceSessionForm`). When some
+ * players are optional — per the campaign's requirements governing the day
+ * (roadmap #25) or for good (roadmap #25.2) — a line above the members names
+ * who is required and the minimum number of players, and optional players
+ * carry an "Opcional" badge. Expanding a
  * **confirmed** day skips that member list — it would just duplicate the
  * attendee list below — and shows the session block directly: its time
  * summary, the attendee list with add/remove controls for a DM
@@ -108,24 +109,24 @@ export default function CampaignViabilityCard({
     (member) => member.isAttending && !isAvailableResponse(member.status),
   );
 
-  // Custom requirements (roadmap #25) explain why the day can be viable
-  // without everyone: who is required (only worth naming when someone is
-  // optional) and the minimum number of players.
+  // Optional players — for the next session (roadmap #25) or for good
+  // (roadmap #25.2) — and a minimum explain why the day can be viable without
+  // everyone: who is required (only worth naming when someone is optional) and
+  // the minimum number of players.
+  const hasOptionalPlayers = campaign.players.some((player) => player.isOptional);
   const requirementParts: string[] = [];
-  if (campaign.requirements) {
-    const requiredNames = campaign.players
-      .filter((player) => !player.isDm && !player.isOptional)
-      .map((player) => player.name);
-    if (campaign.players.some((player) => player.isOptional) && requiredNames.length > 0) {
-      requirementParts.push(
-        t("calendar.requirements.required", { players: requiredNames.join(", ") }),
-      );
-    }
-    if (campaign.requirements.minPlayers !== null) {
-      requirementParts.push(
-        t("calendar.requirements.minPlayers", { count: campaign.requirements.minPlayers }),
-      );
-    }
+  const requiredNames = campaign.players
+    .filter((player) => !player.isDm && !player.isOptional)
+    .map((player) => player.name);
+  if (hasOptionalPlayers && requiredNames.length > 0) {
+    requirementParts.push(
+      t("calendar.requirements.required", { players: requiredNames.join(", ") }),
+    );
+  }
+  if (campaign.requirements && campaign.requirements.minPlayers !== null) {
+    requirementParts.push(
+      t("calendar.requirements.minPlayers", { count: campaign.requirements.minPlayers }),
+    );
   }
 
   // Who a viable confirmation signs up: everyone who can play and is free.
@@ -262,7 +263,7 @@ export default function CampaignViabilityCard({
               players={campaign.players}
               currentUserId={currentUserId}
               viability={campaign.viability}
-              hasRequirements={campaign.requirements !== null}
+              hasRequirements={campaign.requirements !== null || hasOptionalPlayers}
             />
           )
         ) : null}

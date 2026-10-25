@@ -86,9 +86,9 @@ describe("confirmSession — members busy in another campaign's session", () => 
       minPlayers: null,
       requirementsSetAt: null,
       players: [
-        { userId: "ana", role: "DM", optional: false },
-        { userId: "paola", role: "PLAYER", optional: false },
-        { userId: "tucho", role: "PLAYER", optional: false },
+        { userId: "ana", role: "DM", optional: false, alwaysOptional: false },
+        { userId: "paola", role: "PLAYER", optional: false, alwaysOptional: false },
+        { userId: "tucho", role: "PLAYER", optional: false, alwaysOptional: false },
       ],
     });
     // Everyone answered Sí: on answers alone, Poulard would be viable (S).
@@ -173,10 +173,10 @@ describe("confirmSession — campaign requirements (roadmap #25)", () => {
       minPlayers,
       requirementsSetAt: SET_AT,
       players: [
-        { userId: "ana", role: "DM", optional: false },
-        { userId: "paola", role: "PLAYER", optional: false },
-        { userId: "tucho", role: "PLAYER", optional: true },
-        { userId: "patri", role: "PLAYER", optional: true },
+        { userId: "ana", role: "DM", optional: false, alwaysOptional: false },
+        { userId: "paola", role: "PLAYER", optional: false, alwaysOptional: false },
+        { userId: "tucho", role: "PLAYER", optional: true, alwaysOptional: false },
+        { userId: "patri", role: "PLAYER", optional: true, alwaysOptional: false },
       ],
     });
   }
@@ -260,6 +260,64 @@ describe("confirmSession — campaign requirements (roadmap #25)", () => {
         },
       ])
       .mockResolvedValueOnce([]);
+
+    await expect(confirmPoulard()).resolves.toEqual({
+      ok: false,
+      error: "sessions.errors.attendeesRequired",
+    });
+  });
+});
+
+describe("confirmSession — always-optional players (roadmap #25.2)", () => {
+  /**
+   * Arranges Poulard with Tucho always optional. `requirementsSetAt` opens a
+   * next-session window in which the DM marked him required (`optional: false`).
+   */
+  function poulardWithTuchoAlwaysOptional(requirementsSetAt: Date | null): void {
+    findCampaign.mockResolvedValue({
+      name: "Poulard",
+      tag: "PO",
+      minPlayers: null,
+      requirementsSetAt,
+      players: [
+        { userId: "ana", role: "DM", optional: false, alwaysOptional: false },
+        { userId: "paola", role: "PLAYER", optional: false, alwaysOptional: false },
+        { userId: "tucho", role: "PLAYER", optional: false, alwaysOptional: true },
+      ],
+    });
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    holidays.mockResolvedValue([]);
+    findSessions.mockResolvedValue([]);
+    // Tucho, who comes and goes, cannot make it; everyone else can.
+    findAvailability.mockResolvedValue([
+      { userId: "ana", status: "YES" },
+      { userId: "paola", status: "YES" },
+      { userId: "tucho", status: "NO" },
+    ]);
+    transaction.mockImplementation((fn: (client: typeof tx) => unknown) => fn(tx));
+    tx.confirmedSession.create.mockResolvedValue({ id: "session-po" });
+  });
+
+  it("does not let them block a day, and leaves them out of the session", async () => {
+    poulardWithTuchoAlwaysOptional(null);
+
+    const result = await confirmPoulard();
+
+    expect(result.ok).toBe(true);
+    expect(tx.confirmedSession.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ forced: false }) }),
+    );
+    expect(tx.confirmedSessionAttendee.createMany).toHaveBeenCalledWith({
+      data: ["ana", "paola"].map((userId) => ({ sessionId: "session-po", userId })),
+    });
+  });
+
+  it("blocks when the next-session requirements make them required", async () => {
+    poulardWithTuchoAlwaysOptional(new Date("2026-10-20T10:00:00Z"));
 
     await expect(confirmPoulard()).resolves.toEqual({
       ok: false,

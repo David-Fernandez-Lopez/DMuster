@@ -146,10 +146,12 @@
     },
     "requirements": {
       "title": "Requisitos de la próxima partida",
-      "hint": "Por defecto todos los jugadores son imprescindibles. Marca solo a quien necesitas y, si quieres, un mínimo de jugadores. Los másteres siempre son imprescindibles y no cuentan para el mínimo.",
+      "hint": "Por defecto todos los jugadores son imprescindibles, salvo los marcados como «Siempre opcional» en Jugadores. Marca solo a quien necesitas y, si quieres, un mínimo de jugadores. Los másteres siempre son imprescindibles y no cuentan para el mínimo.",
       "statusDefault": "Ahora mismo todos son imprescindibles.",
+      "statusDefaultWithOptional": "Ahora mismo todos son imprescindibles salvo los siempre opcionales.",
+      "alwaysOptionalTag": "Siempre opcional",
       "statusOpen": "Vigentes hasta que pase la próxima partida que se confirme.",
-      "statusUntil": "Vigentes hasta la partida del {{date}}. Después todos vuelven a ser imprescindibles.",
+      "statusUntil": "Vigentes hasta la partida del {{date}}. Después se vuelve a la regla por defecto.",
       "required": "Imprescindibles",
       "minPlayers": "Mínimo de jugadores",
       "minPlayersHint": "Déjalo vacío si no hay mínimo.",
@@ -157,7 +159,7 @@
       "save": "Guardar requisitos",
       "reset": "Restablecer",
       "saved": "Requisitos guardados.",
-      "resetDone": "Todos vuelven a ser imprescindibles.",
+      "resetDone": "Requisitos restablecidos: se vuelve a la regla por defecto.",
       "errors": {
         "validation": "Revisa los requisitos.",
         "minPlayersInvalid": "El mínimo debe ser un número entero mayor que 0.",

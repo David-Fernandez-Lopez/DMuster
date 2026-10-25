@@ -33,9 +33,12 @@ let tx: {
  * Arranges the campaign's players (role PLAYER), as the transaction reads them.
  *
  * @param {string[]} ids - The players' user ids.
+ * @param {string[]} [alwaysOptionalIds] - Those marked always optional.
  */
-function playersAre(ids: string[]): void {
-  tx.campaignPlayer.findMany.mockResolvedValue(ids.map((userId) => ({ userId })));
+function playersAre(ids: string[], alwaysOptionalIds: string[] = []): void {
+  tx.campaignPlayer.findMany.mockResolvedValue(
+    ids.map((userId) => ({ userId, alwaysOptional: alwaysOptionalIds.includes(userId) })),
+  );
 }
 
 describe("setCampaignRequirements", () => {
@@ -115,6 +118,36 @@ describe("setCampaignRequirements", () => {
     ).resolves.toEqual({ ok: true });
     expect(tx.campaign.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { minPlayers: null, requirementsSetAt: null } }),
+    );
+  });
+
+  it("stores the default with an always-optional player left out as a reset too", async () => {
+    playersAre(["cgoob", "patri", "salgado"], ["salgado"]);
+
+    await expect(
+      setCampaignRequirements("iceron", {
+        requiredUserIds: ["cgoob", "patri"],
+        minPlayers: null,
+      }),
+    ).resolves.toEqual({ ok: true });
+    expect(tx.campaign.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { minPlayers: null, requirementsSetAt: null } }),
+    );
+  });
+
+  it("opens a window to require an always-optional player for one session", async () => {
+    playersAre(["cgoob", "patri", "salgado"], ["salgado"]);
+
+    await expect(
+      setCampaignRequirements("iceron", {
+        requiredUserIds: ["cgoob", "patri", "salgado"],
+        minPlayers: null,
+      }),
+    ).resolves.toEqual({ ok: true });
+    expect(tx.campaign.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: { minPlayers: null, requirementsSetAt: expect.any(Date) },
+      }),
     );
   });
 });

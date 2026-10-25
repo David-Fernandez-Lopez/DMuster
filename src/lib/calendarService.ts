@@ -1,6 +1,7 @@
 import { CampaignRole } from "@/generated/prisma/enums";
 import {
   DEFAULT_REQUIREMENTS_WINDOW,
+  isOptionalOn,
   requirementsApplyOn,
 } from "@/lib/campaignRequirements";
 import { loadRequirementWindows } from "@/lib/campaignRequirementsService";
@@ -41,9 +42,10 @@ export type PlayerDayStatus = {
   /** True when this member is a DM of the campaign (shows the "Máster" badge). */
   isDm: boolean;
   /**
-   * True when the campaign's requirements in force that day mark this player
-   * optional (roadmap #25): their answer does not block the campaign on its
-   * own. Always `false` for DMs and under the default rule.
+   * True when this player is optional that day — marked so by the campaign's
+   * requirements in force (roadmap #25), or always optional outside them
+   * (roadmap #25.2): their answer does not block the campaign on its own.
+   * Always `false` for DMs.
    */
   isOptional: boolean;
   status: PlayerStatusValue;
@@ -178,6 +180,7 @@ export async function getCalendarViability(
           userId: true,
           role: true,
           optional: true,
+          alwaysOptional: true,
           user: { select: { name: true } },
         },
       },
@@ -266,7 +269,7 @@ export async function getCalendarViability(
             userId: player.userId,
             name: player.user.name,
             isDm,
-            isOptional: requirementsApply && !isDm && player.optional,
+            isOptional: !isDm && isOptionalOn(player, requirementsApply),
             status: dayStatuses?.get(player.userId) ?? null,
             busyIn: findBusySession(busyIndex, player.userId, campaign.id),
           };

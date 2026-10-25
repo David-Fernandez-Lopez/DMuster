@@ -4,6 +4,7 @@ import { getCampaignRole } from "@/lib/authz";
 import type { PlayerStatusValue } from "@/lib/calendarService";
 import {
   DEFAULT_REQUIREMENTS_WINDOW,
+  isOptionalOn,
   requirementsApplyOn,
 } from "@/lib/campaignRequirements";
 import { loadRequirementWindows } from "@/lib/campaignRequirementsService";
@@ -231,7 +232,7 @@ function describeConflict(conflict: SessionConflict): {
 type CampaignRuleMember = {
   userId: string;
   isDm: boolean;
-  /** Optional under the requirements governing that day (`false` by default). */
+  /** Optional that day: per the requirements governing it, or always optional (`isOptionalOn`). */
   optional: boolean;
 };
 
@@ -476,7 +477,9 @@ export async function confirmSession({
       tag: true,
       minPlayers: true,
       requirementsSetAt: true,
-      players: { select: { userId: true, role: true, optional: true } },
+      players: {
+        select: { userId: true, role: true, optional: true, alwaysOptional: true },
+      },
     },
   });
   if (!campaign) {
@@ -515,7 +518,7 @@ export async function confirmSession({
     campaign.players.map((player) => ({
       userId: player.userId,
       isDm: player.role === CampaignRole.DM,
-      optional: requirementsApply && player.optional,
+      optional: isOptionalOn(player, requirementsApply),
     })),
     requirementsApply ? campaign.minPlayers : null,
     dateIso,

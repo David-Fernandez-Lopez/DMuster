@@ -146,10 +146,12 @@
     },
     "requirements": {
       "title": "Next session requirements",
-      "hint": "By default every player is required. Mark only the ones you need and, if you like, a minimum number of players. DMs are always required and don't count towards the minimum.",
+      "hint": "By default every player is required, except the ones marked “Always optional” in Players. Mark only the ones you need and, if you like, a minimum number of players. DMs are always required and don't count towards the minimum.",
       "statusDefault": "Right now everyone is required.",
+      "statusDefaultWithOptional": "Right now everyone is required except the always-optional players.",
+      "alwaysOptionalTag": "Always optional",
       "statusOpen": "In force until the next session that gets confirmed has passed.",
-      "statusUntil": "In force until the session on {{date}}. After that everyone is required again.",
+      "statusUntil": "In force until the session on {{date}}. After that the default rule applies again.",
       "required": "Required",
       "minPlayers": "Minimum players",
       "minPlayersHint": "Leave it empty for no minimum.",
@@ -157,7 +159,7 @@
       "save": "Save requirements",
       "reset": "Reset",
       "saved": "Requirements saved.",
-      "resetDone": "Everyone is required again.",
+      "resetDone": "Requirements reset: back to the default rule.",
       "errors": {
         "validation": "Check the requirements.",
         "minPlayersInvalid": "The minimum must be a whole number greater than 0.",

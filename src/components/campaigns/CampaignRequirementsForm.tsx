@@ -24,7 +24,9 @@ type Feedback = { key: string; isError: boolean } | null;
 
 /**
  * The "Requisitos de la próxima partida" card on the edit campaign page
- * (roadmap #25). By default every player is required; here a DM picks who is
+ * (roadmap #25). By default every player is required except the ones marked
+ * always optional on the players page (roadmap #25.2, tagged as such here,
+ * and still requirable for this one session); here a DM picks who is
  * really needed (the rest become optional) and, optionally, a minimum number
  * of players — DMs are always required and never count towards it, so they
  * are not listed. A status line says whether custom requirements are in force
@@ -125,17 +127,29 @@ export default function CampaignRequirementsForm({
     );
   }
 
-  /** Resets to the default rule and mirrors it in the form. */
+  /**
+   * Resets to the default rule — everyone required but the always-optional
+   * players — and mirrors it in the form.
+   */
   async function handleReset() {
     const ok = await send({ method: "DELETE" }, "campaigns.requirements.resetDone");
     if (ok) {
-      setRequiredIds(new Set(players.map((player) => player.userId)));
+      setRequiredIds(
+        new Set(
+          players.filter((player) => !player.alwaysOptional).map((player) => player.userId),
+        ),
+      );
       setMinInput("");
     }
   }
 
+  const hasAlwaysOptional = players.some((player) => player.alwaysOptional);
   const statusText = !requirementsWindow.active
-    ? t("campaigns.requirements.statusDefault")
+    ? t(
+        hasAlwaysOptional
+          ? "campaigns.requirements.statusDefaultWithOptional"
+          : "campaigns.requirements.statusDefault",
+      )
     : requirementsWindow.untilDate === null
       ? t("campaigns.requirements.statusOpen")
       : t("campaigns.requirements.statusUntil", {
@@ -193,7 +207,11 @@ export default function CampaignRequirementsForm({
                     <span className="min-w-0 flex-1 truncate">{player.name}</span>
                     {!isRequired ? (
                       <span className="shrink-0 text-xs text-ink-muted">
-                        {t("date.optionalBadge")}
+                        {t(
+                          player.alwaysOptional
+                            ? "campaigns.requirements.alwaysOptionalTag"
+                            : "date.optionalBadge",
+                        )}
                       </span>
                     ) : null}
                   </button>

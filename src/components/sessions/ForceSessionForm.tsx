@@ -25,7 +25,11 @@ interface ForceSessionFormProps {
   currentUserId: string;
   /** The campaign's (non-viable) tier for this day — `B` explains the block as busy members. */
   viability: Viability;
-  /** Whether the campaign's custom requirements govern this day (roadmap #25). */
+  /**
+   * Whether the day is judged by something other than "everyone": the
+   * campaign's requirements governing it (roadmap #25), or optional players
+   * (roadmap #25.2).
+   */
   hasRequirements: boolean;
 }
 

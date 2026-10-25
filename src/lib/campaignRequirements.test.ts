@@ -1,6 +1,7 @@
 import {
   DEFAULT_REQUIREMENTS_WINDOW,
   findAnchorSession,
+  isOptionalOn,
   requirementsApplyOn,
   resolveRequirementsWindow,
 } from "@/lib/campaignRequirements";
@@ -105,6 +106,19 @@ describe("resolveRequirementsWindow", () => {
     expect(
       resolveRequirementsWindow({ setAt, sessions, today: "2026-11-08", timeZone: TZ }),
     ).toEqual(DEFAULT_REQUIREMENTS_WINDOW);
+  });
+});
+
+describe("isOptionalOn", () => {
+  it("uses the standing setting while no next-session requirements govern the day", () => {
+    expect(isOptionalOn({ optional: false, alwaysOptional: true }, false)).toBe(true);
+    expect(isOptionalOn({ optional: true, alwaysOptional: false }, false)).toBe(false);
+  });
+
+  it("lets the next-session requirements decide while they govern the day", () => {
+    // Salgado is always optional, but required for this one session.
+    expect(isOptionalOn({ optional: false, alwaysOptional: true }, true)).toBe(false);
+    expect(isOptionalOn({ optional: true, alwaysOptional: false }, true)).toBe(true);
   });
 });
 

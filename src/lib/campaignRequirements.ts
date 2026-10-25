@@ -97,6 +97,27 @@ export function resolveRequirementsWindow(input: {
 }
 
 /**
+ * Whether a player is optional on a given day. While the next-session
+ * requirements govern the day, what the DM chose for that session decides
+ * (`optional`) — it may even require an always-optional player for that one
+ * session; otherwise the player's standing setting does (`alwaysOptional`,
+ * roadmap #25.2), which never expires. DMs are always required whatever this
+ * says; `computeCampaignViability` ignores the flag for them.
+ *
+ * @param {{ optional: boolean; alwaysOptional: boolean }} player - The
+ *   player's next-session and standing flags.
+ * @param {boolean} requirementsApply - Whether the next-session requirements
+ *   govern the day (`requirementsApplyOn`).
+ * @returns {boolean} True when the player's answer does not block on its own.
+ */
+export function isOptionalOn(
+  player: { optional: boolean; alwaysOptional: boolean },
+  requirementsApply: boolean,
+): boolean {
+  return requirementsApply ? player.optional : player.alwaysOptional;
+}
+
+/**
  * Whether a campaign's custom requirements apply to a given calendar day: the
  * window is active and the day is not after the session they were set for.
  * Days after it are planned with the default rule, so they do not show up

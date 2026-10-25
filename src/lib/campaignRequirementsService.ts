@@ -2,6 +2,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { CampaignRole } from "@/generated/prisma/enums";
 import {
   DEFAULT_REQUIREMENTS_WINDOW,
+  isOptionalOn,
   resolveRequirementsWindow,
   type AnchorCandidate,
   type RequirementsWindow,
@@ -20,8 +21,13 @@ const RECORD_NOT_FOUND = "P2025";
 export type RequirementsPlayer = {
   userId: string;
   name: string;
-  /** Whether the requirements in force need this player (always, by default). */
+  /**
+   * Whether the requirements in force need this player — by default, every
+   * player who is not always optional.
+   */
   required: boolean;
+  /** Whether the player is optional for good (roadmap #25.2), set on the players page. */
+  alwaysOptional: boolean;
 };
 
 /** A campaign's requirements as the DM edits them (serializable to the client). */
@@ -109,8 +115,8 @@ export async function loadRequirementWindows(
 /**
  * Loads a campaign's requirements for the DM's edit form. Requirements that
  * were never saved, or that expired when their session passed, read as the
- * default: every player required and no minimum — so the form never offers to
- * keep a stale setting.
+ * default: every player required except the always-optional ones (roadmap
+ * #25.2), and no minimum — so the form never offers to keep a stale setting.
  *
  * @param {string} campaignId - The campaign whose requirements are read.
  * @returns {Promise<CampaignRequirementsView | null>} The requirements, or
@@ -127,7 +133,12 @@ export async function getCampaignRequirements(
       requirementsSetAt: true,
       players: {
         where: { role: CampaignRole.PLAYER },
-        select: { userId: true, optional: true, user: { select: { name: true } } },
+        select: {
+          userId: true,
+          optional: true,
+          alwaysOptional: true,
+          user: { select: { name: true } },
+        },
         orderBy: { user: { name: "asc" } },
       },
     },
@@ -146,7 +157,8 @@ export async function getCampaignRequirements(
     players: campaign.players.map((player) => ({
       userId: player.userId,
       name: player.user.name,
-      required: !window.active || !player.optional,
+      required: !isOptionalOn(player, window.active),
+      alwaysOptional: player.alwaysOptional,
     })),
   };
 }
@@ -162,8 +174,9 @@ export async function getCampaignRequirements(
  * (`notPlayer`), when the minimum exceeds the number of players
  * (`minTooHigh`), or when nothing would be required at all — no required
  * player and no minimum, so the DM alone would make any day viable
- * (`empty`). Requiring every player with no minimum is the default rule, so
- * it is stored as a reset instead of opening a window that changes nothing.
+ * (`empty`). Requiring exactly the players who are not always optional
+ * (roadmap #25.2), with no minimum, is the default rule, so it is stored as a
+ * reset instead of opening a window that changes nothing.
  *
  * Runs under a lock on the campaign row so a player added or removed at the
  * same moment cannot slip between the membership check and the writes.
@@ -183,10 +196,13 @@ export async function setCampaignRequirements(
 
         const players = await tx.campaignPlayer.findMany({
           where: { campaignId, role: CampaignRole.PLAYER },
-          select: { userId: true },
+          select: { userId: true, alwaysOptional: true },
         });
         const playerIds = new Set(players.map((player) => player.userId));
         const requiredIds = new Set(input.requiredUserIds);
+        const defaultRequiredIds = players
+          .filter((player) => !player.alwaysOptional)
+          .map((player) => player.userId);
 
         if ([...requiredIds].some((id) => !playerIds.has(id))) {
           return { ok: false, error: "campaigns.requirements.errors.notPlayer" };
@@ -194,7 +210,11 @@ export async function setCampaignRequirements(
         if (input.minPlayers !== null && input.minPlayers > playerIds.size) {
           return { ok: false, error: "campaigns.requirements.errors.minTooHigh" };
         }
-        if (requiredIds.size === playerIds.size && input.minPlayers === null) {
+        const isDefaultRule =
+          input.minPlayers === null &&
+          requiredIds.size === defaultRequiredIds.length &&
+          defaultRequiredIds.every((id) => requiredIds.has(id));
+        if (isDefaultRule) {
           await clearRequirements(tx, campaignId);
           return { ok: true };
         }
