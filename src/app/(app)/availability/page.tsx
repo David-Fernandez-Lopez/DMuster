@@ -4,16 +4,11 @@ import AvailabilityList from "@/components/availability/AvailabilityList";
 import { getServerTranslation } from "@/i18n/server";
 import { getUserAvailability } from "@/lib/availabilityService";
 import { auth } from "@/lib/auth";
+import { MIN_DAYS, WINDOW_DAYS } from "@/lib/availabilityHorizon";
 import { listCampaignsForUser } from "@/lib/campaignService";
 import { addDays, upcomingEligibleDaysThroughMonth } from "@/lib/date";
 import { todayIso } from "@/lib/today";
 import { listHolidays } from "@/lib/holidayService";
-
-/** How many days ahead the responding window scans for eligible days. */
-const WINDOW_DAYS = 90;
-
-/** Minimum number of upcoming eligible days shown at once. */
-const MIN_DAYS = 16;
 
 /**
  * "Mi disponibilidad" page (`/availability`) — the primary flow for a player to

@@ -98,6 +98,10 @@ model User {
   // Manual light/dark override. null = follow the OS preference
   // (prefers-color-scheme). Mirrors `locale` for cross-device persistence.
   theme              Theme?
+  // How many months "Mi disponibilidad" lists, the current one included. Only
+  // widens the default window (at least 16 eligible days through month end),
+  // never narrows it.
+  availabilityHorizonMonths Int @default(2)
   // Opt-in for Google Calendar sync (roadmap #23), independent of having a
   // Google `Account` row — lets a user pause sync without disconnecting.
   googleSyncEnabled  Boolean   @default(false)

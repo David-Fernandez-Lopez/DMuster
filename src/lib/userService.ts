@@ -3,6 +3,11 @@ import bcrypt from "bcryptjs";
 import { Prisma } from "@/generated/prisma/client";
 import { getLocale } from "@/i18n/server";
 import type { AppLocale } from "@/i18n/settings";
+import {
+  type AvailabilityHorizon,
+  DEFAULT_AVAILABILITY_HORIZON,
+  isAvailabilityHorizon,
+} from "@/lib/availabilityHorizon";
 import { prisma } from "@/lib/prisma";
 import type { Theme } from "@/lib/theme";
 
@@ -129,6 +134,61 @@ export async function updateUserTheme(
   } catch (error) {
     console.error("[PROFILE/UPDATE_THEME] Failed to update user theme:", error);
     return { ok: false, error: "profile.errors.updateFailed" };
+  }
+}
+
+/**
+ * Reads how many months the user's "Mi disponibilidad" list covers. A missing
+ * user or a stored value outside the supported options falls back to the
+ * default, so the list always renders.
+ *
+ * @param {string} userId - Id of the user whose horizon is read.
+ * @returns {Promise<AvailabilityHorizon>} The user's horizon, in months.
+ */
+export async function getUserAvailabilityHorizon(
+  userId: string,
+): Promise<AvailabilityHorizon> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { availabilityHorizonMonths: true },
+  });
+  const months = user?.availabilityHorizonMonths;
+  return isAvailabilityHorizon(months) ? months : DEFAULT_AVAILABILITY_HORIZON;
+}
+
+/** Result of an availability horizon update. `error` holds an i18n key on failure. */
+export type UpdateAvailabilityHorizonResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+/**
+ * Persists how many months the user's "Mi disponibilidad" list covers, so the
+ * choice applies on every device. Failures are logged server-side and returned
+ * as a friendly i18n error key rather than thrown.
+ *
+ * @param {string} userId - Id of the user whose horizon is being updated.
+ * @param {AvailabilityHorizon} months - New horizon to persist.
+ * @returns {Promise<UpdateAvailabilityHorizonResult>} Success, or an error key
+ *   (`availability.errors.unknown`).
+ */
+export async function updateUserAvailabilityHorizon(
+  userId: string,
+  months: AvailabilityHorizon,
+): Promise<UpdateAvailabilityHorizonResult> {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { availabilityHorizonMonths: months },
+      select: { id: true },
+    });
+
+    return { ok: true };
+  } catch (error) {
+    console.error(
+      "[AVAILABILITY/UPDATE_HORIZON] Failed to update user availability horizon:",
+      error,
+    );
+    return { ok: false, error: "availability.errors.unknown" };
   }
 }
 
