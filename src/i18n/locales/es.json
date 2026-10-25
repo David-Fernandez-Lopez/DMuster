@@ -220,8 +220,6 @@
       "alreadyAttending": "Ya está en la partida.",
       "requiresYes": "Solo puedes sumarte si has respondido Sí o Sí (Online) ese día.",
       "attendeeConflict": "Ya hay partida ese día con {{campaign}}.",
-      "attendeeConflictOther": "Esa persona ya tiene partida ese día en otra campaña.",
-      "playerConflictOther": "Ya tienen partida ese día en otra campaña: {{players}}.",
       "lastAttendee": "La partida no puede quedarse sin jugadores.",
       "past": "Esa partida ya ha pasado."
     }

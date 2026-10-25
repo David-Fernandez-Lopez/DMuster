@@ -194,38 +194,31 @@ export async function findConflicts(
 }
 
 /**
- * Turns a conflict into the message its requester is entitled to see.
+ * Turns a conflict into its message: the blocking campaign and the people who
+ * would be double-booked.
  *
- * Detecting the conflict has to look across every campaign — that is the rule,
- * and it is deliberate. Reporting it does not. Naming the blocking campaign
- * told a DM which *other* campaign one of their players is in, and by probing
- * dates that reconstructs where and when someone plays: exactly the shape the
- * calendar's own scoping works to avoid. Someone who already belongs to that
- * campaign learns nothing new, so they still get the name; everyone else gets
- * the fact, which is all they need in order to decide.
- *
- * The shared player names are not withheld either way — they are members of the
- * requester's own campaign, since the attendee set is a subset of it.
+ * The campaign is always named, whether or not the requester belongs to it. It
+ * used to be withheld from non-members (finding B6-03), back when the calendar
+ * only showed each user their own campaigns. It now shows every campaign's
+ * confirmed sessions to the whole group, name and players included, so hiding
+ * the name here would protect nothing and only make the message less useful.
+ * The shared player names are members of the requester's own campaign anyway,
+ * since the attendee set is a subset of it.
  *
  * @param {SessionConflict} conflict - The blocking session.
- * @param {string} requesterId - The user who will read the message.
- * @returns {Promise<{ error: string; params?: Record<string, string> }>} The
- *   i18n key and its interpolations.
+ * @returns {{ error: string; params: Record<string, string> }} The i18n key
+ *   and its interpolations.
  */
-async function describeConflict(
-  conflict: SessionConflict,
-  requesterId: string,
-): Promise<{ error: string; params?: Record<string, string> }> {
-  const role = await getCampaignRole(requesterId, conflict.campaignId);
-  const players = conflict.sharedNames.join(", ");
-
-  if (role === null) {
-    return { error: "sessions.errors.playerConflictOther", params: { players } };
-  }
-
+function describeConflict(conflict: SessionConflict): {
+  error: string;
+  params: Record<string, string>;
+} {
   return {
     error: "sessions.errors.playerConflict",
-    params: { campaign: conflict.campaignName, players },
+    params: {
+      campaign: conflict.campaignName,
+      players: conflict.sharedNames.join(", "),
+    },
   };
 }
 
@@ -505,7 +498,7 @@ export async function confirmSession({
     const [conflict] = conflicts;
     return {
       ok: false,
-      ...(await describeConflict(conflict, userId)),
+      ...describeConflict(conflict),
     };
   }
 
@@ -808,18 +801,12 @@ export async function addAttendee(
 
   const conflicts = await findConflicts(dateIso, [targetUserId], sessionId);
   if (conflicts.length > 0) {
-    const blocking = conflicts[0];
-    const actorRole = await getCampaignRole(actingUserId, blocking.campaignId);
+    // Always named, for the same reason as in `describeConflict`: the calendar
+    // already shows every campaign's sessions to everyone.
     return {
       ok: false,
-      // Same reasoning as `describeConflict`: the campaign's name only goes to
-      // someone already in it.
-      error:
-        actorRole === null
-          ? "sessions.errors.attendeeConflictOther"
-          : "sessions.errors.attendeeConflict",
-      params:
-        actorRole === null ? undefined : { campaign: blocking.campaignName },
+      error: "sessions.errors.attendeeConflict",
+      params: { campaign: conflicts[0].campaignName },
     };
   }
 

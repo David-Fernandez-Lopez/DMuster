@@ -1,4 +1,5 @@
-import { confirmSession } from "@/lib/confirmedSessionService";
+import { getCampaignRole } from "@/lib/authz";
+import { addAttendee, confirmSession } from "@/lib/confirmedSessionService";
 import { listHolidays } from "@/lib/holidayService";
 import { prisma } from "@/lib/prisma";
 
@@ -17,7 +18,8 @@ jest.mock("@/lib/prisma", () => ({
   prisma: {
     campaign: { findUnique: jest.fn() },
     availability: { findMany: jest.fn() },
-    confirmedSession: { findMany: jest.fn() },
+    confirmedSession: { findMany: jest.fn(), findFirst: jest.fn() },
+    confirmedSessionAttendee: { findUnique: jest.fn() },
     $transaction: jest.fn(),
   },
 }));
@@ -29,6 +31,7 @@ jest.mock("@/lib/google/calendarSyncService", () => ({
 }));
 jest.mock("@/lib/holidayService", () => ({ listHolidays: jest.fn() }));
 
+const campaignRole = getCampaignRole as jest.Mock;
 const holidays = listHolidays as jest.Mock;
 const findCampaign = prisma.campaign.findUnique as jest.Mock;
 const findAvailability = prisma.availability.findMany as jest.Mock;
@@ -136,5 +139,48 @@ describe("confirmSession — members busy in another campaign's session", () => 
     await confirmPoulard();
 
     expect(findSessions).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the blocking campaign even though the DM is not in it", async () => {
+    // Ana is not an Academia member; the calendar shows her Academia's session
+    // in full, so the conflict error names it too.
+    academiaPlaying(["paola"]);
+
+    await expect(confirmPoulard(["ana", "paola"])).resolves.toEqual({
+      ok: false,
+      error: "sessions.errors.playerConflict",
+      params: { campaign: "Academia Arcana", players: "paola" },
+    });
+    expect(campaignRole).not.toHaveBeenCalled();
+  });
+});
+
+describe("addAttendee — target busy in another campaign's session", () => {
+  const findSession = prisma.confirmedSession.findFirst as jest.Mock;
+  const findAttendee = prisma.confirmedSessionAttendee.findUnique as jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    findSession.mockResolvedValue({
+      campaignId: "poulard",
+      date: new Date(`${DATE}T00:00:00.000Z`),
+    });
+    findAttendee.mockResolvedValue(null);
+    // The acting DM's role in Poulard, then the target's.
+    campaignRole.mockResolvedValueOnce("DM").mockResolvedValueOnce("PLAYER");
+  });
+
+  it("names the blocking campaign, without checking whether the DM belongs to it", async () => {
+    academiaPlaying(["paola"]);
+
+    await expect(addAttendee("session-po", "paola", "ana")).resolves.toEqual({
+      ok: false,
+      error: "sessions.errors.attendeeConflict",
+      params: { campaign: "Academia Arcana" },
+    });
+    // Only the two Poulard checks (actor and target) — no lookup of the DM's
+    // role in Academia.
+    expect(campaignRole).toHaveBeenCalledTimes(2);
   });
 });

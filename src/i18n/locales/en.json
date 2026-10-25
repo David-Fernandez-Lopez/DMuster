@@ -220,8 +220,6 @@
       "alreadyAttending": "Already in the session.",
       "requiresYes": "You can only join if you answered Yes or Yes (Online) that day.",
       "attendeeConflict": "Already a session that day with {{campaign}}.",
-      "attendeeConflictOther": "That person already has a session that day in another campaign.",
-      "playerConflictOther": "They already have a session that day in another campaign: {{players}}.",
       "lastAttendee": "A session can't be left with no players.",
       "past": "That session has already taken place."
     }

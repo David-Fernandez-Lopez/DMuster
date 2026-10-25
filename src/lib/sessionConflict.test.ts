@@ -167,18 +167,11 @@ describe("findConflictingSessions", () => {
   });
 
   describe("what a conflict reports", () => {
-    // ⚠ `campaignName` is returned on purpose, and must stay.
-    //
-    // Deciding who may *see* it is a separate question, answered one layer up
-    // in `confirmedSessionService.describeConflict`: a requester who belongs to
-    // the blocking campaign gets its name, everyone else gets a generic
-    // message. That distinction cannot be made here, where there is no
-    // requester — this function only reports what the conflict is.
-    //
-    // Written down because the tempting way to "fix" the disclosure is to stop
-    // returning the field, which would leave this suite green while removing
-    // the name from the people entitled to it.
-    it("names the blocking campaign, for the caller to decide what to do with", () => {
+    // `campaignName` is what the conflict errors show: every requester gets the
+    // blocking campaign's name, since the calendar already shows every
+    // campaign's sessions to the whole group (see
+    // `confirmedSessionService.describeConflict`).
+    it("names the blocking campaign, which the error message shows", () => {
       const [conflict] = findConflictingSessions(
         ["alice"],
         [
@@ -199,8 +192,7 @@ describe("findConflictingSessions", () => {
       });
     });
 
-    // The service needs it to answer "is the requester a member of this?"
-    it("carries the campaign id, which is what the membership check keys on", () => {
+    it("carries the campaign id of the blocking session", () => {
       const [conflict] = findConflictingSessions(
         ["alice"],
         [attendance({ campaignId: "campaign-42", attendeeIds: ["alice"] })],
