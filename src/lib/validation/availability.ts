@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { AVAILABILITY_HORIZON_OPTIONS } from "@/lib/availabilityHorizon";
 import { isValidIsoDate } from "@/lib/date";
 
 // Validation error messages are i18n keys, not user-facing text: the client
@@ -30,3 +31,18 @@ export const availabilityBodySchema = z.object({
 });
 
 export type AvailabilityBodyInput = z.infer<typeof availabilityBodySchema>;
+
+/**
+ * How many months "Mi disponibilidad" lists. Only the offered options are
+ * accepted, and the smallest one is the default window, so no value can make
+ * the list shorter than the default.
+ */
+export const availabilityHorizonSchema = z.literal(AVAILABILITY_HORIZON_OPTIONS, {
+  error: "availability.errors.invalidHorizon",
+});
+
+/**
+ * State returned by the availability server actions to the client.
+ * `error` holds an i18n key when the update fails, translated client-side.
+ */
+export type AvailabilityActionState = { error?: string };

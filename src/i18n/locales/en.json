@@ -88,10 +88,16 @@
     "no": "No",
     "affects": "Affects: {{tags}}",
     "allDone": "All done! No pending days left.",
+    "horizon": {
+      "label": "Show",
+      "option": "{{count}} months",
+      "default": "{{count}} months (default)"
+    },
     "errors": {
       "invalidDate": "Enter a valid date.",
       "notEligible": "This day is not playable.",
       "unauthorized": "You must log in.",
+      "invalidHorizon": "Pick one of the available ranges.",
       "unknown": "Something went wrong. Please try again."
     }
   },

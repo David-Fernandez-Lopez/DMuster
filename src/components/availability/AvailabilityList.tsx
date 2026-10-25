@@ -7,9 +7,11 @@ import AvailabilityDayCard from "@/components/availability/AvailabilityDayCard";
 import {
   type ResponseStatus,
 } from "@/components/availability/AvailabilityToggle";
+import HorizonSelector from "@/components/availability/HorizonSelector";
 import ResponderFilter, {
   type ResponderFilterValue,
 } from "@/components/availability/ResponderFilter";
+import type { AvailabilityHorizon } from "@/lib/availabilityHorizon";
 import { groupDaysByMonth, toUtcDate } from "@/lib/date";
 import type { ResponseStatus as StoredResponseStatus } from "@/lib/viability";
 
@@ -20,6 +22,8 @@ interface AvailabilityListProps {
   initialResponses: Record<string, StoredResponseStatus>;
   /** Tags of the user's campaigns (the "Afecta a" line on each card). */
   tags: string[];
+  /** Months the list covers, as saved on the user's profile. */
+  horizon: AvailabilityHorizon;
 }
 
 /**
@@ -39,14 +43,18 @@ interface AvailabilityListProps {
  * "confirm what I chose" into "delete what I chose" — a day silently back to
  * pending, which every campaign then reads as an unresolved "T".
  *
+ * For the same reason the page keys this list by `horizon`: widening it brings
+ * new days and their stored answers, which only a fresh mount takes in.
+ *
  * @param {AvailabilityListProps} props - The days, the user's current
- *   responses, and the campaign tags.
+ *   responses, the campaign tags and the horizon.
  * @returns {JSX.Element} The filtered list of availability day cards.
  */
 export default function AvailabilityList({
   days,
   initialResponses,
   tags,
+  horizon,
 }: AvailabilityListProps) {
   const { t, i18n } = useTranslation();
   const [filter, setFilter] = useState<ResponderFilterValue>("pending");
@@ -78,7 +86,10 @@ export default function AvailabilityList({
 
   return (
     <div className="mt-6">
-      <ResponderFilter value={filter} onChange={setFilter} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <ResponderFilter value={filter} onChange={setFilter} />
+        <HorizonSelector initialHorizon={horizon} />
+      </div>
 
       {visibleDays.length === 0 ? (
         <p className="mt-6 rounded-[var(--radius-card)] border border-border bg-bg-elevated p-6 text-center text-sm text-ink-muted">

@@ -88,10 +88,16 @@
     "no": "No",
     "affects": "Afecta a: {{tags}}",
     "allDone": "¡Todo respondido! No te quedan días pendientes.",
+    "horizon": {
+      "label": "Mostrar",
+      "option": "{{count}} meses",
+      "default": "{{count}} meses (por defecto)"
+    },
     "errors": {
       "invalidDate": "Introduce una fecha válida.",
       "notEligible": "Este día no es elegible para jugar.",
       "unauthorized": "Debes iniciar sesión.",
+      "invalidHorizon": "Elige uno de los periodos disponibles.",
       "unknown": "Algo ha ido mal. Inténtalo de nuevo."
     }
   },
