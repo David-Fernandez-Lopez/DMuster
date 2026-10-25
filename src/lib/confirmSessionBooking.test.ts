@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 const DATE = "2026-10-31";
 
 jest.mock("@/lib/today", () => ({ todayIso: () => "2026-10-25" }));
+jest.mock("@/lib/env", () => ({ env: { APP_TIMEZONE: "Europe/Madrid" } }));
 
 // The generated Prisma client is ESM and uses `import.meta.url`, which ts-jest
 // cannot parse under the current CommonJS setup — same stand-in as
@@ -82,10 +83,12 @@ describe("confirmSession — members busy in another campaign's session", () => 
     findCampaign.mockResolvedValue({
       name: "Poulard",
       tag: "PO",
+      minPlayers: null,
+      requirementsSetAt: null,
       players: [
-        { userId: "ana", role: "DM" },
-        { userId: "paola", role: "PLAYER" },
-        { userId: "tucho", role: "PLAYER" },
+        { userId: "ana", role: "DM", optional: false },
+        { userId: "paola", role: "PLAYER", optional: false },
+        { userId: "tucho", role: "PLAYER", optional: false },
       ],
     });
     // Everyone answered Sí: on answers alone, Poulard would be viable (S).
@@ -152,6 +155,116 @@ describe("confirmSession — members busy in another campaign's session", () => 
       params: { campaign: "Academia Arcana", players: "paola" },
     });
     expect(campaignRole).not.toHaveBeenCalled();
+  });
+});
+
+describe("confirmSession — campaign requirements (roadmap #25)", () => {
+  /** Saved on the 20th, before any of the sessions below were confirmed. */
+  const SET_AT = new Date("2026-10-20T10:00:00Z");
+
+  /**
+   * Arranges Poulard with custom requirements: Paola required, Tucho and
+   * Patri optional, at least `minPlayers` players.
+   */
+  function poulardRequiring(minPlayers: number | null): void {
+    findCampaign.mockResolvedValue({
+      name: "Poulard",
+      tag: "PO",
+      minPlayers,
+      requirementsSetAt: SET_AT,
+      players: [
+        { userId: "ana", role: "DM", optional: false },
+        { userId: "paola", role: "PLAYER", optional: false },
+        { userId: "tucho", role: "PLAYER", optional: true },
+        { userId: "patri", role: "PLAYER", optional: true },
+      ],
+    });
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    holidays.mockResolvedValue([]);
+    // No sessions anywhere: no anchor for the requirements, nobody busy.
+    findSessions.mockResolvedValue([]);
+    transaction.mockImplementation((fn: (client: typeof tx) => unknown) => fn(tx));
+    tx.confirmedSession.create.mockResolvedValue({ id: "session-po" });
+  });
+
+  it("confirms without forcing when only an optional player said no, signing up the rest", async () => {
+    poulardRequiring(2);
+    findAvailability.mockResolvedValue([
+      { userId: "ana", status: "YES" },
+      { userId: "paola", status: "YES" },
+      { userId: "tucho", status: "ONLINE" },
+      { userId: "patri", status: "NO" },
+    ]);
+
+    const result = await confirmPoulard();
+
+    expect(result.ok).toBe(true);
+    expect(tx.confirmedSession.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ forced: false }) }),
+    );
+    expect(tx.confirmedSessionAttendee.createMany).toHaveBeenCalledWith({
+      data: ["ana", "paola", "tucho"].map((userId) => ({ sessionId: "session-po", userId })),
+    });
+  });
+
+  it("still needs the required player", async () => {
+    poulardRequiring(null);
+    findAvailability.mockResolvedValue([
+      { userId: "ana", status: "YES" },
+      { userId: "paola", status: "NO" },
+      { userId: "tucho", status: "YES" },
+      { userId: "patri", status: "YES" },
+    ]);
+
+    await expect(confirmPoulard()).resolves.toEqual({
+      ok: false,
+      error: "sessions.errors.attendeesRequired",
+    });
+  });
+
+  it("is not viable while the minimum is not reached", async () => {
+    poulardRequiring(3);
+    findAvailability.mockResolvedValue([
+      { userId: "ana", status: "YES" },
+      { userId: "paola", status: "YES" },
+      { userId: "tucho", status: "YES" },
+      { userId: "patri", status: "NO" },
+    ]);
+
+    await expect(confirmPoulard()).resolves.toEqual({
+      ok: false,
+      error: "sessions.errors.attendeesRequired",
+    });
+  });
+
+  it("plans days after the session they were set for with the default rule", async () => {
+    poulardRequiring(2);
+    findAvailability.mockResolvedValue([
+      { userId: "ana", status: "YES" },
+      { userId: "paola", status: "YES" },
+      { userId: "tucho", status: "YES" },
+      { userId: "patri", status: "NO" },
+    ]);
+    // First the anchor lookup — a Poulard session on the 30th, confirmed after
+    // the requirements were saved — then the day's sessions (none).
+    findSessions
+      .mockResolvedValueOnce([
+        {
+          campaignId: "poulard",
+          date: new Date("2026-10-30T00:00:00.000Z"),
+          createdAt: new Date("2026-10-22T10:00:00Z"),
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    await expect(confirmPoulard()).resolves.toEqual({
+      ok: false,
+      error: "sessions.errors.attendeesRequired",
+    });
   });
 });
 

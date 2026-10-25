@@ -39,6 +39,10 @@
       "T": "Tal vez",
       "B": "Ocupado"
     },
+    "requirements": {
+      "required": "Imprescindibles: {{players}}",
+      "minPlayers": "Mínimo de jugadores: {{count}}"
+    },
     "moreChips": "+{{count}}",
     "filter": {
       "button": "Filtros",
@@ -207,6 +211,8 @@
     "allDay": "Todo el día",
     "notViable": "No todos han respondido Sí. Puedes forzar la partida y elegir quién juega.",
     "notViableBusy": "Alguien ya juega ese día en otra partida. Puedes forzar la partida sin esas personas.",
+    "notViableRequirements": "No se cumplen los requisitos de la partida (imprescindibles o mínimo de jugadores). Puedes forzarla y elegir quién juega.",
+    "confirmAttendeesHint": "Se apuntará a quienes pueden jugar: {{players}}.",
     "force": "Forzar partida",
     "forceWarning": "Han respondido que no: {{players}}.",
     "forceWarningPending": "No han respondido: {{players}}.",

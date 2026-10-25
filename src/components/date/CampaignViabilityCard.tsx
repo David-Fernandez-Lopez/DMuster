@@ -67,7 +67,10 @@ function ConfirmedBadgeIcon() {
  * rows with each member's response (`PlayerStatusRow`) — or "Juega en AC" for
  * a member already playing another campaign's session that day — followed by either a
  * DM's confirm action (viable `S`/`O` day) or the master override, "Forzar
- * partida" (non-viable day, roadmap #22, `ForceSessionForm`). Expanding a
+ * partida" (non-viable day, roadmap #22, `ForceSessionForm`). When the
+ * campaign's custom requirements govern the day (roadmap #25), a line above
+ * the members names who is required and the minimum number of players, and
+ * optional players carry an "Opcional" badge. Expanding a
  * **confirmed** day skips that member list — it would just duplicate the
  * attendee list below — and shows the session block directly: its time
  * summary, the attendee list with add/remove controls for a DM
@@ -104,6 +107,33 @@ export default function CampaignViabilityCard({
   const unavailableAttendees = attendeeMembers.filter(
     (member) => member.isAttending && !isAvailableResponse(member.status),
   );
+
+  // Custom requirements (roadmap #25) explain why the day can be viable
+  // without everyone: who is required (only worth naming when someone is
+  // optional) and the minimum number of players.
+  const requirementParts: string[] = [];
+  if (campaign.requirements) {
+    const requiredNames = campaign.players
+      .filter((player) => !player.isDm && !player.isOptional)
+      .map((player) => player.name);
+    if (campaign.players.some((player) => player.isOptional) && requiredNames.length > 0) {
+      requirementParts.push(
+        t("calendar.requirements.required", { players: requiredNames.join(", ") }),
+      );
+    }
+    if (campaign.requirements.minPlayers !== null) {
+      requirementParts.push(
+        t("calendar.requirements.minPlayers", { count: campaign.requirements.minPlayers }),
+      );
+    }
+  }
+
+  // Who a viable confirmation signs up: everyone who can play and is free.
+  // Named only when that leaves someone out, which only optional players or a
+  // minimum make possible.
+  const confirmableNames = campaign.players
+    .filter((player) => !player.busyIn && isAvailableResponse(player.status))
+    .map((player) => player.name);
 
   return (
     <details
@@ -142,6 +172,10 @@ export default function CampaignViabilityCard({
       </summary>
 
       <div className="flex flex-col gap-3 px-3 pb-3">
+        {!confirmedSession && requirementParts.length > 0 ? (
+          <p className="text-xs text-ink-muted">{requirementParts.join(" · ")}</p>
+        ) : null}
+
         {!confirmedSession ? (
           <div className="divide-y divide-border">
             {campaign.players.map((player) => (
@@ -149,6 +183,7 @@ export default function CampaignViabilityCard({
                 key={player.userId}
                 name={player.name}
                 isDm={player.isDm}
+                isOptional={player.isOptional}
                 status={player.status}
                 busyIn={player.busyIn}
               />
@@ -211,13 +246,23 @@ export default function CampaignViabilityCard({
           </div>
         ) : viewerIsDm ? (
           isViable(campaign.viability) ? (
-            <ConfirmSessionForm campaignId={campaign.campaignId} date={date} />
+            <ConfirmSessionForm
+              campaignId={campaign.campaignId}
+              date={date}
+              attendeeNames={
+                confirmableNames.length < campaign.players.length
+                  ? confirmableNames
+                  : undefined
+              }
+            />
           ) : (
             <ForceSessionForm
               campaignId={campaign.campaignId}
               date={date}
               players={campaign.players}
               currentUserId={currentUserId}
+              viability={campaign.viability}
+              hasRequirements={campaign.requirements !== null}
             />
           )
         ) : null}

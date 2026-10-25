@@ -39,6 +39,10 @@
       "T": "Maybe",
       "B": "Busy"
     },
+    "requirements": {
+      "required": "Required: {{players}}",
+      "minPlayers": "Minimum players: {{count}}"
+    },
     "moreChips": "+{{count}}",
     "filter": {
       "button": "Filters",
@@ -207,6 +211,8 @@
     "allDay": "All day",
     "notViable": "Not everyone answered Yes. You can force the session and choose who plays.",
     "notViableBusy": "Someone is already playing another session that day. You can force the session without them.",
+    "notViableRequirements": "The session requirements aren't met (required players or minimum players). You can force it and choose who plays.",
+    "confirmAttendeesHint": "This will sign up everyone who can play: {{players}}.",
     "force": "Force session",
     "forceWarning": "Answered No: {{players}}.",
     "forceWarningPending": "Haven't answered: {{players}}.",

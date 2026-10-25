@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 
 import StatusPill from "@/components/date/StatusPill";
 import type { PlayerDayStatus } from "@/lib/calendarService";
-import { isAvailableResponse } from "@/lib/viability";
+import { isAvailableResponse, type Viability } from "@/lib/viability";
 
 /** Duration preloaded once a start time is set, per the locked #21/#22 decision. */
 const DEFAULT_DURATION_MINUTES = 240;
@@ -23,14 +23,20 @@ interface ForceSessionFormProps {
   players: PlayerDayStatus[];
   /** The confirming DM's id — always selected and locked in the checklist. */
   currentUserId: string;
+  /** The campaign's (non-viable) tier for this day — `B` explains the block as busy members. */
+  viability: Viability;
+  /** Whether the campaign's custom requirements govern this day (roadmap #25). */
+  hasRequirements: boolean;
 }
 
 /**
  * The master-override flow (roadmap #22): confirming a session on a
  * non-viable (neither `S` nor `O`) day. Collapsed, a single warning-styled "Forzar partida" trigger (visually
  * distinct from `ConfirmSessionForm`'s primary confirm button) sits under the
- * "not viable" note — the busy variant when someone already plays another
- * campaign's session that day. Tapping it opens a two-step panel: a warning
+ * "not viable" note — the busy variant when the day is `B` (members already
+ * playing another campaign's session that day are what blocks it), the
+ * requirements variant when the campaign's custom requirements (roadmap #25)
+ * govern the day. Tapping it opens a two-step panel: a warning
  * naming who is busy elsewhere, who said No and who hasn't answered, plus a
  * checklist of every member (prechecked Sí/Sí (Online)/Tal vez, the confirming
  * DM's own row locked, busy members unchecked and disabled since the server
@@ -49,6 +55,8 @@ export default function ForceSessionForm({
   date,
   players,
   currentUserId,
+  viability,
+  hasRequirements,
 }: ForceSessionFormProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -169,7 +177,13 @@ export default function ForceSessionForm({
           {t("sessions.force")}
         </button>
         <p className="text-xs text-ink-muted">
-          {t(busyPlayers.length > 0 ? "sessions.notViableBusy" : "sessions.notViable")}
+          {t(
+            viability === "B"
+              ? "sessions.notViableBusy"
+              : hasRequirements
+                ? "sessions.notViableRequirements"
+                : "sessions.notViable",
+          )}
         </p>
       </div>
     );

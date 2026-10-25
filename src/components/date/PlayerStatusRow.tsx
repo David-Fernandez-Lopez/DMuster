@@ -11,6 +11,8 @@ interface PlayerStatusRowProps {
   name: string;
   /** Whether the member is a DM of the campaign (shows the "Máster" badge). */
   isDm: boolean;
+  /** Whether the campaign's requirements make this player optional (shows "Opcional"). */
+  isOptional?: boolean;
   /** The member's stored response, or `null` when unanswered. */
   status: PlayerStatusValue;
   /** The other campaign's session the member already attends that day, if any. */
@@ -19,7 +21,8 @@ interface PlayerStatusRowProps {
 
 /**
  * One member's row inside a campaign viability card: an avatar initial, the
- * member's name, a "Máster" badge for DMs, and a status pill (Sí / Sí (Online) /
+ * member's name, a "Máster" badge for DMs or a muted "Opcional" one for players
+ * the campaign's requirements do not need (roadmap #25), and a status pill (Sí / Sí (Online) /
  * Tal vez / No / Sin responder, or "Juega en AC" when they already play another
  * campaign's session that day). Pending members (no stored response) render the
  * neutral "Sin responder" pill.
@@ -30,6 +33,7 @@ interface PlayerStatusRowProps {
 export default function PlayerStatusRow({
   name,
   isDm,
+  isOptional = false,
   status,
   busyIn,
 }: PlayerStatusRowProps) {
@@ -48,6 +52,10 @@ export default function PlayerStatusRow({
       {isDm ? (
         <span className="shrink-0 rounded-[var(--radius-control)] bg-brand-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand">
           {t("date.dmBadge")}
+        </span>
+      ) : isOptional ? (
+        <span className="shrink-0 rounded-[var(--radius-control)] border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+          {t("date.optionalBadge")}
         </span>
       ) : null}
       <StatusPill status={status} busyIn={busyIn} />

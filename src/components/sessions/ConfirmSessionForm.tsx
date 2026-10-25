@@ -21,6 +21,11 @@ interface ConfirmSessionFormProps {
   date: string;
   /** When present, edits this session's time instead of confirming a new one. */
   session?: ExistingSession;
+  /**
+   * Who confirming will sign up, when that is not the whole campaign (optional
+   * players or a minimum let a day be viable without everyone, roadmap #25).
+   */
+  attendeeNames?: string[];
 }
 
 /**
@@ -33,6 +38,8 @@ interface ConfirmSessionFormProps {
  * since the API treats both fields as a full replace. Refreshes on success so
  * the day modal reflects the change. A blocked confirmation (e.g. a
  * conflicting campaign) renders its translated, interpolated error inline.
+ * When confirming will not sign up the whole campaign, the collapsed trigger
+ * names who it will.
  *
  * @param {ConfirmSessionFormProps} props
  * @returns {JSX.Element}
@@ -41,6 +48,7 @@ export default function ConfirmSessionForm({
   campaignId,
   date,
   session,
+  attendeeNames,
 }: ConfirmSessionFormProps) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -113,6 +121,11 @@ export default function ConfirmSessionForm({
         >
           {t(isEditMode ? "sessions.editTime" : "sessions.confirm")}
         </button>
+        {!isEditMode && attendeeNames ? (
+          <p className="text-xs text-ink-muted">
+            {t("sessions.confirmAttendeesHint", { players: attendeeNames.join(", ") })}
+          </p>
+        ) : null}
         {errorKey ? (
           <p className="text-sm text-n" role="alert">
             {t(errorKey, errorParams)}

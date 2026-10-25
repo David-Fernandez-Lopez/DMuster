@@ -1,5 +1,10 @@
 import { CampaignRole } from "@/generated/prisma/enums";
 import {
+  DEFAULT_REQUIREMENTS_WINDOW,
+  requirementsApplyOn,
+} from "@/lib/campaignRequirements";
+import { loadRequirementWindows } from "@/lib/campaignRequirementsService";
+import {
   type ActiveSessionRecord,
   type ConfirmedSessionDetailDto,
   type ConfirmedSessionDto,
@@ -15,7 +20,7 @@ import {
 } from "@/lib/sessionConflict";
 import { canSelfJoin } from "@/lib/sessionRules";
 import {
-  computeViability,
+  computeCampaignViability,
   resolveMemberAvailability,
   type ResponseStatus,
   type Viability,
@@ -35,6 +40,12 @@ export type PlayerDayStatus = {
   name: string;
   /** True when this member is a DM of the campaign (shows the "Máster" badge). */
   isDm: boolean;
+  /**
+   * True when the campaign's requirements in force that day mark this player
+   * optional (roadmap #25): their answer does not block the campaign on its
+   * own. Always `false` for DMs and under the default rule.
+   */
+  isOptional: boolean;
   status: PlayerStatusValue;
   /**
    * The other campaign whose active session this member already attends that
@@ -50,6 +61,12 @@ export type CampaignDayViability = {
   name: string;
   tag: string;
   viability: Viability;
+  /**
+   * The campaign's custom requirements when they govern this day (roadmap
+   * #25) — which players are optional is on each `PlayerDayStatus` — or
+   * `null` under the default rule (every member required).
+   */
+  requirements: { minPlayers: number | null } | null;
   /** Every member of the campaign, sorted by name. */
   players: PlayerDayStatus[];
   /**
@@ -128,9 +145,11 @@ function toForeignSession(session: ActiveSessionRecord): ForeignSessionDto {
  * All the data is fetched in **three batched queries** (the user's campaigns
  * with their members, every relevant member's availability rows in range, and
  * every active confirmed session in range across all campaigns) and combined in
- * memory — no per-day or per-campaign query, so there is no N+1.
- * `undefined`/missing responses collapse to the pending "T" tier via
- * `computeViability`.
+ * memory — no per-day or per-campaign query, so there is no N+1. A fourth runs
+ * only when some campaign has custom requirements (roadmap #25), to find the
+ * session each was set for: they govern the days up to it, and the rest use
+ * the default rule. `undefined`/missing responses collapse to the pending "T"
+ * tier via `computeCampaignViability`.
  *
  * @param {string} userId - The logged-in user whose campaigns are shown.
  * @param {string} startIso - Range start, "YYYY-MM-DD" (inclusive).
@@ -152,12 +171,20 @@ export async function getCalendarViability(
       id: true,
       name: true,
       tag: true,
+      minPlayers: true,
+      requirementsSetAt: true,
       players: {
-        select: { userId: true, role: true, user: { select: { name: true } } },
+        select: {
+          userId: true,
+          role: true,
+          optional: true,
+          user: { select: { name: true } },
+        },
       },
     },
     orderBy: { name: "asc" },
   });
+  const requirementWindows = await loadRequirementWindows(campaigns);
 
   // Every distinct member across the user's campaigns — the availability rows we
   // need. A single `in` query avoids one lookup per campaign or per day.
@@ -228,14 +255,22 @@ export async function getCalendarViability(
     }
 
     byDate[iso] = campaigns.map((campaign) => {
+      const requirementsApply = requirementsApplyOn(
+        requirementWindows.get(campaign.id) ?? DEFAULT_REQUIREMENTS_WINDOW,
+        iso,
+      );
       const players = campaign.players
-        .map((player) => ({
-          userId: player.userId,
-          name: player.user.name,
-          isDm: player.role === CampaignRole.DM,
-          status: dayStatuses?.get(player.userId) ?? null,
-          busyIn: findBusySession(busyIndex, player.userId, campaign.id),
-        }))
+        .map((player) => {
+          const isDm = player.role === CampaignRole.DM;
+          return {
+            userId: player.userId,
+            name: player.user.name,
+            isDm,
+            isOptional: requirementsApply && !isDm && player.optional,
+            status: dayStatuses?.get(player.userId) ?? null,
+            busyIn: findBusySession(busyIndex, player.userId, campaign.id),
+          };
+        })
         .sort((a, b) => a.name.localeCompare(b.name));
 
       const sessionRecord = sessionByCampaign.get(campaign.id) ?? null;
@@ -275,9 +310,15 @@ export async function getCalendarViability(
         campaignId: campaign.id,
         name: campaign.name,
         tag: campaign.tag,
-        viability: computeViability(
-          players.map((p) => resolveMemberAvailability(p.status, p.busyIn !== null)),
+        viability: computeCampaignViability(
+          players.map((p) => ({
+            availability: resolveMemberAvailability(p.status, p.busyIn !== null),
+            isDm: p.isDm,
+            optional: p.isOptional,
+          })),
+          requirementsApply ? campaign.minPlayers : null,
         ),
+        requirements: requirementsApply ? { minPlayers: campaign.minPlayers } : null,
         players,
         confirmedSession,
       };

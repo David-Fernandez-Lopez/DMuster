@@ -2,6 +2,11 @@ import { Prisma } from "@/generated/prisma/client";
 import { CampaignRole } from "@/generated/prisma/enums";
 import { getCampaignRole } from "@/lib/authz";
 import type { PlayerStatusValue } from "@/lib/calendarService";
+import {
+  DEFAULT_REQUIREMENTS_WINDOW,
+  requirementsApplyOn,
+} from "@/lib/campaignRequirements";
+import { loadRequirementWindows } from "@/lib/campaignRequirementsService";
 import { isEligible, toIsoDate, toUtcDate } from "@/lib/date";
 import { todayIso } from "@/lib/today";
 import {
@@ -22,7 +27,7 @@ import {
 } from "@/lib/sessionConflict";
 import { canRemoveAttendee, canSelfJoin } from "@/lib/sessionRules";
 import {
-  computeViability,
+  computeCampaignViability,
   isAvailableResponse,
   isViable,
   resolveMemberAvailability,
@@ -222,45 +227,67 @@ function describeConflict(conflict: SessionConflict): {
   };
 }
 
+/** A campaign member as the viability rule sees them on the day being checked. */
+type CampaignRuleMember = {
+  userId: string;
+  isDm: boolean;
+  /** Optional under the requirements governing that day (`false` by default). */
+  optional: boolean;
+};
+
 /**
  * Recomputes a campaign's viability for one day server-side, never trusting a
  * client-claimed value. Same rule as the calendar (`getCalendarViability`):
  * each member's stored answer, overridden by "busy" when they already attend
  * another campaign's active session that day (`findBusySession`), resolved by
- * `computeViability` (src/lib/viability.ts).
+ * `computeCampaignViability` (src/lib/viability.ts) under the requirements
+ * governing that day. Also returns who can play — answered Sí or Sí (Online)
+ * and not busy — which is who a viable session signs up.
  *
  * @param {string} campaignId - The campaign being checked.
- * @param {string[]} memberIds - Every member's user id.
+ * @param {readonly CampaignRuleMember[]} members - Every member, with whether
+ *   the requirements governing that day make them optional.
+ * @param {number | null} minPlayers - The minimum number of players governing
+ *   that day, or `null` for none.
  * @param {string} dateIso - The calendar day to check, "YYYY-MM-DD".
  * @param {readonly SessionAttendance[]} attendance - Every active session that
  *   day across all campaigns, from `listActiveSessions`.
- * @returns {Promise<Viability>} `S`, `O`, `N`, `T` or `B`.
+ * @returns {Promise<{ viability: Viability; availableMemberIds: string[] }>}
+ *   The tier (`S`, `O`, `N`, `T` or `B`) and the members who can play.
  */
 async function computeCampaignViabilityOnDate(
   campaignId: string,
-  memberIds: string[],
+  members: readonly CampaignRuleMember[],
+  minPlayers: number | null,
   dateIso: string,
   attendance: readonly SessionAttendance[],
-): Promise<Viability> {
-  if (memberIds.length === 0) {
-    return "S";
+): Promise<{ viability: Viability; availableMemberIds: string[] }> {
+  if (members.length === 0) {
+    return { viability: "S", availableMemberIds: [] };
   }
 
   const rows = await prisma.availability.findMany({
-    where: { userId: { in: memberIds }, date: toUtcDate(dateIso) },
+    where: { userId: { in: members.map((member) => member.userId) }, date: toUtcDate(dateIso) },
     select: { userId: true, status: true },
   });
 
   const statusByUser = new Map(rows.map((row) => [row.userId, row.status]));
   const busyIndex = buildBusyIndex(attendance);
-  return computeViability(
-    memberIds.map((id) =>
-      resolveMemberAvailability(
-        statusByUser.get(id),
-        findBusySession(busyIndex, id, campaignId) !== null,
-      ),
+  const resolved = members.map((member) => ({
+    ...member,
+    availability: resolveMemberAvailability(
+      statusByUser.get(member.userId),
+      findBusySession(busyIndex, member.userId, campaignId) !== null,
     ),
-  );
+  }));
+
+  return {
+    viability: computeCampaignViability(resolved, minPlayers),
+    // Busy already overrides the answer, so a Sí here is someone free to play.
+    availableMemberIds: resolved
+      .filter((member) => member.availability === "YES" || member.availability === "ONLINE")
+      .map((member) => member.userId),
+  };
 }
 
 /**
@@ -405,8 +432,12 @@ export async function listUpcomingSessions(
  * eligible, and no other active session that day shares an attendee. Without
  * `attendeeIds`, the campaign's viability must be viable (`S`, or `O` when
  * someone plays online — a member already attending another campaign's session
- * that day makes it `B`, never viable) and the whole membership becomes the attendee set
- * (roadmap #21 — a viable day means everyone plays). With `attendeeIds` (a DM
+ * that day makes it `B`, never viable) under the requirements governing that
+ * day (roadmap #25), and everyone who can play — answered Sí or Sí (Online),
+ * not busy — becomes the attendee set. Under the default rule that is the
+ * whole membership (roadmap #21 — a viable day means everyone plays); with
+ * optional players or a minimum, the ones who cannot make it stay out and can
+ * self-join later if they change their answer. With `attendeeIds` (a DM
  * override, roadmap #22), every id must be a campaign member and the confirming
  * DM must be among them; the viability requirement is lifted, and the session
  * is flagged `forced` whenever it wasn't actually viable. Session + attendee rows are created inside
@@ -443,7 +474,9 @@ export async function confirmSession({
     select: {
       name: true,
       tag: true,
-      players: { select: { userId: true, role: true } },
+      minPlayers: true,
+      requirementsSetAt: true,
+      players: { select: { userId: true, role: true, optional: true } },
     },
   });
   if (!campaign) {
@@ -464,13 +497,27 @@ export async function confirmSession({
   }
 
   const memberIds = campaign.players.map((player) => player.userId);
+  // The campaign's custom requirements govern this day only up to the session
+  // they were set for; past it, the default rule applies.
+  const requirementWindows = await loadRequirementWindows([
+    { id: campaignId, requirementsSetAt: campaign.requirementsSetAt },
+  ]);
+  const requirementsApply = requirementsApplyOn(
+    requirementWindows.get(campaignId) ?? DEFAULT_REQUIREMENTS_WINDOW,
+    dateIso,
+  );
   // Every active session that day, across all campaigns — loaded once and
   // shared by the viability check (busy members make it `B`) and the conflict
   // check below.
   const attendance = await listActiveSessions(dateIso, dateIso);
-  const viability = await computeCampaignViabilityOnDate(
+  const { viability, availableMemberIds } = await computeCampaignViabilityOnDate(
     campaignId,
-    memberIds,
+    campaign.players.map((player) => ({
+      userId: player.userId,
+      isDm: player.role === CampaignRole.DM,
+      optional: requirementsApply && player.optional,
+    })),
+    requirementsApply ? campaign.minPlayers : null,
     dateIso,
     attendance,
   );
@@ -480,7 +527,7 @@ export async function confirmSession({
     if (!isViable(viability)) {
       return { ok: false, error: "sessions.errors.attendeesRequired" };
     }
-    attendees = memberIds;
+    attendees = availableMemberIds;
   } else {
     const memberIdSet = new Set(memberIds);
     const deduped = [...new Set(attendeeIds)];

@@ -9,6 +9,7 @@ const TODAY = "2026-08-27";
 // every machine and at every hour — including the 00:00–02:00 window where the
 // civil day and UTC disagree, which is the whole point of `@/lib/today`.
 jest.mock("@/lib/today", () => ({ todayIso: () => "2026-08-27" }));
+jest.mock("@/lib/env", () => ({ env: { APP_TIMEZONE: "Europe/Madrid" } }));
 
 // The generated Prisma client is ESM and uses `import.meta.url`, which ts-jest
 // cannot parse under the current CommonJS setup. The service only reaches into
