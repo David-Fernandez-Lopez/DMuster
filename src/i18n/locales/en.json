@@ -60,7 +60,8 @@
       "online": "Yes (Online)",
       "maybe": "Maybe",
       "no": "No",
-      "none": "No answer"
+      "none": "No answer",
+      "busy": "Playing {{tag}}"
     },
     "dmBadge": "DM"
   },
@@ -177,9 +178,12 @@
     "durationUnit": "min",
     "allDay": "All day",
     "notViable": "Not everyone answered Yes. You can force the session and choose who plays.",
+    "notViableBusy": "Someone is already playing another session that day. You can force the session without them.",
     "force": "Force session",
     "forceWarning": "Answered No: {{players}}.",
     "forceWarningPending": "Haven't answered: {{players}}.",
+    "forceWarningBusy": "Already playing another session that day: {{players}}.",
+    "forceBlockedDmBusy": "You're already playing {{campaign}} that day, so you can't force this session.",
     "selectAttendees": "Choose who plays",
     "attendees": "Session players",
     "attendeesCount": "Playing: {{count}}",
@@ -188,6 +192,7 @@
     "selfJoinBlocked": "You're already playing {{campaign}} that day.",
     "addAttendee": "Add",
     "removeAttendee": "Remove",
+    "busyCannotAdd": "Already playing {{campaign}} that day.",
     "warning": {
       "noLongerViable": "Not everyone has confirmed: {{players}}."
     },

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import StatusPill from "@/components/date/StatusPill";
 import type { PlayerDayStatus } from "@/lib/calendarService";
 import { isAvailableResponse } from "@/lib/viability";
 
@@ -28,13 +29,17 @@ interface ForceSessionFormProps {
  * The master-override flow (roadmap #22): confirming a session on a
  * non-viable (neither `S` nor `O`) day. Collapsed, a single warning-styled "Forzar partida" trigger (visually
  * distinct from `ConfirmSessionForm`'s primary confirm button) sits under the
- * existing "not viable" note. Tapping it opens a two-step panel: a warning
- * naming who said No and who hasn't answered, plus a checklist of every
- * member (prechecked Sí/Sí (Online)/Tal vez, the confirming DM's own row locked); then
- * the same optional start time + duration fields as `ConfirmSessionForm`.
- * Submits `POST /api/sessions` with the chosen `attendeeIds` and refreshes on
- * success. A blocked confirmation (e.g. a conflicting campaign) renders its
- * translated, interpolated error inline.
+ * "not viable" note — the busy variant when someone already plays another
+ * campaign's session that day. Tapping it opens a two-step panel: a warning
+ * naming who is busy elsewhere, who said No and who hasn't answered, plus a
+ * checklist of every member (prechecked Sí/Sí (Online)/Tal vez, the confirming
+ * DM's own row locked, busy members unchecked and disabled since the server
+ * would refuse them as a conflict); then the same optional start time +
+ * duration fields as `ConfirmSessionForm`. When the confirming DM is the one
+ * busy elsewhere the trigger is replaced by an explanation: the DM must attend,
+ * so no attendee set could pass. Submits `POST /api/sessions` with the chosen
+ * `attendeeIds` and refreshes on success. A blocked confirmation (e.g. a
+ * conflicting campaign) renders its translated, interpolated error inline.
  *
  * @param {ForceSessionFormProps} props
  * @returns {JSX.Element}
@@ -58,13 +63,24 @@ export default function ForceSessionForm({
     Record<string, string> | undefined
   >();
 
-  /** Opens the warning step, preselecting Sí/Sí (Online)/Tal vez plus the confirming DM. */
+  // Members already playing another campaign's session that day: never
+  // selectable, since the server rejects them as a shared-attendee conflict.
+  const busyPlayers = players.filter((player) => player.busyIn);
+  const busyIds = new Set(busyPlayers.map((player) => player.userId));
+  const dmBusy =
+    players.find((player) => player.userId === currentUserId)?.busyIn ?? null;
+
+  /**
+   * Opens the warning step, preselecting Sí/Sí (Online)/Tal vez plus the
+   * confirming DM, and leaving out anyone busy in another campaign's session.
+   */
   function openWarning() {
     const preselected = new Set(
       players
         .filter(
           (player) =>
-            isAvailableResponse(player.status) || player.status === "MAYBE",
+            !player.busyIn &&
+            (isAvailableResponse(player.status) || player.status === "MAYBE"),
         )
         .map((player) => player.userId),
     );
@@ -75,9 +91,12 @@ export default function ForceSessionForm({
     setStep("warning");
   }
 
-  /** Toggles one member's selection; the confirming DM's own row is locked. */
+  /**
+   * Toggles one member's selection; the confirming DM's own row is locked and
+   * busy members cannot be selected.
+   */
   function toggleAttendee(userId: string) {
-    if (userId === currentUserId) {
+    if (userId === currentUserId || busyIds.has(userId)) {
       return;
     }
     const next = new Set(selected);
@@ -131,6 +150,14 @@ export default function ForceSessionForm({
     }
   }
 
+  if (dmBusy) {
+    return (
+      <p className="text-xs text-n">
+        {t("sessions.forceBlockedDmBusy", { campaign: dmBusy.campaignName })}
+      </p>
+    );
+  }
+
   if (step === "closed") {
     return (
       <div className="flex flex-col gap-1">
@@ -141,17 +168,34 @@ export default function ForceSessionForm({
         >
           {t("sessions.force")}
         </button>
-        <p className="text-xs text-ink-muted">{t("sessions.notViable")}</p>
+        <p className="text-xs text-ink-muted">
+          {t(busyPlayers.length > 0 ? "sessions.notViableBusy" : "sessions.notViable")}
+        </p>
       </div>
     );
   }
 
   if (step === "warning") {
-    const noPlayers = players.filter((player) => player.status === "NO");
-    const pendingPlayers = players.filter((player) => player.status === null);
+    // Busy members get their own line; listing them again under No or
+    // pending would only repeat them.
+    const noPlayers = players.filter(
+      (player) => !player.busyIn && player.status === "NO",
+    );
+    const pendingPlayers = players.filter(
+      (player) => !player.busyIn && player.status === null,
+    );
 
     return (
       <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-border bg-bg p-3">
+        {busyPlayers.length > 0 ? (
+          <p className="text-sm text-b">
+            {t("sessions.forceWarningBusy", {
+              players: busyPlayers
+                .map((player) => `${player.name} (${player.busyIn?.campaignTag})`)
+                .join(", "),
+            })}
+          </p>
+        ) : null}
         {noPlayers.length > 0 ? (
           <p className="text-sm text-n">
             {t("sessions.forceWarning", {
@@ -174,14 +218,17 @@ export default function ForceSessionForm({
           {players.map((player) => {
             const isSelected = selected.has(player.userId);
             const isLocked = player.userId === currentUserId;
+            const isBusy = busyIds.has(player.userId);
             return (
               <button
                 key={player.userId}
                 type="button"
                 onClick={() => toggleAttendee(player.userId)}
-                disabled={isLocked}
+                disabled={isLocked || isBusy}
                 aria-pressed={isSelected}
-                className="flex min-h-[44px] w-full items-center gap-2 rounded-[var(--radius-control)] px-2 text-left text-sm text-ink transition-colors hover:bg-brand-soft disabled:cursor-default disabled:hover:bg-transparent"
+                className={`flex min-h-[44px] w-full items-center gap-2 rounded-[var(--radius-control)] px-2 text-left text-sm text-ink transition-colors hover:bg-brand-soft disabled:cursor-default disabled:hover:bg-transparent ${
+                  isBusy ? "opacity-60" : ""
+                }`}
               >
                 <span
                   aria-hidden="true"
@@ -194,6 +241,9 @@ export default function ForceSessionForm({
                   {isSelected ? "✓" : ""}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{player.name}</span>
+                {isBusy ? (
+                  <StatusPill status={player.status} busyIn={player.busyIn} />
+                ) : null}
               </button>
             );
           })}

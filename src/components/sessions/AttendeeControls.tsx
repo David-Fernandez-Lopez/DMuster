@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import StatusPill from "@/components/date/StatusPill";
 import type { SessionMemberDto } from "@/lib/confirmedSessionService";
-import type { ResponseStatus } from "@/lib/viability";
 
 /** One member of a session's campaign, with whether they currently attend it. */
 export type AttendeeListMember = SessionMemberDto & { isAttending: boolean };
@@ -19,30 +19,26 @@ interface AttendeeControlsProps {
   viewerIsDm: boolean;
 }
 
-/** Soft-pill classes + label key per response value (null = pending). */
-const STATUS_STYLE: Record<
-  ResponseStatus | "NONE",
-  { className: string; labelKey: string }
-> = {
-  YES: { className: "bg-s-soft text-s", labelKey: "date.status.yes" },
-  ONLINE: { className: "bg-o-soft text-o", labelKey: "date.status.online" },
-  MAYBE: { className: "bg-t-soft text-t", labelKey: "date.status.maybe" },
-  NO: { className: "bg-n-soft text-n", labelKey: "date.status.no" },
-  NONE: {
-    className: "border border-border bg-bg text-ink-muted",
-    labelKey: "date.status.none",
-  },
-};
-
 interface AttendeeRowProps {
   member: AttendeeListMember;
-  /** Present only for a DM viewer — renders the +/- icon button. */
-  action: { symbol: string; label: string; pending: boolean; onClick: () => void } | null;
+  /**
+   * Present only for a DM viewer — renders the +/- icon button. `disabled`
+   * blocks it for a reason other than a request in flight, explained by `hint`.
+   */
+  action: {
+    symbol: string;
+    label: string;
+    pending: boolean;
+    disabled?: boolean;
+    hint?: string;
+    onClick: () => void;
+  } | null;
 }
 
 /**
  * One member's row inside the attendee list: an avatar initial, the member's
- * name, a "Máster" badge for DMs, their status pill, and — for a DM viewer —
+ * name, a "Máster" badge for DMs, their status pill (or "Juega en AC" when they
+ * already play another campaign's session that day), and — for a DM viewer —
  * an add/remove icon button. Mirrors `PlayerStatusRow`'s visual language but
  * with a real interactive slot instead of its chevron-aligning spacer.
  *
@@ -51,7 +47,6 @@ interface AttendeeRowProps {
  */
 function AttendeeRow({ member, action }: AttendeeRowProps) {
   const { t } = useTranslation();
-  const style = STATUS_STYLE[member.status ?? "NONE"];
   const initial = member.name.charAt(0).toUpperCase();
 
   return (
@@ -68,16 +63,13 @@ function AttendeeRow({ member, action }: AttendeeRowProps) {
           {t("date.dmBadge")}
         </span>
       ) : null}
-      <span
-        className={`shrink-0 rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-semibold ${style.className}`}
-      >
-        {t(style.labelKey)}
-      </span>
+      <StatusPill status={member.status} busyIn={member.busyIn} />
       {action ? (
         <button
           type="button"
           onClick={action.onClick}
-          disabled={action.pending}
+          disabled={action.pending || action.disabled}
+          title={action.hint}
           aria-label={`${action.label} ${member.name}`}
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border text-sm font-semibold text-ink-muted transition-colors hover:border-brand hover:text-brand disabled:opacity-60"
         >
@@ -94,10 +86,11 @@ function AttendeeRow({ member, action }: AttendeeRowProps) {
  * The attendee list of a confirmed session (roadmap #22): a "Juegan: N"
  * header, one row per attending member with a "−" remove button (DM only),
  * then — when the campaign has non-attending members — a greyed-out
- * "No juegan" section with a "+" add button (DM only) per row. A shared
- * inline error surfaces a blocked add/remove (e.g. the target already plays
- * another session that day). Renders read-only rows (no buttons) for a
- * non-DM viewer.
+ * "No juegan" section with a "+" add button (DM only) per row — disabled, with
+ * a tooltip, for a member the calendar already knows plays another campaign's
+ * session that day. A shared inline error surfaces any other blocked
+ * add/remove (e.g. a conflict "Próximas partidas" could not foresee). Renders
+ * read-only rows (no buttons) for a non-DM viewer.
  *
  * @param {AttendeeControlsProps} props
  * @returns {JSX.Element}
@@ -213,6 +206,14 @@ export default function AttendeeControls({
                         symbol: "+",
                         label: t("sessions.addAttendee"),
                         pending: pendingUserIds.has(member.userId),
+                        // Already playing another campaign's session that
+                        // day: the server would refuse the add as a conflict.
+                        disabled: Boolean(member.busyIn),
+                        hint: member.busyIn
+                          ? t("sessions.busyCannotAdd", {
+                              campaign: member.busyIn.campaignName,
+                            })
+                          : undefined,
                         onClick: () => mutate(member.userId, "add"),
                       }
                     : null

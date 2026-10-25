@@ -86,7 +86,8 @@ function ConfirmedBadgeIcon() {
  * Sí (Online) / No / Tal vez), a checkmark when a session is confirmed, and a
  * chevron.
  * Expanding an **unconfirmed** day reveals the alphabetically ordered member
- * rows with each member's response (`PlayerStatusRow`), followed by either a
+ * rows with each member's response (`PlayerStatusRow`) — or "Juega en AC" for
+ * a member already playing another campaign's session that day — followed by either a
  * DM's confirm action (viable `S`/`O` day) or the master override, "Forzar
  * partida" (non-viable day, roadmap #22, `ForceSessionForm`). Expanding a
  * **confirmed** day skips that member list — it would just duplicate the
@@ -171,6 +172,7 @@ export default function CampaignViabilityCard({
                 name={player.name}
                 isDm={player.isDm}
                 status={player.status}
+                busyIn={player.busyIn}
               />
             ))}
           </div>

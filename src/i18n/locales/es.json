@@ -60,7 +60,8 @@
       "online": "Sí (Online)",
       "maybe": "Tal vez",
       "no": "No",
-      "none": "Sin responder"
+      "none": "Sin responder",
+      "busy": "Juega en {{tag}}"
     },
     "dmBadge": "Máster"
   },
@@ -177,9 +178,12 @@
     "durationUnit": "min",
     "allDay": "Todo el día",
     "notViable": "No todos han respondido Sí. Puedes forzar la partida y elegir quién juega.",
+    "notViableBusy": "Alguien ya juega ese día en otra partida. Puedes forzar la partida sin esas personas.",
     "force": "Forzar partida",
     "forceWarning": "Han respondido que no: {{players}}.",
     "forceWarningPending": "No han respondido: {{players}}.",
+    "forceWarningBusy": "Ya juegan ese día en otra partida: {{players}}.",
+    "forceBlockedDmBusy": "Ese día ya juegas con {{campaign}}, así que no puedes forzar esta partida.",
     "selectAttendees": "Selecciona quién juega",
     "attendees": "Jugadores en la partida",
     "attendeesCount": "Juegan: {{count}}",
@@ -188,6 +192,7 @@
     "selfJoinBlocked": "Ya juegas ese día con {{campaign}}.",
     "addAttendee": "Añadir",
     "removeAttendee": "Quitar",
+    "busyCannotAdd": "Ya juega ese día con {{campaign}}.",
     "warning": {
       "noLongerViable": "No todos han confirmado: {{players}}."
     },

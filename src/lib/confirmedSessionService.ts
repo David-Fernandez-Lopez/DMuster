@@ -14,6 +14,7 @@ import { prisma } from "@/lib/prisma";
 import { lockRow } from "@/lib/rowLock";
 import {
   buildBusyIndex,
+  type BusySession,
   findBusySession,
   findConflictingSessions,
   type SessionAttendance,
@@ -61,6 +62,12 @@ export type SessionMemberDto = {
   isDm: boolean;
   /** The member's stored response for the session's day, or `null` if unanswered. */
   status: PlayerStatusValue;
+  /**
+   * The other campaign whose active session this member already attends that
+   * day, when known. Only the calendar computes it; "Próximas partidas" leaves
+   * it out, so an absent value means "not computed", not "free".
+   */
+  busyIn?: BusySession | null;
 };
 
 /**

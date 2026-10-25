@@ -2,8 +2,9 @@
 
 import { useTranslation } from "react-i18next";
 
+import StatusPill from "@/components/date/StatusPill";
 import type { PlayerStatusValue } from "@/lib/calendarService";
-import type { ResponseStatus } from "@/lib/viability";
+import type { BusySession } from "@/lib/sessionConflict";
 
 interface PlayerStatusRowProps {
   /** The member's display name. */
@@ -12,28 +13,16 @@ interface PlayerStatusRowProps {
   isDm: boolean;
   /** The member's stored response, or `null` when unanswered. */
   status: PlayerStatusValue;
+  /** The other campaign's session the member already attends that day, if any. */
+  busyIn?: BusySession | null;
 }
-
-/** Soft-pill classes + label key per response value (null = pending). */
-const STATUS_STYLE: Record<
-  ResponseStatus | "NONE",
-  { className: string; labelKey: string }
-> = {
-  YES: { className: "bg-s-soft text-s", labelKey: "date.status.yes" },
-  ONLINE: { className: "bg-o-soft text-o", labelKey: "date.status.online" },
-  MAYBE: { className: "bg-t-soft text-t", labelKey: "date.status.maybe" },
-  NO: { className: "bg-n-soft text-n", labelKey: "date.status.no" },
-  NONE: {
-    className: "border border-border bg-bg text-ink-muted",
-    labelKey: "date.status.none",
-  },
-};
 
 /**
  * One member's row inside a campaign viability card: an avatar initial, the
  * member's name, a "Máster" badge for DMs, and a status pill (Sí / Sí (Online) /
- * Tal vez / No / Sin responder). Pending members (no stored response) render the neutral
- * "Sin responder" pill.
+ * Tal vez / No / Sin responder, or "Juega en AC" when they already play another
+ * campaign's session that day). Pending members (no stored response) render the
+ * neutral "Sin responder" pill.
  *
  * @param {PlayerStatusRowProps} props
  * @returns {JSX.Element}
@@ -42,9 +31,9 @@ export default function PlayerStatusRow({
   name,
   isDm,
   status,
+  busyIn,
 }: PlayerStatusRowProps) {
   const { t } = useTranslation();
-  const style = STATUS_STYLE[status ?? "NONE"];
   const initial = name.charAt(0).toUpperCase();
 
   return (
@@ -61,11 +50,7 @@ export default function PlayerStatusRow({
           {t("date.dmBadge")}
         </span>
       ) : null}
-      <span
-        className={`shrink-0 rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-semibold ${style.className}`}
-      >
-        {t(style.labelKey)}
-      </span>
+      <StatusPill status={status} busyIn={busyIn} />
       {/* Mirrors the card summary's chevron (h-4 w-4 + gap-2) so status pills
           line up under the viability badge. */}
       <span aria-hidden="true" className="h-4 w-4 shrink-0" />
