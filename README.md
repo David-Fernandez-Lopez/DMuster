@@ -16,11 +16,13 @@ per day, and that answer applies to every campaign they belong to:
 - **T** — Maybe / not sure yet
 
 The app automatically computes a **viability result** per campaign for each eligible day, from
-the answers of that campaign's members, in this priority order:
+the answers of that campaign's members and the sessions already confirmed that day, in this
+priority order:
 
 | Result | Condition |
 |--------|-----------|
-| Red (N) | At least one member cannot attend |
+| Slate-violet (B) | At least one member already plays another campaign's confirmed session that day |
+| Red (N) | Otherwise, at least one member cannot attend |
 | Amber (T) | Otherwise, at least one member answered *maybe* or has not answered yet |
 | Blue (O) | Otherwise, everyone can play and at least one member plays online |
 | Green (S) | Everyone can play in person |
@@ -29,7 +31,8 @@ Green and blue days are both viable: a DM can confirm a session on them directly
 
 ## Features
 
-- Monthly calendar view with color-coded session viability per campaign
+- Monthly calendar view with color-coded session viability per campaign, plus every confirmed
+  session in the group, including those of campaigns you are not in
 - Role-based access: **DM** manages campaigns; **Players** set their own availability
 - A user can be DM of some campaigns and player in others simultaneously
 - Confirmed sessions: a DM confirms a session on a viable day (or forces one on a day that is

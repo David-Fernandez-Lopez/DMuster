@@ -3,7 +3,7 @@
 ## 1. What is DMuster
 
 Web application for managing player availability across multiple tabletop RPG campaigns.
-Replaces a manual Google Sheets workflow. Players respond to proposed session dates with one of four statuses — S (yes), Sí (Online) (yes, remotely), N (no), T (maybe) — and the app computes a viability result per campaign for each date.
+Replaces a manual Google Sheets workflow. Players respond to proposed session dates with one of four statuses — S (yes), Sí (Online) (yes, remotely), N (no), T (maybe) — and the app computes a viability result per campaign for each date: S, O, N, T, or B ("Ocupado") when a member already plays another campaign's confirmed session that day.
 
 ## 2. Stack
 
@@ -54,13 +54,19 @@ never stored; `Holiday` only holds the extra Monday–Thursday dates.
 For a given eligible day and campaign, filter only the players belonging to that campaign, then
 apply in priority order:
 
-1. Any player responds **N** → result **N**
-2. Any player responds **T** (stored `MAYBE`, or no stored response) → result **T**
-3. Any player responds **Sí (Online)** (the rest `YES`) → result **O**
-4. All players respond **S** → result **S**
+1. Any player already **attends an active confirmed session of another campaign** that day → result **B** ("Ocupado")
+2. Any player responds **N** → result **N**
+3. Any player responds **T** (stored `MAYBE`, or no stored response) → result **T**
+4. Any player responds **Sí (Online)** (the rest `YES`) → result **O**
+5. All players respond **S** → result **S**
+
+**B** follows the shared-attendee conflict rule: what counts is being an *attendee* of the other
+session (a member left out of a forced session is free), DMs included, for the whole day. Being
+busy overrides whatever the player answered.
 
 **S** and **O** are both *viable*: a DM confirms either without forcing, and `ONLINE` counts as a
-yes for the session rules (self-join, attendee preselection and warnings).
+yes for the session rules (self-join, attendee preselection and warnings). **T**, **N** and **B**
+are not viable: a DM can only force a session there, and busy players can never be picked.
 
 ## 4. Roles & Permissions
 
@@ -81,7 +87,8 @@ yes for the session rules (self-join, attendee preselection and warnings).
 - Main view: monthly calendar with color-coded viability indicators per campaign per day
 - Only **eligible days** (Fridays + weekends + holidays) are interactive; non-eligible days are dimmed and non-interactive
 - Tapping an eligible day opens a **modal** to set the player's own Sí/Sí (Online)/Tal vez/No for that day (no page navigation); the per-campaign breakdown (#18) also lives in that modal
-- Status colors: green (S — all confirmed), blue (O — all can play, someone online), red (N — someone cannot), amber (T — pending/no response)
+- Status colors: green (S — all confirmed), blue (O — all can play, someone online), red (N — someone cannot), amber (T — pending/no response), slate-violet (B — someone already plays another campaign's session)
+- The calendar shows **every** active confirmed session of the group: the user's own campaigns' in bold with the cell tinted, other campaigns' as muted chips (no tint) plus a read-only "Otras partidas este día" section in the day modal, with name, time and players. A "Filtros" toggle hides the muted chips. Viability is still computed only for the user's own campaigns, and "Próximas partidas" (`/sessions`) lists only their own campaigns' sessions
 - **Design reference**: the authoritative visual spec lives in `design/README.md` and `design/screenshots/` (local, gitignored — a Claude design handoff). Follow it for layout, tokens, and flows
 
 ## 6. Conventions
