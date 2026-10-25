@@ -29,6 +29,11 @@ priority order:
 
 Green and blue days are both viable: a DM can confirm a session on them directly.
 
+By default every member counts. A DM can set **requirements for the campaign's next session**:
+which players are required and/or a minimum number of players (DMs are always required and never
+counted). Optional players then don't block a day on their own, and the requirements lapse by
+themselves once that session has passed, so a forgotten setting never keeps a day green.
+
 ## Features
 
 - Monthly calendar view with color-coded session viability per campaign, plus every confirmed
@@ -38,6 +43,8 @@ Green and blue days are both viable: a DM can confirm a session on them directly
 - Confirmed sessions: a DM confirms a session on a viable day (or forces one on a day that is
   not), adjusts who attends, and can cancel it; players who can play that day may join an
   already confirmed session themselves
+- Flexible campaigns: per-campaign requirements for the next session (required players, minimum
+  number of players) that reset to "everyone required" on their own after that session
 - Holidays: any DM can add extra Monday–Thursday dates that become eligible like a Friday or
   weekend
 - Multi-campaign support from a single account
