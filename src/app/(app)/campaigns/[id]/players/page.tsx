@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import AddPlayerPicker from "@/components/campaigns/AddPlayerPicker";
+import AlwaysOptionalToggle from "@/components/campaigns/AlwaysOptionalToggle";
 import RemovePlayerButton from "@/components/campaigns/RemovePlayerButton";
 import { CampaignRole } from "@/generated/prisma/enums";
 import { getServerTranslation } from "@/i18n/server";
@@ -20,9 +21,10 @@ type CampaignPlayersPageProps = { params: Promise<{ id: string }> };
  * only players are redirected to the list. This mirrors the API guard as
  * defense-in-depth — the mutations still return 403/404 regardless.
  *
- * Lists the current members with their role and a remove control, and offers a
- * picker of registered users not yet in the campaign. Reads go straight through
- * the service layer; mutations go through the API.
+ * Lists the current members with their role and a remove control — players
+ * also get the "Siempre opcional" switch (roadmap #25.2) — and offers a picker
+ * of registered users not yet in the campaign. Reads go straight through the
+ * service layer; mutations go through the API.
  *
  * @param {CampaignPlayersPageProps} props - Route props with the async `params`.
  * @returns {Promise<JSX.Element>}
@@ -92,6 +94,13 @@ export default async function CampaignPlayersPage({
               <p className="text-xs text-ink-muted">
                 {t(`campaigns.role.${member.role}`)}
               </p>
+              {member.role === CampaignRole.PLAYER ? (
+                <AlwaysOptionalToggle
+                  campaignId={id}
+                  userId={member.userId}
+                  alwaysOptional={member.alwaysOptional}
+                />
+              ) : null}
             </div>
             <RemovePlayerButton campaignId={id} userId={member.userId} />
           </li>

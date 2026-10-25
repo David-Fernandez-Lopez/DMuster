@@ -8,9 +8,13 @@ import {
   addPlayerToCampaign,
   type CampaignPlayerMutationResult,
   removePlayerFromCampaign,
+  setPlayerAlwaysOptional,
 } from "@/lib/campaignPlayerService";
 import { firstFieldErrors } from "@/lib/validation/auth";
-import { campaignPlayerSchema } from "@/lib/validation/campaign";
+import {
+  campaignPlayerOptionalSchema,
+  campaignPlayerSchema,
+} from "@/lib/validation/campaign";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -18,12 +22,15 @@ type RouteContext = { params: Promise<{ id: string }> };
 const BAD_REQUEST_ERRORS = new Set([
   "campaigns.players.errors.alreadyMember",
   "campaigns.players.errors.lastDm",
+  "campaigns.players.errors.notPlayer",
+  "campaigns.players.errors.lastRequired",
 ]);
 
 /**
  * Maps a failed membership mutation to its HTTP status: conflicting requests
- * (already a member / last DM) are 400, missing targets (unknown user / not a
- * member) are 404, and anything else is treated as a server error (500).
+ * (already a member / last DM / a DM marked optional / the last required
+ * player) are 400, missing targets (unknown user / not a member) are 404, and
+ * anything else is treated as a server error (500).
  *
  * @param {string} error - The i18n error key returned by the service.
  * @returns {number} The HTTP status to respond with.
@@ -173,6 +180,52 @@ export async function POST(
     result,
     { campaignId: membership.campaignId, userId: parsed.userId },
     201,
+  );
+}
+
+/**
+ * PUT /api/campaigns/[id]/players — marks a player as always optional, or
+ * clears it (roadmap #25.2). Restricted to a DM of the campaign. Authorization
+ * runs before body validation: non-member → 404, player → 403, malformed body
+ * → 400; a DM target or the last required player → 400.
+ *
+ * @param {Request} request - The incoming request with the JSON body.
+ * @param {RouteContext} context - Route context with the async `params`.
+ * @returns {Promise<NextResponse>} 200, 400, 401, 403, 404, or 500.
+ */
+export async function PUT(
+  request: Request,
+  context: RouteContext,
+): Promise<NextResponse> {
+  const membership = await resolveMembership(context);
+  if ("response" in membership) {
+    return membership.response;
+  }
+  if (membership.role !== CampaignRole.DM) {
+    return FORBIDDEN;
+  }
+
+  const body = await request.json().catch(() => null);
+  const parsed = campaignPlayerOptionalSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        error: "campaigns.players.errors.validation",
+        fieldErrors: firstFieldErrors(z.flattenError(parsed.error).fieldErrors),
+      },
+      { status: 400 },
+    );
+  }
+
+  const result = await setPlayerAlwaysOptional(
+    membership.campaignId,
+    parsed.data.userId,
+    parsed.data.alwaysOptional,
+  );
+  return respondToMutation(
+    result,
+    { campaignId: membership.campaignId, userId: parsed.data.userId },
+    200,
   );
 }
 

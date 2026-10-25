@@ -133,12 +133,15 @@
       "add": "Add player",
       "remove": "Remove",
       "noneToAdd": "There are no more registered users to add.",
+      "alwaysOptional": "Always optional",
       "errors": {
         "validation": "Select a valid user.",
         "alreadyMember": "This user is already in this campaign.",
         "userNotFound": "User not found.",
         "notMember": "This user is not in this campaign.",
-        "lastDm": "You can't remove the last DM of the campaign."
+        "lastDm": "You can't remove the last DM of the campaign.",
+        "notPlayer": "DMs are always required.",
+        "lastRequired": "At least one player has to be required."
       }
     },
     "requirements": {

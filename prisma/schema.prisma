@@ -171,14 +171,18 @@ model Campaign {
 }
 
 model CampaignPlayer {
-  campaignId String
-  userId     String
-  role       CampaignRole @default(PLAYER)
+  campaignId     String
+  userId         String
+  role           CampaignRole @default(PLAYER)
   // Marked optional by the campaign's custom requirements (roadmap #25): their
   // answer never blocks a session on its own. Ignored for DMs (always
   // required) and whenever the requirements are not in force.
-  optional   Boolean      @default(false)
-  createdAt  DateTime     @default(now())
+  optional       Boolean      @default(false)
+  // Optional for good (roadmap #25.2) — a player who comes and goes. Never
+  // expires: it applies whenever the next-session requirements above are not
+  // in force, and seeds their default. Ignored for DMs.
+  alwaysOptional Boolean      @default(false)
+  createdAt      DateTime     @default(now())
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)

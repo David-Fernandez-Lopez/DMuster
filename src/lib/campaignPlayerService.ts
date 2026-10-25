@@ -25,6 +25,8 @@ export type CampaignMember = {
   userId: string;
   name: string;
   role: CampaignRole;
+  /** Whether the player is optional for good (roadmap #25.2); always `false` for DMs. */
+  alwaysOptional: boolean;
 };
 
 /** A registered user eligible to be added to a campaign. */
@@ -51,7 +53,11 @@ export async function listCampaignMembers(
 ): Promise<CampaignMember[]> {
   const memberships = await prisma.campaignPlayer.findMany({
     where: { campaignId },
-    select: { role: true, user: { select: { id: true, name: true } } },
+    select: {
+      role: true,
+      alwaysOptional: true,
+      user: { select: { id: true, name: true } },
+    },
     orderBy: { user: { name: "asc" } },
   });
 
@@ -59,6 +65,7 @@ export async function listCampaignMembers(
     userId: membership.user.id,
     name: membership.user.name,
     role: membership.role,
+    alwaysOptional: membership.role === CampaignRole.PLAYER && membership.alwaysOptional,
   }));
 }
 
@@ -112,6 +119,79 @@ export async function addPlayerToCampaign(
     }
 
     console.error("[CAMPAIGN_PLAYERS/ADD] Failed to add player:", error);
+    return { ok: false, error: "campaigns.errors.unknown" };
+  }
+}
+
+/**
+ * Marks a player of a campaign as always optional, or clears it (roadmap
+ * #25.2): a player who comes and goes, whose answer should never block the
+ * campaign on its own. Unlike the next-session requirements, it never expires.
+ *
+ * The next-session flag (`optional`) is written along with it, so the DM's
+ * latest action also wins while next-session requirements are in force; when
+ * they are not, that flag is ignored anyway.
+ *
+ * Refused for a non-member (`notMember`), for a DM — DMs are always required
+ * (`notPlayer`) — and when it would leave no player required at all, so the DM
+ * alone would make any day viable (`lastRequired`). Runs under a lock on the
+ * campaign row, because that last guard counts sibling rows: two DMs marking
+ * the last two required players at once would otherwise each see the other
+ * still required.
+ *
+ * @param {string} campaignId - The campaign the player belongs to.
+ * @param {string} userId - The player being marked.
+ * @param {boolean} alwaysOptional - Whether the player is optional for good.
+ * @returns {Promise<CampaignPlayerMutationResult>} Success, or an error key.
+ */
+export async function setPlayerAlwaysOptional(
+  campaignId: string,
+  userId: string,
+  alwaysOptional: boolean,
+): Promise<CampaignPlayerMutationResult> {
+  try {
+    return await prisma.$transaction(
+      async (tx): Promise<CampaignPlayerMutationResult> => {
+        await lockRow(tx, "campaign", campaignId);
+
+        const membership = await tx.campaignPlayer.findUnique({
+          where: { campaignId_userId: { campaignId, userId } },
+          select: { role: true },
+        });
+        if (!membership) {
+          return { ok: false, error: "campaigns.players.errors.notMember" };
+        }
+        if (membership.role !== CampaignRole.PLAYER) {
+          return { ok: false, error: "campaigns.players.errors.notPlayer" };
+        }
+
+        if (alwaysOptional) {
+          const othersRequired = await tx.campaignPlayer.count({
+            where: {
+              campaignId,
+              role: CampaignRole.PLAYER,
+              alwaysOptional: false,
+              userId: { not: userId },
+            },
+          });
+          if (othersRequired === 0) {
+            return { ok: false, error: "campaigns.players.errors.lastRequired" };
+          }
+        }
+
+        await tx.campaignPlayer.update({
+          where: { campaignId_userId: { campaignId, userId } },
+          data: { alwaysOptional, optional: alwaysOptional },
+          select: { campaignId: true },
+        });
+        return { ok: true };
+      },
+    );
+  } catch (error) {
+    console.error(
+      `[CAMPAIGN_PLAYERS/ALWAYS_OPTIONAL] Failed to update player ${userId} in campaign ${campaignId}:`,
+      error,
+    );
     return { ok: false, error: "campaigns.errors.unknown" };
   }
 }

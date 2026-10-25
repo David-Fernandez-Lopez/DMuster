@@ -55,6 +55,17 @@ export const campaignPlayerSchema = z.object({
 export type CampaignPlayerInput = z.infer<typeof campaignPlayerSchema>;
 
 /**
+ * Payload for `PUT /api/campaigns/[id]/players` (roadmap #25.2): marks one
+ * player of the campaign as always optional, or clears it. Like the other
+ * membership handlers, the target user travels in the body.
+ */
+export const campaignPlayerOptionalSchema = campaignPlayerSchema.extend({
+  alwaysOptional: z.boolean({ error: "campaigns.players.errors.validation" }),
+});
+
+export type CampaignPlayerOptionalInput = z.infer<typeof campaignPlayerOptionalSchema>;
+
+/**
  * Upper bound on the ids accepted in a requirements payload — far above any
  * real campaign, only there so a crafted body cannot make the server walk an
  * unbounded list.

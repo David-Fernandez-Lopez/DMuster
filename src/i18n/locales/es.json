@@ -133,12 +133,15 @@
       "add": "Añadir jugador",
       "remove": "Quitar",
       "noneToAdd": "No hay más usuarios registrados para añadir.",
+      "alwaysOptional": "Siempre opcional",
       "errors": {
         "validation": "Selecciona un usuario válido.",
         "alreadyMember": "Este usuario ya está en la campaña.",
         "userNotFound": "Usuario no encontrado.",
         "notMember": "Este usuario no está en la campaña.",
-        "lastDm": "No puedes quitar al último máster de la campaña."
+        "lastDm": "No puedes quitar al último máster de la campaña.",
+        "notPlayer": "Los másteres siempre son imprescindibles.",
+        "lastRequired": "Al menos un jugador tiene que ser imprescindible."
       }
     },
     "requirements": {
