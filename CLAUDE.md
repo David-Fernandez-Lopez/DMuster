@@ -20,7 +20,7 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 
 | Entity | Key fields |
 |---|---|
-| `User` | id, name, email, password (hashed), locale, timestamps |
+| `User` | id, name, email, password (hashed), locale, availabilityHorizonMonths, timestamps |
 | `Campaign` | id, name, tag (2-letter chip label), description, createdById, minPlayers, requirementsSetAt, timestamps |
 | `CampaignPlayer` | campaignId, userId, role (DM/PLAYER), optional, alwaysOptional *(M:N join table)* |
 | `Holiday` | id, date (unique), createdById, createdAt |
@@ -121,6 +121,7 @@ Rules:
 - Main view: monthly calendar with color-coded viability indicators per campaign per day
 - Only **eligible days** (Fridays + weekends + holidays) are interactive; non-eligible days are dimmed and non-interactive
 - Tapping an eligible day opens a **modal** to set the player's own Sí/Sí (Online)/Tal vez/No for that day (no page navigation); the per-campaign breakdown (#18) also lives in that modal. When a campaign has optional players that day (always optional, or per its session requirements), its card names the required players and the minimum, and marks optional players "Opcional" — visible to everyone
+- "Mi disponibilidad" (`/availability`) lists upcoming eligible days to answer in a row, grouped by month. By default it shows at least 16 eligible days through the end of that month (about two months). Each user can widen it to 3, 4, 6 or 12 months (the current month included) with its "Mostrar" select, saved on their profile (`User.availabilityHorizonMonths`). The choice only adds days: the list never shows less than the default
 - Status colors: green (S — all needed confirmed), blue (O — all needed can play, someone online), red (N — someone needed cannot), amber (T — pending/no response), slate-violet (B — someone already plays another campaign's session)
 - The calendar shows **every** active confirmed session of the group: the user's own campaigns' in bold with the cell tinted, other campaigns' as muted chips (no tint) plus a read-only "Otras partidas este día" section in the day modal, with name, time and players. A "Filtros" toggle hides the muted chips. Viability is still computed only for the user's own campaigns, and "Próximas partidas" (`/sessions`) lists only their own campaigns' sessions
 - **Design reference**: the authoritative visual spec lives in `design/README.md` and `design/screenshots/` (local, gitignored — a Claude design handoff). Follow it for layout, tokens, and flows
