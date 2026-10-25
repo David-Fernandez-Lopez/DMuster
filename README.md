@@ -32,7 +32,9 @@ Green and blue days are both viable: a DM can confirm a session on them directly
 By default every member counts. A DM can set **requirements for the campaign's next session**:
 which players are required and/or a minimum number of players (DMs are always required and never
 counted). Optional players then don't block a day on their own, and the requirements lapse by
-themselves once that session has passed, so a forgotten setting never keeps a day green.
+themselves once that session has passed, so a forgotten setting never keeps a day green. Players
+who come and go can instead be marked **always optional** on the campaign's players page, which
+never expires.
 
 ## Features
 
@@ -44,7 +46,8 @@ themselves once that session has passed, so a forgotten setting never keeps a da
   not), adjusts who attends, and can cancel it; players who can play that day may join an
   already confirmed session themselves
 - Flexible campaigns: per-campaign requirements for the next session (required players, minimum
-  number of players) that reset to "everyone required" on their own after that session
+  number of players) that reset on their own after that session, plus always-optional players
+  for those who come and go
 - Holidays: any DM can add extra Monday–Thursday dates that become eligible like a Friday or
   weekend
 - Multi-campaign support from a single account

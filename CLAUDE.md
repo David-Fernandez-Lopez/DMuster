@@ -22,7 +22,7 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 |---|---|
 | `User` | id, name, email, password (hashed), locale, timestamps |
 | `Campaign` | id, name, tag (2-letter chip label), description, createdById, minPlayers, requirementsSetAt, timestamps |
-| `CampaignPlayer` | campaignId, userId, role (DM/PLAYER), optional *(M:N join table)* |
+| `CampaignPlayer` | campaignId, userId, role (DM/PLAYER), optional, alwaysOptional *(M:N join table)* |
 | `Holiday` | id, date (unique), createdById, createdAt |
 | `Availability` | id, date, userId, status (YES/NO/MAYBE/ONLINE), timestamps — unique per (date, user) |
 
@@ -52,8 +52,8 @@ never stored; `Holiday` only holds the extra Monday–Thursday dates.
 ### Viability logic
 
 For a given eligible day and campaign, filter only the players belonging to that campaign, then
-apply in priority order (this is the **default rule**, where every member is required; a campaign's
-custom requirements refine it, see below):
+apply in priority order (this is the **default rule**, where every member is required; always-optional
+players and a campaign's custom requirements refine it, see below):
 
 1. Any player already **attends an active confirmed session of another campaign** that day → result **B** ("Ocupado")
 2. Any player responds **N** → result **N**
@@ -71,22 +71,34 @@ are not viable: a DM can only force a session there, and busy players can never 
 
 ### Session requirements
 
-By default every member of a campaign is required. A DM can set **requirements for the next
-session** in "Editar campaña": which players are required (the rest become **optional**) and/or a
-**minimum number of players**. DMs are always required and never count towards the minimum.
+By default every member of a campaign is required. Two settings relax that; DMs are always
+required under both and never count towards a minimum:
 
+- **Always-optional players** (`CampaignPlayer.alwaysOptional`), toggled per player on the
+  campaign's players page: a player who comes and goes. It **never expires**. At least one player
+  must stay required, so the toggle refuses to mark the last one.
+- **Requirements for the next session**, set in "Editar campaña": which players are required (the
+  rest become **optional**) and/or a **minimum number of players**. Always-optional players start
+  unchecked there, but the DM can require one for that session.
+
+Rules:
+
+- **Who is optional on a day:** while the next-session requirements govern the day, what the DM
+  chose for that session (`optional`); otherwise the standing `alwaysOptional`.
 - **Viability:** the required members (every DM plus the non-optional players) go through the
   priority above; optional players never block on their own. With a minimum *M*, count the players
   (not DMs): *A* = `YES`/`ONLINE`, *P* = `MAYBE`/pending, *Z* = busy. The minimum is met if
   *A* ≥ *M*; otherwise it is **T** if *A*+*P* ≥ *M*, **B** if *A*+*P*+*Z* ≥ *M*, else **N**. The
   result is the stronger block of the two (B > N > T); when both pass, **O** if anyone who will
-  play is online, else **S**.
+  play is online, else **S**. If every player ends up optional with no minimum (the last required
+  player left), a minimum of 1 applies: the DM alone never makes a session.
 - **Lifetime:** in force from the moment they are saved until the campaign's next confirmed session
   has passed — the first active session dated after the save, or on that same day but confirmed
   after it. They govern every day up to and including that session's date (every day while none
   is confirmed); later days use the default rule. Once that session is past they lapse on their
   own (ignored on read, no cleanup); a DM can also reset them earlier. This keeps a forgotten
-  setting from painting days green.
+  setting from painting days green. (Always-optional players are not affected: theirs is a
+  standing fact, not a plan for one session.)
 - **Confirming:** a viable confirmation signs up everyone who can play (`YES`/`ONLINE`, not busy)
   — the whole membership under the default rule. The others may self-join later.
 
@@ -94,7 +106,7 @@ session** in "Editar campaña": which players are required (the rest become **op
 
 - Roles are **per campaign** (`CampaignPlayer.role`), not global. Any authenticated user can
   create a campaign and thereby becomes its **DM**.
-- **DM** (of a given campaign): manages the campaign itself (edit/delete), its players and its next-session requirements. DMs do **not** propose dates
+- **DM** (of a given campaign): manages the campaign itself (edit/delete), its players (including who is always optional) and its next-session requirements. DMs do **not** propose dates
 - A campaign can have **multiple DMs** (several `CampaignPlayer` rows with role `DM`); each of them has full management rights over that campaign
 - Campaign mutation permissions are checked against `CampaignPlayer.role = DM` **in that campaign**, never against `createdById` (audit only)
 - **Player** (of a given campaign): can only set their own availability
@@ -108,7 +120,7 @@ session** in "Editar campaña": which players are required (the rest become **op
 - **Mobile-first** responsive design (players respond primarily from mobile)
 - Main view: monthly calendar with color-coded viability indicators per campaign per day
 - Only **eligible days** (Fridays + weekends + holidays) are interactive; non-eligible days are dimmed and non-interactive
-- Tapping an eligible day opens a **modal** to set the player's own Sí/Sí (Online)/Tal vez/No for that day (no page navigation); the per-campaign breakdown (#18) also lives in that modal. When a campaign's session requirements govern the day, its card names the required players and the minimum, and marks optional players "Opcional" — visible to everyone
+- Tapping an eligible day opens a **modal** to set the player's own Sí/Sí (Online)/Tal vez/No for that day (no page navigation); the per-campaign breakdown (#18) also lives in that modal. When a campaign has optional players that day (always optional, or per its session requirements), its card names the required players and the minimum, and marks optional players "Opcional" — visible to everyone
 - Status colors: green (S — all needed confirmed), blue (O — all needed can play, someone online), red (N — someone needed cannot), amber (T — pending/no response), slate-violet (B — someone already plays another campaign's session)
 - The calendar shows **every** active confirmed session of the group: the user's own campaigns' in bold with the cell tinted, other campaigns' as muted chips (no tint) plus a read-only "Otras partidas este día" section in the day modal, with name, time and players. A "Filtros" toggle hides the muted chips. Viability is still computed only for the user's own campaigns, and "Próximas partidas" (`/sessions`) lists only their own campaigns' sessions
 - **Design reference**: the authoritative visual spec lives in `design/README.md` and `design/screenshots/` (local, gitignored — a Claude design handoff). Follow it for layout, tokens, and flows
