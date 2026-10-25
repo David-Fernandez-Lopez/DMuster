@@ -152,6 +152,15 @@ model Campaign {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Next-session requirements (roadmap #25). `requirementsSetAt` is when a DM
+  // last saved custom requirements; `null` means the default rule (every
+  // member is required). They apply until the campaign's next confirmed
+  // session has passed (src/lib/campaignRequirements.ts) and are ignored from
+  // then on, so an expired setting needs no cleanup. `minPlayers` is how many
+  // players (DMs never count) must be able to play, or `null` for no minimum.
+  minPlayers        Int?
+  requirementsSetAt DateTime?
+
   createdBy User             @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   players   CampaignPlayer[]
 
@@ -165,6 +174,10 @@ model CampaignPlayer {
   campaignId String
   userId     String
   role       CampaignRole @default(PLAYER)
+  // Marked optional by the campaign's custom requirements (roadmap #25): their
+  // answer never blocks a session on its own. Ignored for DMs (always
+  // required) and whenever the requirements are not in force.
+  optional   Boolean      @default(false)
   createdAt  DateTime     @default(now())
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)

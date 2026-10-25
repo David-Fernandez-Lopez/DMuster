@@ -55,6 +55,39 @@ export const campaignPlayerSchema = z.object({
 export type CampaignPlayerInput = z.infer<typeof campaignPlayerSchema>;
 
 /**
+ * Upper bound on the ids accepted in a requirements payload — far above any
+ * real campaign, only there so a crafted body cannot make the server walk an
+ * unbounded list.
+ */
+export const CAMPAIGN_REQUIREMENTS_MAX_IDS = 200;
+
+/**
+ * Payload for `PUT /api/campaigns/[id]/requirements` (roadmap #25): which
+ * players are required for the next session, and the minimum number of players
+ * who must be able to play (`null` for none). Whether the ids are actually
+ * players of the campaign is checked by the service, against the database.
+ */
+export const campaignRequirementsSchema = z.object({
+  requiredUserIds: z
+    .array(
+      z.string().trim().min(1, { error: "campaigns.requirements.errors.validation" }),
+    )
+    .max(CAMPAIGN_REQUIREMENTS_MAX_IDS, {
+      error: "campaigns.requirements.errors.validation",
+    }),
+  minPlayers: z
+    .number({ error: "campaigns.requirements.errors.minPlayersInvalid" })
+    .int({ error: "campaigns.requirements.errors.minPlayersInvalid" })
+    .min(1, { error: "campaigns.requirements.errors.minPlayersInvalid" })
+    .max(CAMPAIGN_REQUIREMENTS_MAX_IDS, {
+      error: "campaigns.requirements.errors.minPlayersInvalid",
+    })
+    .nullable(),
+});
+
+export type CampaignRequirementsInput = z.infer<typeof campaignRequirementsSchema>;
+
+/**
  * State shared by the campaign form (client) to surface validation results.
  * `error` is a top-level i18n key; `fieldErrors` maps a field name to an i18n
  * key. Both are translated on the client — never user-facing text.

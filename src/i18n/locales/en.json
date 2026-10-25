@@ -68,7 +68,8 @@
       "none": "No answer",
       "busy": "Playing {{tag}}"
     },
-    "dmBadge": "DM"
+    "dmBadge": "DM",
+    "optionalBadge": "Optional"
   },
   "availability": {
     "title": "My availability",
@@ -134,6 +135,28 @@
         "userNotFound": "User not found.",
         "notMember": "This user is not in this campaign.",
         "lastDm": "You can't remove the last DM of the campaign."
+      }
+    },
+    "requirements": {
+      "title": "Next session requirements",
+      "hint": "By default every player is required. Mark only the ones you need and, if you like, a minimum number of players. DMs are always required and don't count towards the minimum.",
+      "statusDefault": "Right now everyone is required.",
+      "statusOpen": "In force until the next session that gets confirmed has passed.",
+      "statusUntil": "In force until the session on {{date}}. After that everyone is required again.",
+      "required": "Required",
+      "minPlayers": "Minimum players",
+      "minPlayersHint": "Leave it empty for no minimum.",
+      "noPlayers": "Add players to the campaign to set requirements.",
+      "save": "Save requirements",
+      "reset": "Reset",
+      "saved": "Requirements saved.",
+      "resetDone": "Everyone is required again.",
+      "errors": {
+        "validation": "Check the requirements.",
+        "minPlayersInvalid": "The minimum must be a whole number greater than 0.",
+        "notPlayer": "One of the selected players is no longer in the campaign. Reload the page.",
+        "minTooHigh": "The minimum can't be higher than the number of players in the campaign.",
+        "empty": "Mark at least one required player or set a minimum number of players."
       }
     },
     "errors": {

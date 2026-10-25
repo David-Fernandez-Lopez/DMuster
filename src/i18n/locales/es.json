@@ -68,7 +68,8 @@
       "none": "Sin responder",
       "busy": "Juega en {{tag}}"
     },
-    "dmBadge": "Máster"
+    "dmBadge": "Máster",
+    "optionalBadge": "Opcional"
   },
   "availability": {
     "title": "Mi disponibilidad",
@@ -134,6 +135,28 @@
         "userNotFound": "Usuario no encontrado.",
         "notMember": "Este usuario no está en la campaña.",
         "lastDm": "No puedes quitar al último máster de la campaña."
+      }
+    },
+    "requirements": {
+      "title": "Requisitos de la próxima partida",
+      "hint": "Por defecto todos los jugadores son imprescindibles. Marca solo a quien necesitas y, si quieres, un mínimo de jugadores. Los másteres siempre son imprescindibles y no cuentan para el mínimo.",
+      "statusDefault": "Ahora mismo todos son imprescindibles.",
+      "statusOpen": "Vigentes hasta que pase la próxima partida que se confirme.",
+      "statusUntil": "Vigentes hasta la partida del {{date}}. Después todos vuelven a ser imprescindibles.",
+      "required": "Imprescindibles",
+      "minPlayers": "Mínimo de jugadores",
+      "minPlayersHint": "Déjalo vacío si no hay mínimo.",
+      "noPlayers": "Añade jugadores a la campaña para configurar los requisitos.",
+      "save": "Guardar requisitos",
+      "reset": "Restablecer",
+      "saved": "Requisitos guardados.",
+      "resetDone": "Todos vuelven a ser imprescindibles.",
+      "errors": {
+        "validation": "Revisa los requisitos.",
+        "minPlayersInvalid": "El mínimo debe ser un número entero mayor que 0.",
+        "notPlayer": "Alguno de los jugadores marcados ya no está en la campaña. Recarga la página.",
+        "minTooHigh": "El mínimo no puede superar el número de jugadores de la campaña.",
+        "empty": "Marca al menos un imprescindible o indica un mínimo de jugadores."
       }
     },
     "errors": {
