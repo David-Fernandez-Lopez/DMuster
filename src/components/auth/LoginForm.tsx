@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -25,9 +26,17 @@ const INITIAL_STATE: AuthFormState = {};
  * to a signed-out state, not just the button: an expired session, a revoked
  * account, a cleared cookie. Anyone looking at this form is not signed in.
  *
+ * @param {{ showForgotPassword: boolean; passwordWasReset: boolean }} props - Whether to
+ *   offer password recovery (SMTP configured) and whether the visitor just completed one.
  * @returns {JSX.Element} The login form.
  */
-export default function LoginForm() {
+export default function LoginForm({
+  showForgotPassword,
+  passwordWasReset,
+}: {
+  showForgotPassword: boolean;
+  passwordWasReset: boolean;
+}) {
   const { t } = useTranslation();
   const [state, formAction, isPending] = useActionState(login, INITIAL_STATE);
 
@@ -37,6 +46,11 @@ export default function LoginForm() {
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      {passwordWasReset ? (
+        <p className="rounded-[var(--radius-control)] bg-s-soft px-3 py-2 text-sm text-s" role="status">
+          {t("passwordReset.reset.done")}
+        </p>
+      ) : null}
       <AuthField
         id="email"
         name="email"
@@ -67,6 +81,11 @@ export default function LoginForm() {
         pendingLabel={t("common.loading")}
         isPending={isPending}
       />
+      {showForgotPassword ? (
+        <Link href="/forgot-password" className="text-center text-sm text-brand underline">
+          {t("auth.login.forgotPassword")}
+        </Link>
+      ) : null}
     </form>
   );
 }

@@ -114,6 +114,27 @@ Rules:
 - A user may be DM of some campaigns and player in others
 - Data model is designed to support multi-group in the future
 
+### Password recovery
+
+Optional, enabled only when `SMTP_HOST` and `SMTP_FROM` are set (otherwise the login link is hidden
+and `/forgot-password` / `/reset-password/*` return 404).
+
+- `/forgot-password` takes an email. The answer is **always the same** neutral confirmation; the
+  real outcome (`SENT`, `UNKNOWN_EMAIL`, `DISABLED_ACCOUNT`, `RATE_LIMITED`, `SEND_FAILED`) is only
+  recorded in `PasswordResetLog` (email, outcome, IP, date; never a token).
+- The mailed link (built from `AUTH_URL`, never from request headers) holds a single-use token,
+  valid 60 minutes; only its SHA-256 hash is stored in `PasswordResetToken`. A new request voids
+  older unused links.
+- Rate limit, counted from the log: 3 requests per email and 10 per IP per hour (`RATE_LIMITED`
+  rows do not count).
+- Requests are processed after the response (`after()`), so the answer takes the same time
+  whatever the address. The per-email limit is enforced under a MySQL `GET_LOCK`; the client IP is
+  the last `X-Forwarded-For` entry (one proxy in front).
+- Requesting a new link marks older unused ones `supersededAt`; redeeming one sets `usedAt`.
+- Resetting the password also deletes all of the account's sessions.
+- Retention: log rows are deleted after 90 days and tokens a day after expiring, pruned on each
+  request (no cron needed).
+
 ## 5. UI
 
 - Visual style: minimalist with RPG/fantasy touches (medieval-style headings, thematic icons, clean layout)

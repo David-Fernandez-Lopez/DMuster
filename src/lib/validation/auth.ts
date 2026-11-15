@@ -69,6 +69,8 @@ export type LoginInput = z.infer<typeof loginSchema>;
  */
 export type AuthFormState = {
   error?: string;
+  /** Set by the forgot-password action once the request was accepted. */
+  sent?: boolean;
   fieldErrors?: Record<string, string>;
 };
 

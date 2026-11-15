@@ -113,8 +113,52 @@ export const envSchema = z
         })
         .optional(),
     ),
+    // Outgoing mail (password recovery). All-or-nothing: unset leaves the
+    // feature disabled, a partial set is refused below. Credentials are
+    // optional because some relays accept unauthenticated local connections.
+    SMTP_HOST: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    SMTP_PORT: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(65535).optional()),
+    // true = implicit TLS (port 465); false = STARTTLS when offered (587).
+    SMTP_SECURE: z.preprocess(
+      emptyToUndefined,
+      z.enum(["true", "false"]).transform((v) => v === "true").optional(),
+    ),
+    SMTP_USER: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    SMTP_PASSWORD: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
+    // Sender shown to the recipient, e.g. `DMuster <no-reply@example.com>`.
+    SMTP_FROM: z.preprocess(emptyToUndefined, z.string().min(3).optional()),
   })
   .superRefine((value, ctx) => {
+    if (Boolean(value.SMTP_HOST) !== Boolean(value.SMTP_FROM)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["SMTP_HOST"],
+        message: "SMTP_HOST and SMTP_FROM must be set together",
+      });
+    }
+    if (Boolean(value.SMTP_USER) !== Boolean(value.SMTP_PASSWORD)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["SMTP_USER"],
+        message: "SMTP_USER and SMTP_PASSWORD must be set together",
+      });
+    }
+    // A port/TLS mismatch only fails at the first send, long after startup:
+    // 465 speaks TLS from the first byte, 587/25 start in plain text.
+    if (value.SMTP_PORT === 465 && value.SMTP_SECURE !== true) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["SMTP_SECURE"],
+        message: "SMTP_PORT 465 requires SMTP_SECURE=true",
+      });
+    }
+    if (value.SMTP_SECURE === true && (value.SMTP_PORT === 587 || value.SMTP_PORT === 25)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["SMTP_SECURE"],
+        message: "SMTP_SECURE=true does not work with port 587 or 25; use false (STARTTLS)",
+      });
+    }
     if (value.NODE_ENV === "production" && !value.AUTH_URL) {
       ctx.addIssue({
         code: "custom",

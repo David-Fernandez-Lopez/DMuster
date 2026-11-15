@@ -45,3 +45,12 @@ export const env = loadEnv();
 export const isGoogleSyncConfigured: boolean = Boolean(
   env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_OAUTH_REDIRECT_URI
 );
+
+/**
+ * True when outgoing mail is configured. Gates password recovery: the login
+ * page hides its link and the recovery routes 404 when false, so a deployment
+ * without SMTP is unaffected.
+ *
+ * @returns {boolean} Whether password-reset emails can be sent.
+ */
+export const isMailConfigured: boolean = Boolean(env.SMTP_HOST && env.SMTP_FROM);

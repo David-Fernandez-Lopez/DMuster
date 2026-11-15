@@ -352,7 +352,8 @@
       "submit": "Entrar",
       "errors": {
         "invalidCredentials": "Correo o contraseña incorrectos."
-      }
+      },
+      "forgotPassword": "¿Has olvidado la contraseña?"
     },
     "errors": {
       "required": "Este campo es obligatorio.",
@@ -418,6 +419,36 @@
       "revoked": "Este enlace de invitación ha sido revocado.",
       "issuerNoLongerDm": "Quien te invitó ya no es máster de esa campaña. Pide un enlace nuevo a un máster actual.",
       "unknown": "Algo ha ido mal. Inténtalo de nuevo."
+    }
+  },
+  "passwordReset": {
+    "backToLogin": "Volver a iniciar sesión",
+    "forgot": {
+      "title": "Recuperar contraseña",
+      "subtitle": "Escribe tu correo y, si existe una cuenta con él, te enviaremos un enlace para crear una contraseña nueva.",
+      "submit": "Enviar enlace",
+      "sent": "Si existe una cuenta con ese correo, te hemos enviado un enlace para restablecer la contraseña. Revisa también la carpeta de spam."
+    },
+    "reset": {
+      "title": "Nueva contraseña",
+      "password": "Contraseña nueva",
+      "confirmPassword": "Repite la contraseña",
+      "submit": "Guardar contraseña",
+      "requestAnother": "Solicitar un enlace nuevo",
+      "done": "Contraseña actualizada. Ya puedes iniciar sesión."
+    },
+    "errors": {
+      "invalidToken": "Este enlace no es válido o ha caducado. Solicita uno nuevo.",
+      "unavailable": "La recuperación de contraseña no está disponible.",
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo."
+    },
+    "email": {
+      "subject": "Restablece tu contraseña de DMuster",
+      "greeting": "Hola, {{name}}:",
+      "intro": "Hemos recibido una solicitud para restablecer tu contraseña. Usa este enlace para elegir una nueva:",
+      "button": "Restablecer contraseña",
+      "expiry": "El enlace caduca en {{minutes}} minutos y solo se puede usar una vez.",
+      "ignore": "Si no lo has solicitado tú, ignora este mensaje: tu contraseña no cambiará."
     }
   }
 }

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import LoginForm from "@/components/auth/LoginForm";
 import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
+import { isMailConfigured } from "@/lib/env";
 
 /**
  * Login page. Renders the translated heading and the client login form.
@@ -15,14 +16,22 @@ import { auth } from "@/lib/auth";
  * holding a stale cookie — and therefore what makes deleting session rows a
  * usable way to revoke access.
  *
+ * `?reset=1` (set after a successful password reset) shows a confirmation.
+ *
+ * @param {{ searchParams: Promise<{ reset?: string }> }} props - Query string.
  * @returns {Promise<JSX.Element>}
  */
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ reset?: string }>;
+}) {
   const session = await auth();
   if (session?.user) {
     redirect("/");
   }
 
+  const { reset } = await searchParams;
   const { t } = await getServerTranslation();
 
   return (
@@ -30,7 +39,7 @@ export default async function LoginPage() {
       <h2 className="text-center font-display text-xl font-semibold text-ink">
         {t("auth.login.title")}
       </h2>
-      <LoginForm />
+      <LoginForm showForgotPassword={isMailConfigured} passwordWasReset={reset === "1"} />
     </div>
   );
 }

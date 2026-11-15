@@ -11,14 +11,11 @@
 // on a populated one there is nothing to bootstrap.
 import "dotenv/config";
 
-import bcrypt from "bcryptjs";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
 import { loadSeedEnv } from "./seedEnv";
 import { PrismaClient, CampaignRole } from "../src/generated/prisma/client";
-
-/** Bcrypt cost factor. Kept in sync with the app (src/lib/userService.ts). */
-const BCRYPT_COST = 10;
+import { hashPassword } from "../src/lib/passwordHash";
 
 /**
  * Builds the MariaDB driver adapter from the DATABASE_URL connection string.
@@ -89,7 +86,7 @@ async function main(): Promise<void> {
     }
 
     console.log("[SEED] Creating the bootstrap account and campaign...");
-    const passwordHash = await bcrypt.hash(env.SEED_USER_PASSWORD, BCRYPT_COST);
+    const passwordHash = await hashPassword(env.SEED_USER_PASSWORD);
 
     const campaign = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({

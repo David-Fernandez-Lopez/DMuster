@@ -352,7 +352,8 @@
       "submit": "Sign in",
       "errors": {
         "invalidCredentials": "Incorrect email or password."
-      }
+      },
+      "forgotPassword": "Forgot your password?"
     },
     "errors": {
       "required": "This field is required.",
@@ -418,6 +419,36 @@
       "revoked": "This invitation link has been revoked.",
       "issuerNoLongerDm": "Whoever invited you is no longer a DM of that campaign. Ask a current DM for a new link.",
       "unknown": "Something went wrong. Please try again."
+    }
+  },
+  "passwordReset": {
+    "backToLogin": "Back to sign in",
+    "forgot": {
+      "title": "Recover password",
+      "subtitle": "Enter your email and, if an account exists for it, we'll send you a link to create a new password.",
+      "submit": "Send link",
+      "sent": "If an account exists for that email, we've sent a link to reset the password. Check your spam folder too."
+    },
+    "reset": {
+      "title": "New password",
+      "password": "New password",
+      "confirmPassword": "Repeat the password",
+      "submit": "Save password",
+      "requestAnother": "Request a new link",
+      "done": "Password updated. You can now sign in."
+    },
+    "errors": {
+      "invalidToken": "This link is invalid or has expired. Request a new one.",
+      "unavailable": "Password recovery is not available.",
+      "unknown": "Something went wrong. Please try again."
+    },
+    "email": {
+      "subject": "Reset your DMuster password",
+      "greeting": "Hi {{name}},",
+      "intro": "We received a request to reset your password. Use this link to choose a new one:",
+      "button": "Reset password",
+      "expiry": "The link expires in {{minutes}} minutes and can only be used once.",
+      "ignore": "If you didn't request this, ignore this message: your password won't change."
     }
   }
 }

@@ -8,11 +8,9 @@ import {
   DEFAULT_AVAILABILITY_HORIZON,
   isAvailabilityHorizon,
 } from "@/lib/availabilityHorizon";
+import { hashPassword } from "@/lib/passwordHash";
 import { prisma } from "@/lib/prisma";
 import type { Theme } from "@/lib/theme";
-
-/** Bcrypt cost factor. Kept in sync with the seed script (prisma/seed.ts). */
-const BCRYPT_COST = 10;
 
 /** Prisma error code raised on a unique-constraint violation. */
 const UNIQUE_VIOLATION = "P2002";
@@ -50,7 +48,7 @@ export async function registerUser(
 
   try {
     const locale = await getLocale();
-    const passwordHash = await bcrypt.hash(input.password, BCRYPT_COST);
+    const passwordHash = await hashPassword(input.password);
 
     const user = await client.user.create({
       data: {
@@ -271,7 +269,7 @@ export async function changePassword(
       return { ok: false, error: "profile.errors.wrongPassword" };
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_COST);
+    const passwordHash = await hashPassword(newPassword);
     await prisma.user.update({
       where: { id: userId },
       data: { password: passwordHash },

@@ -127,3 +127,51 @@ describe("envSchema", () => {
     });
   });
 });
+
+describe("SMTP settings", () => {
+  it("accepts mail left entirely unset", () => {
+    expect(parse().ok).toBe(true);
+  });
+
+  it("accepts a complete configuration and coerces the port", () => {
+    expect(
+      parse({ SMTP_HOST: "smtp.example.com", SMTP_PORT: "587", SMTP_FROM: "DMuster <no-reply@example.com>" }).ok,
+    ).toBe(true);
+  });
+
+  it("treats blank values as unset", () => {
+    expect(parse({ SMTP_HOST: "", SMTP_PORT: "", SMTP_FROM: "", SMTP_SECURE: "" }).ok).toBe(true);
+  });
+
+  it("refuses a host without a sender", () => {
+    const { ok, messages } = parse({ SMTP_HOST: "smtp.example.com" });
+    expect(ok).toBe(false);
+    expect(messages).toMatch(/SMTP_HOST and SMTP_FROM/);
+  });
+
+  it("refuses a user without a password", () => {
+    const { ok, messages } = parse({ SMTP_USER: "me" });
+    expect(ok).toBe(false);
+    expect(messages).toMatch(/SMTP_USER and SMTP_PASSWORD/);
+  });
+
+  it("refuses an out-of-range port", () => {
+    expect(parse({ SMTP_HOST: "h", SMTP_FROM: "f@x.io", SMTP_PORT: "70000" }).ok).toBe(false);
+  });
+
+  it("refuses port 465 without implicit TLS", () => {
+    const { ok, messages } = parse({ SMTP_HOST: "h", SMTP_FROM: "f@x.io", SMTP_PORT: "465", SMTP_SECURE: "false" });
+    expect(ok).toBe(false);
+    expect(messages).toMatch(/465 requires SMTP_SECURE=true/);
+  });
+
+  it("refuses implicit TLS on port 587", () => {
+    const { ok, messages } = parse({ SMTP_HOST: "h", SMTP_FROM: "f@x.io", SMTP_PORT: "587", SMTP_SECURE: "true" });
+    expect(ok).toBe(false);
+    expect(messages).toMatch(/587 or 25/);
+  });
+
+  it("accepts 465 with implicit TLS", () => {
+    expect(parse({ SMTP_HOST: "h", SMTP_FROM: "f@x.io", SMTP_PORT: "465", SMTP_SECURE: "true" }).ok).toBe(true);
+  });
+});

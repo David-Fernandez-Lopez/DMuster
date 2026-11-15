@@ -16,7 +16,8 @@ import { SECURE_SESSION_COOKIE, SESSION_COOKIE } from "@/lib/sessionCookie";
 //   - /invite links (roadmap #24) must render their own state — an explanation,
 //     or the accept form — for whoever opens them, instead of a signed-in
 //     visitor silently bouncing to "/" before ever seeing the page.
-const UNPROTECTED_ROUTES = ["/login", "/invite"];
+//   - /forgot-password and /reset-password/* are for people who cannot sign in.
+const UNPROTECTED_ROUTES = ["/login", "/invite", "/forgot-password", "/reset-password"];
 
 /**
  * Reports whether `pathname` is (or is nested under) one of `routes`.

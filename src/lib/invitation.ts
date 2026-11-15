@@ -1,15 +1,12 @@
 // Pure token/status helpers for invitation-only access (roadmap #24). Only
-// `node:crypto` is imported — no Prisma/Next — so this stays trivially
+// `node:crypto` is reached (via secureToken.ts) — no Prisma/Next — so this stays trivially
 // unit-testable, mirroring roadmap #17's precedent with viability.ts and
 // #23's oauthState.ts.
 
-import { createHash, randomBytes } from "node:crypto";
+import { generateSecureToken, hashSecureToken } from "@/lib/secureToken";
 
 /** How long a freshly created invitation stays acceptable. */
 export const INVITATION_TTL_DAYS = 7;
-
-/** Number of random bytes backing a raw invitation token (256 bits). */
-const TOKEN_BYTES = 32;
 
 /** The subset of `Invitation` fields needed to derive its lifecycle state. */
 export type InvitationLifecycle = {
@@ -30,7 +27,7 @@ export type InvitationStatus = "pending" | "accepted" | "revoked" | "expired";
  * @returns {string} A new random raw token.
  */
 export function generateInvitationToken(): string {
-  return randomBytes(TOKEN_BYTES).toString("base64url");
+  return generateSecureToken();
 }
 
 /**
@@ -42,7 +39,7 @@ export function generateInvitationToken(): string {
  * @returns {string} The token's SHA-256 hash, as lowercase hex.
  */
 export function hashInvitationToken(rawToken: string): string {
-  return createHash("sha256").update(rawToken).digest("hex");
+  return hashSecureToken(rawToken);
 }
 
 /**

@@ -140,6 +140,7 @@ model User {
   reminderEvents        AvailabilityReminderEvent[]
   sentInvitations       Invitation[]                @relation("InvitationInvitedBy")
   acceptedInvitations   Invitation[]                @relation("InvitationAcceptedBy")
+  passwordResetTokens   PasswordResetToken[]
 
   @@map("users")
 }
@@ -459,6 +460,55 @@ model Invitation {
 
   @@index([email])
   @@map("invitations")
+}
+
+// What happened to one "forgot password" request. Only SENT means a link was
+// actually mailed; every other value is a request that produced no email.
+enum PasswordResetOutcome {
+  SENT
+  UNKNOWN_EMAIL
+  DISABLED_ACCOUNT
+  RATE_LIMITED
+  SEND_FAILED
+}
+
+// A single-use password reset link. Like `Invitation`, only the SHA-256 hash of
+// the raw token is stored; the raw value exists once, in the email. Rows are
+// pruned a day after they expire (see `prunePasswordResetData`).
+model PasswordResetToken {
+  id           String    @id @default(cuid())
+  userId       String
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  // Set on the token that was redeemed.
+  usedAt       DateTime?
+  // Set when a newer link (or a completed reset) voided this one unused.
+  supersededAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  // The prune deletes by expiry alone.
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+// Append-only audit trail of every "forgot password" request, whether or not
+// the email exists (the screen answers identically either way, so this is the
+// only place the difference is visible). `userId` is a loose scalar (no FK) and
+// no token is ever stored here. Also what the rate limit counts. Kept 90 days.
+model PasswordResetLog {
+  id        String               @id @default(cuid())
+  email     String               @db.VarChar(191)
+  outcome   PasswordResetOutcome
+  ipAddress String?              @db.VarChar(45)
+  createdAt DateTime             @default(now())
+
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+  @@index([createdAt])
+  @@map("password_reset_logs")
 }
 
 // ─── Auth.js v5 adapter tables ───────────────────────────────────────────────

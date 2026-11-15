@@ -1,16 +1,29 @@
 "use server";
 
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { AuthError } from "next-auth";
 import { z } from "zod";
 
 import { signIn, signOut } from "@/lib/auth";
+import { clientIpFromForwardedFor } from "@/lib/clientIp";
+import { isMailConfigured } from "@/lib/env";
 import { acceptInvitation as acceptInvitationRequest } from "@/lib/invitationService";
+import {
+  requestPasswordReset as requestPasswordResetService,
+  resetPassword as resetPasswordService,
+} from "@/lib/passwordResetService";
 import {
   type AuthFormState,
   firstFieldErrors,
   loginSchema,
 } from "@/lib/validation/auth";
 import { acceptInvitationSchema } from "@/lib/validation/invitation";
+import {
+  requestPasswordResetSchema,
+  resetPasswordSchema,
+} from "@/lib/validation/passwordReset";
 
 /** Where users land after a successful sign-in. */
 const AFTER_AUTH_REDIRECT = "/";
@@ -131,4 +144,72 @@ export async function acceptInvitation(
 export async function logoutToInvitation(formData: FormData): Promise<void> {
   const token = String(formData.get("token") ?? "");
   await signOut({ redirectTo: `/invite/${encodeURIComponent(token)}` });
+}
+
+/**
+ * Handles the "forgot password" form. The visitor always gets the same answer
+ * (`{ sent: true }`) whether the address exists, is disabled, was rate-limited
+ * or the mail failed; the work runs in `after()` and what happened is only
+ * recorded in `PasswordResetLog`.
+ *
+ * @param {AuthFormState} _prevState - Previous action state (unused).
+ * @param {FormData} formData - Submitted form.
+ * @returns {Promise<AuthFormState>} Field errors for a malformed email, or `{ sent: true }`.
+ */
+export async function requestPasswordReset(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  if (!isMailConfigured) {
+    return { error: "passwordReset.errors.unavailable" };
+  }
+
+  const parsed = requestPasswordResetSchema.safeParse({ email: formData.get("email") });
+  if (!parsed.success) {
+    return { fieldErrors: firstFieldErrors(z.flattenError(parsed.error).fieldErrors) };
+  }
+
+  // Headers can only be read while the request is live, so the IP is taken
+  // now; everything else runs once the answer has been sent. That keeps the
+  // response identical in content *and* timing whatever the address is.
+  const ipAddress = clientIpFromForwardedFor((await headers()).get("x-forwarded-for"));
+  const email = parsed.data.email;
+  after(() => requestPasswordResetService({ email, ipAddress }));
+
+  return { sent: true };
+}
+
+/**
+ * Sets the new password from `/reset-password/[token]` and sends the user to
+ * the login page. The token travels as a hidden field, like `acceptInvitation`.
+ *
+ * @param {AuthFormState} _prevState - Previous action state (unused).
+ * @param {FormData} formData - Submitted form, including the hidden `token` field.
+ * @returns {Promise<AuthFormState>} Field/top-level errors, or never (redirects).
+ */
+export async function resetPassword(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  if (!isMailConfigured) {
+    return { error: "passwordReset.errors.unavailable" };
+  }
+
+  const parsed = resetPasswordSchema.safeParse({
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) {
+    return { fieldErrors: firstFieldErrors(z.flattenError(parsed.error).fieldErrors) };
+  }
+
+  const result = await resetPasswordService({
+    rawToken: String(formData.get("token") ?? ""),
+    password: parsed.data.password,
+  });
+  if (!result.ok) {
+    return { error: result.error };
+  }
+
+  redirect("/login?reset=1");
 }
