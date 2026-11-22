@@ -233,7 +233,10 @@ export default function CampaignViabilityCard({
                     durationMinutes: confirmedSession.durationMinutes,
                   }}
                 />
-                <CancelSessionButton sessionId={confirmedSession.id} />
+                <CancelSessionButton
+                  sessionId={confirmedSession.id}
+                  members={campaign.players}
+                />
               </div>
             ) : confirmedSession.viewerCanSelfJoin ? (
               <SelfJoinButton sessionId={confirmedSession.id} />

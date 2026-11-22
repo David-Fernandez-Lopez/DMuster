@@ -21,7 +21,7 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 | Entity | Key fields |
 |---|---|
 | `User` | id, name, email, password (hashed), locale, availabilityHorizonMonths, timestamps |
-| `Campaign` | id, name, tag (2-letter chip label), description, createdById, minPlayers, requirementsSetAt, timestamps |
+| `Campaign` | id, name, tag (2-letter chip label), description, createdById, minPlayers, requirementsSetAt, archivedAt, timestamps |
 | `CampaignPlayer` | campaignId, userId, role (DM/PLAYER), optional, alwaysOptional *(M:N join table)* |
 | `Holiday` | id, date (unique), createdById, createdAt |
 | `Availability` | id, date, userId, status (YES/NO/MAYBE/ONLINE), timestamps — unique per (date, user) |
@@ -102,11 +102,20 @@ Rules:
 - **Confirming:** a viable confirmation signs up everyone who can play (`YES`/`ONLINE`, not busy)
   — the whole membership under the default rule. The others may self-join later.
 
+### Archived campaigns and cancellation cause
+
+- A DM can **archive** a concluded campaign (`Campaign.archivedAt`, from "Editar campaña"; it can be
+  unarchived). Archiving is refused while the campaign has active sessions dated today or later. An
+  archived campaign keeps its history for the statistics view, but takes no new sessions and drops
+  out of the calendar's viability; it is listed under "Archivadas" in `/campaigns`.
+- When a DM cancels a session they may name the member whose plans changed
+  (`ConfirmedSession.cancelCauseUserId`, optional, must belong to the campaign). Statistics only.
+
 ## 4. Roles & Permissions
 
 - Roles are **per campaign** (`CampaignPlayer.role`), not global. Any authenticated user can
   create a campaign and thereby becomes its **DM**.
-- **DM** (of a given campaign): manages the campaign itself (edit/delete), its players (including who is always optional) and its next-session requirements. DMs do **not** propose dates
+- **DM** (of a given campaign): manages the campaign itself (edit/delete/archive), its players (including who is always optional) and its next-session requirements. DMs do **not** propose dates
 - A campaign can have **multiple DMs** (several `CampaignPlayer` rows with role `DM`); each of them has full management rights over that campaign
 - Campaign mutation permissions are checked against `CampaignPlayer.role = DM` **in that campaign**, never against `createdById` (audit only)
 - **Player** (of a given campaign): can only set their own availability

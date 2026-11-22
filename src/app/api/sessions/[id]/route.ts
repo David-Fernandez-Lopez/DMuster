@@ -8,7 +8,10 @@ import {
   updateSession,
 } from "@/lib/confirmedSessionService";
 import { firstFieldErrors } from "@/lib/validation/auth";
-import { updateSessionSchema } from "@/lib/validation/confirmedSession";
+import {
+  cancelSessionSchema,
+  updateSessionSchema,
+} from "@/lib/validation/confirmedSession";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -93,12 +96,14 @@ export async function PUT(
  * campaign. Ladder: 401 → 404 (missing, already cancelled, or non-member) →
  * 403 (member, not DM).
  *
- * @param {Request} _request - The incoming request (unused).
+ * @param {Request} request - The incoming request; an optional JSON body
+ *   `{ causeUserId }` names the member whose plans caused the cancellation.
  * @param {RouteContext} context - Route context with the async `params`.
- * @returns {Promise<NextResponse>} 200, 401, 403, or 404.
+ * @returns {Promise<NextResponse>} 200, 400 (bad body or cause not a member),
+ *   401, 403, or 404.
  */
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: RouteContext,
 ): Promise<NextResponse> {
   const session = await auth();
@@ -111,11 +116,39 @@ export async function DELETE(
 
   const { id } = await params;
 
-  const result = await cancelSession(id, session.user.id);
+  // The body is optional: a bare DELETE cancels without naming a cause.
+  const rawBody = await request.text();
+  let causeUserId: string | null = null;
+  if (rawBody.trim() !== "") {
+    let json: unknown;
+    try {
+      json = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json(
+        { error: "sessions.errors.validation" },
+        { status: 400 },
+      );
+    }
+    const parsed = cancelSessionSchema.safeParse(json);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "sessions.errors.invalidCancelCause" },
+        { status: 400 },
+      );
+    }
+    causeUserId = parsed.data.causeUserId ?? null;
+  }
+
+  const result = await cancelSession(id, session.user.id, causeUserId);
   if (!result.ok) {
     return NextResponse.json(
       { error: result.error },
-      { status: authorizationStatus(result.error) },
+      {
+        status:
+          result.error === "sessions.errors.invalidCancelCause"
+            ? 400
+            : authorizationStatus(result.error),
+      },
     );
   }
 

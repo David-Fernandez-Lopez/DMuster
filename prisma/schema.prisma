@@ -72,6 +72,7 @@ model User {
 
   confirmedSessions     ConfirmedSession[]          @relation("SessionConfirmedBy")
   cancelledSessions     ConfirmedSession[]          @relation("SessionCancelledBy")
+  causedCancellations   ConfirmedSession[]          @relation("SessionCancelCause")
   sessionAttendances    ConfirmedSessionAttendee[]  @relation("SessionAttendee")
   addedSessionAttendees ConfirmedSessionAttendee[]  @relation("SessionAttendeeAddedBy")
   sentInvitations       Invitation[]                @relation("InvitationInvitedBy")
@@ -101,6 +102,11 @@ model Campaign {
   // players (DMs never count) must be able to play, or `null` for no minimum.
   minPlayers        Int?
   requirementsSetAt DateTime?
+
+  // Set when a DM archives a concluded campaign. An archived campaign keeps its
+  // history (sessions, members) for the statistics view but takes no new
+  // sessions and drops out of the calendar's viability. `null` = active.
+  archivedAt DateTime?
 
   createdBy User             @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   players   CampaignPlayer[]
@@ -193,6 +199,9 @@ model ConfirmedSession {
   confirmedById String
   cancelledAt   DateTime?
   cancelledById String?
+  // Optional: the member whose plans changed and caused the cancellation,
+  // picked by the DM when cancelling. Statistics only ("a quién le surgió algo").
+  cancelCauseUserId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -200,6 +209,7 @@ model ConfirmedSession {
   campaign       Campaign                   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   confirmedBy    User                       @relation("SessionConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
   cancelledBy    User?                      @relation("SessionCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+  cancelCause    User?                      @relation("SessionCancelCause", fields: [cancelCauseUserId], references: [id], onDelete: SetNull)
   attendees      ConfirmedSessionAttendee[]
 
   @@unique([campaignId, activeDate])

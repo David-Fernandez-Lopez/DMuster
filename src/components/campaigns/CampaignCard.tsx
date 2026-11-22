@@ -43,6 +43,11 @@ export default function CampaignCard({ campaign, viewerId, t }: CampaignCardProp
         <p className="min-w-0 flex-1 truncate font-bold text-ink">
           {campaign.name}
         </p>
+        {campaign.archivedAt ? (
+          <span className="shrink-0 rounded-full border border-brand px-2 text-[10px] font-bold uppercase text-brand">
+            {t("campaigns.archivedBadge")}
+          </span>
+        ) : null}
       </div>
 
       {campaign.description ? (

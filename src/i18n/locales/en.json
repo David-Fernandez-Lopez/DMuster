@@ -111,7 +111,9 @@
       "dm": "As DM",
       "player": "As player",
       "dmEmpty": "You're not running any campaigns yet.",
-      "playerEmpty": "You're not playing in any campaign yet."
+      "playerEmpty": "You're not playing in any campaign yet.",
+      "archived": "Archived",
+      "archivedEmpty": "You have no archived campaigns."
     },
     "role": {
       "DM": "DM",
@@ -132,7 +134,11 @@
       "confirmYes": "Yes, delete",
       "leave": "Leave campaign",
       "confirmLeave": "Leave this campaign? Only a DM can add you back.",
-      "confirmLeaveYes": "Yes, leave"
+      "confirmLeaveYes": "Yes, leave",
+      "archive": "Archive",
+      "confirmArchive": "Archive this campaign? It will leave the calendar and take no new sessions, but its history is kept.",
+      "confirmArchiveYes": "Yes, archive",
+      "unarchive": "Unarchive"
     },
     "players": {
       "title": "Players",
@@ -183,8 +189,12 @@
       "unauthorized": "You must log in.",
       "forbidden": "Only a DM of this campaign can do that.",
       "notFound": "Campaign not found.",
-      "unknown": "Something went wrong. Please try again."
-    }
+      "unknown": "Something went wrong. Please try again.",
+      "hasUpcomingSessions": "Cancel this campaign's upcoming sessions first.",
+      "alreadyArchived": "The campaign is already archived.",
+      "notArchived": "The campaign is not archived."
+    },
+    "archivedBadge": "Archived"
   },
   "holidays": {
     "title": "Holidays",
@@ -261,8 +271,12 @@
       "requiresYes": "You can only join if you answered Yes or Yes (Online) that day.",
       "attendeeConflict": "Already a session that day with {{campaign}}.",
       "lastAttendee": "A session can't be left with no players.",
-      "past": "That session has already taken place."
-    }
+      "past": "That session has already taken place.",
+      "invalidCancelCause": "That person is not in the campaign.",
+      "campaignArchived": "This campaign is archived: unarchive it to confirm sessions."
+    },
+    "cancelCause": "Whose plans changed? (optional)",
+    "cancelCauseNone": "No one in particular / other reason"
   },
   "profile": {
     "title": "Profile",

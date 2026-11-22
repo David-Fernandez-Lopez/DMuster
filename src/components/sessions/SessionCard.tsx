@@ -75,7 +75,10 @@ export default function SessionCard({ session }: SessionCardProps) {
 
       {session.viewerIsDm ? (
         <div className="mt-3">
-          <CancelSessionButton sessionId={session.id} />
+          <CancelSessionButton
+            sessionId={session.id}
+            members={session.campaignMembers}
+          />
         </div>
       ) : session.viewerCanSelfJoin ? (
         <div className="mt-3">

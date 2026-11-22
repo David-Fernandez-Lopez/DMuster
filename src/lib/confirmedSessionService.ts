@@ -472,6 +472,7 @@ export async function confirmSession({
       tag: true,
       minPlayers: true,
       requirementsSetAt: true,
+      archivedAt: true,
       players: {
         select: { userId: true, role: true, optional: true, alwaysOptional: true },
       },
@@ -487,6 +488,9 @@ export async function confirmSession({
   }
   if (viewer.role !== CampaignRole.DM) {
     return { ok: false, error: "sessions.errors.forbidden" };
+  }
+  if (campaign.archivedAt) {
+    return { ok: false, error: "sessions.errors.campaignArchived" };
   }
 
   const holidays = new Set((await listHolidays()).map((holiday) => holiday.date));
@@ -721,20 +725,35 @@ export async function updateSession(
  *
  * @param {string} id - The session id.
  * @param {string} userId - The requesting user (must be a DM of the campaign).
+ * @param {string | null} [causeUserId] - Optional member whose plans caused the
+ *   cancellation (statistics only); must belong to the campaign.
  * @returns {Promise<CancelSessionResult>} Success with the id, or an error key.
  */
 export async function cancelSession(
   id: string,
   userId: string,
+  causeUserId: string | null = null,
 ): Promise<CancelSessionResult> {
   const authorized = await authorizeSessionMutation(id, userId);
   if ("error" in authorized) {
     return { ok: false, error: authorized.error };
   }
 
+  if (causeUserId !== null) {
+    const causeRole = await getCampaignRole(causeUserId, authorized.campaignId);
+    if (causeRole === null) {
+      return { ok: false, error: "sessions.errors.invalidCancelCause" };
+    }
+  }
+
   const result = await prisma.confirmedSession.updateMany({
     where: { id, ...ACTIVE_SESSION },
-    data: { cancelledAt: new Date(), cancelledById: userId, activeDate: null },
+    data: {
+      cancelledAt: new Date(),
+      cancelledById: userId,
+      cancelCauseUserId: causeUserId,
+      activeDate: null,
+    },
   });
 
   if (result.count === 0) {

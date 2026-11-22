@@ -168,7 +168,7 @@ export async function getCalendarViability(
   holidays: Set<string>,
 ): Promise<CalendarViability> {
   const campaigns = await prisma.campaign.findMany({
-    where: { players: { some: { userId } } },
+    where: { players: { some: { userId } }, archivedAt: null },
     select: {
       id: true,
       name: true,

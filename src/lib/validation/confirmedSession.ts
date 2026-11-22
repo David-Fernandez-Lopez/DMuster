@@ -84,3 +84,17 @@ export const updateSessionSchema = z
   });
 
 export type UpdateSessionInput = z.infer<typeof updateSessionSchema>;
+
+/**
+ * Optional body of `DELETE /api/sessions/[id]`: the member whose plans caused
+ * the cancellation (statistics only). Absent or `null` means no one in particular.
+ */
+export const cancelSessionSchema = z.object({
+  causeUserId: z
+    .string()
+    .trim()
+    .min(1, { error: "sessions.errors.invalidCancelCause" })
+    .nullish(),
+});
+
+export type CancelSessionInput = z.infer<typeof cancelSessionSchema>;

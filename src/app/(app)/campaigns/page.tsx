@@ -64,8 +64,10 @@ export default async function CampaignsPage() {
   const { t } = await getServerTranslation();
   const campaigns = await listCampaignsForUser(session.user.id);
 
-  const dmCampaigns = campaigns.filter((c) => c.role === CampaignRole.DM);
-  const playerCampaigns = campaigns.filter(
+  const activeCampaigns = campaigns.filter((c) => c.archivedAt === null);
+  const archivedCampaigns = campaigns.filter((c) => c.archivedAt !== null);
+  const dmCampaigns = activeCampaigns.filter((c) => c.role === CampaignRole.DM);
+  const playerCampaigns = activeCampaigns.filter(
     (c) => c.role === CampaignRole.PLAYER,
   );
 
@@ -116,6 +118,20 @@ export default async function CampaignsPage() {
               t,
             )}
           </CampaignSection>
+          {archivedCampaigns.length > 0 ? (
+            <CampaignSection
+              title={t("campaigns.groups.archived")}
+              count={archivedCampaigns.length}
+              defaultOpen={false}
+            >
+              {renderGroupBody(
+                archivedCampaigns,
+                t("campaigns.groups.archivedEmpty"),
+                session.user.id,
+                t,
+              )}
+            </CampaignSection>
+          ) : null}
         </div>
       )}
     </main>

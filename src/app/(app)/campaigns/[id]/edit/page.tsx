@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import ArchiveCampaignButton from "@/components/campaigns/ArchiveCampaignButton";
 import CampaignForm from "@/components/campaigns/CampaignForm";
 import CampaignRequirementsForm from "@/components/campaigns/CampaignRequirementsForm";
 import { CampaignRole } from "@/generated/prisma/enums";
@@ -73,6 +74,13 @@ export default async function EditCampaignPage({
           requirementsWindow={requirements.window}
         />
       ) : null}
+
+      <div className="mt-6 rounded-[var(--radius-card)] border border-border bg-bg-elevated p-4">
+        <ArchiveCampaignButton
+          campaignId={campaign.id}
+          archived={campaign.archivedAt !== null}
+        />
+      </div>
     </main>
   );
 }

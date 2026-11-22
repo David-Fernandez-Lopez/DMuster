@@ -1,6 +1,8 @@
 import { Prisma } from "@/generated/prisma/client";
 import { CampaignRole } from "@/generated/prisma/enums";
 import { prisma } from "@/lib/prisma";
+import { todayIso } from "@/lib/today";
+import { toUtcDate } from "@/lib/date";
 import type { CampaignInput } from "@/lib/validation/campaign";
 
 /** Prisma error code raised when a record to update/delete does not exist. */
@@ -13,6 +15,8 @@ export type CampaignWithRole = {
   tag: string;
   description: string | null;
   role: CampaignRole;
+  /** When a DM archived the campaign, or `null` while it is active. */
+  archivedAt: Date | null;
 };
 
 /** Result of a campaign mutation. `error` holds an i18n key on failure. */
@@ -28,6 +32,7 @@ type MembershipWithCampaign = {
     name: string;
     tag: string;
     description: string | null;
+    archivedAt: Date | null;
   };
 };
 
@@ -45,6 +50,7 @@ function toCampaignWithRole(membership: MembershipWithCampaign): CampaignWithRol
     tag: membership.campaign.tag,
     description: membership.campaign.description,
     role: membership.role,
+    archivedAt: membership.campaign.archivedAt,
   };
 }
 
@@ -63,7 +69,13 @@ export async function listCampaignsForUser(
     select: {
       role: true,
       campaign: {
-        select: { id: true, name: true, tag: true, description: true },
+        select: {
+          id: true,
+          name: true,
+          tag: true,
+          description: true,
+          archivedAt: true,
+        },
       },
     },
     orderBy: { campaign: { name: "asc" } },
@@ -90,7 +102,13 @@ export async function getCampaignForUser(
     select: {
       role: true,
       campaign: {
-        select: { id: true, name: true, tag: true, description: true },
+        select: {
+          id: true,
+          name: true,
+          tag: true,
+          description: true,
+          archivedAt: true,
+        },
       },
     },
   });
@@ -199,6 +217,63 @@ export async function deleteCampaign(
     }
 
     console.error("[CAMPAIGNS/DELETE] Failed to delete campaign:", error);
+    return { ok: false, error: "campaigns.errors.unknown" };
+  }
+}
+
+/**
+ * Archives or unarchives a campaign. Archiving is refused while the campaign
+ * still has active sessions dated today or later (a DM cancels them first);
+ * both directions are refused when the campaign is already in the target state,
+ * so a double tap surfaces a clear message instead of silently succeeding.
+ * Trusts the caller already checked the DM role.
+ *
+ * @param {string} campaignId - Id of the campaign.
+ * @param {boolean} archive - `true` to archive, `false` to unarchive.
+ * @returns {Promise<CampaignMutationResult>} Success, or an error key
+ *   (`notFound` / `alreadyArchived` / `notArchived` / `hasUpcomingSessions` / `unknown`).
+ */
+export async function setCampaignArchived(
+  campaignId: string,
+  archive: boolean,
+): Promise<CampaignMutationResult> {
+  try {
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { archivedAt: true },
+    });
+    if (!campaign) {
+      return { ok: false, error: "campaigns.errors.notFound" };
+    }
+    if (archive && campaign.archivedAt !== null) {
+      return { ok: false, error: "campaigns.errors.alreadyArchived" };
+    }
+    if (!archive && campaign.archivedAt === null) {
+      return { ok: false, error: "campaigns.errors.notArchived" };
+    }
+
+    if (archive) {
+      const upcoming = await prisma.confirmedSession.count({
+        where: {
+          campaignId,
+          cancelledAt: null,
+          date: { gte: toUtcDate(todayIso()) },
+        },
+      });
+      if (upcoming > 0) {
+        return { ok: false, error: "campaigns.errors.hasUpcomingSessions" };
+      }
+    }
+
+    await prisma.campaign.update({
+      where: { id: campaignId },
+      data: { archivedAt: archive ? new Date() : null },
+      select: { id: true },
+    });
+
+    return { ok: true, campaignId };
+  } catch (error) {
+    console.error("[CAMPAIGNS/ARCHIVE] Failed to change archive state:", error);
     return { ok: false, error: "campaigns.errors.unknown" };
   }
 }

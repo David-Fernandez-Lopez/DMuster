@@ -6,6 +6,8 @@ import { useTranslation } from "react-i18next";
 
 interface CancelSessionButtonProps {
   sessionId: string;
+  /** Campaign members offered as the optional "whose plans changed" cause. */
+  members: { userId: string; name: string }[];
 }
 
 /**
@@ -17,17 +19,22 @@ interface CancelSessionButtonProps {
  * (e.g. the DM role was lost mid-session → 403, or it was already cancelled →
  * 404) surfaces a translated error and keeps the row visible.
  *
- * @param {CancelSessionButtonProps} props - The session to cancel.
+ * Confirming also offers an optional "whose plans changed?" select, sent as
+ * `causeUserId` and kept for the statistics view.
+ *
+ * @param {CancelSessionButtonProps} props - The session to cancel and its members.
  * @returns {JSX.Element} The cancel control.
  */
 export default function CancelSessionButton({
   sessionId,
+  members,
 }: CancelSessionButtonProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
+  const [causeUserId, setCauseUserId] = useState("");
 
   /**
    * Sends the cancel request and, on success, refreshes so the session's
@@ -41,6 +48,8 @@ export default function CancelSessionButton({
     try {
       const response = await fetch(`/api/sessions/${sessionId}`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ causeUserId: causeUserId || null }),
       });
 
       if (!response.ok) {
@@ -72,6 +81,22 @@ export default function CancelSessionButton({
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm text-ink">{t("sessions.cancelConfirmPrompt")}</p>
+      <label className="flex flex-col gap-1 text-xs text-ink-muted">
+        {t("sessions.cancelCause")}
+        <select
+          value={causeUserId}
+          onChange={(event) => setCauseUserId(event.target.value)}
+          disabled={isPending}
+          className="min-h-[44px] rounded-[var(--radius-control)] border border-border bg-bg-elevated px-3 text-sm text-ink"
+        >
+          <option value="">{t("sessions.cancelCauseNone")}</option>
+          {members.map((member) => (
+            <option key={member.userId} value={member.userId}>
+              {member.name}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="flex items-center gap-2">
         <button
           type="button"

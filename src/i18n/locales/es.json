@@ -111,7 +111,9 @@
       "dm": "Como máster",
       "player": "Como jugador",
       "dmEmpty": "No diriges ninguna campaña todavía.",
-      "playerEmpty": "No juegas en ninguna campaña todavía."
+      "playerEmpty": "No juegas en ninguna campaña todavía.",
+      "archived": "Archivadas",
+      "archivedEmpty": "No tienes campañas archivadas."
     },
     "role": {
       "DM": "Máster",
@@ -132,7 +134,11 @@
       "confirmYes": "Sí, eliminar",
       "leave": "Salir de la campaña",
       "confirmLeave": "¿Salir de esta campaña? Solo un máster podrá volver a añadirte.",
-      "confirmLeaveYes": "Sí, salir"
+      "confirmLeaveYes": "Sí, salir",
+      "archive": "Archivar",
+      "confirmArchive": "¿Archivar esta campaña? Dejará de aparecer en el calendario y no admitirá nuevas partidas, pero su historial se conserva.",
+      "confirmArchiveYes": "Sí, archivar",
+      "unarchive": "Desarchivar"
     },
     "players": {
       "title": "Jugadores",
@@ -183,8 +189,12 @@
       "unauthorized": "Debes iniciar sesión.",
       "forbidden": "Solo un máster de esta campaña puede hacer esto.",
       "notFound": "Campaña no encontrada.",
-      "unknown": "Algo ha ido mal. Inténtalo de nuevo."
-    }
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo.",
+      "hasUpcomingSessions": "Cancela primero las partidas próximas de esta campaña.",
+      "alreadyArchived": "La campaña ya está archivada.",
+      "notArchived": "La campaña no está archivada."
+    },
+    "archivedBadge": "Archivada"
   },
   "holidays": {
     "title": "Festivos",
@@ -261,8 +271,12 @@
       "requiresYes": "Solo puedes sumarte si has respondido Sí o Sí (Online) ese día.",
       "attendeeConflict": "Ya hay partida ese día con {{campaign}}.",
       "lastAttendee": "La partida no puede quedarse sin jugadores.",
-      "past": "Esa partida ya ha pasado."
-    }
+      "past": "Esa partida ya ha pasado.",
+      "invalidCancelCause": "Esa persona no pertenece a la campaña.",
+      "campaignArchived": "Esta campaña está archivada: desarchívala para confirmar partidas."
+    },
+    "cancelCause": "¿A quién le surgió algo? (opcional)",
+    "cancelCauseNone": "Nadie en concreto / otro motivo"
   },
   "profile": {
     "title": "Perfil",
