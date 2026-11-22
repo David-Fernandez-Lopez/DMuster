@@ -64,13 +64,14 @@ export function TiePill({ label }: { label: string }) {
 }
 
 /**
- * Horizontal bar: soft track, brand fill.
+ * Horizontal bar: soft track, brand fill (or the given colours).
  *
  * @param {object} props - Component props.
  * @param {number} props.percent - Fill width, 0..100.
  * @param {number} [props.height] - Track height in px.
  * @param {string} [props.fill] - CSS colour of the fill (default brand).
  * @param {string} [props.track] - Track colour class.
+ * @param {string} [props.trackColor] - CSS colour of the track; replaces `track` when given.
  * @returns {JSX.Element}
  */
 export function HBar({
@@ -78,17 +79,19 @@ export function HBar({
   height = 10,
   fill = "var(--color-brand)",
   track = "bg-brand-soft",
+  trackColor,
 }: {
   percent: number;
   height?: number;
   fill?: string;
   track?: string;
+  trackColor?: string;
 }) {
   return (
     <div
       aria-hidden="true"
-      style={{ height }}
-      className={`overflow-hidden rounded-full ${track}`}
+      style={{ height, ...(trackColor ? { background: trackColor } : {}) }}
+      className={`overflow-hidden rounded-full ${trackColor ? "" : track}`}
     >
       <div
         style={{ width: `${Math.max(0, Math.min(100, percent))}%`, background: fill }}

@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 
+import { campaignColor, campaignTint } from "@/lib/campaignColor";
 import type { CampaignStats } from "@/lib/statistics/metrics";
 import { pct } from "@/lib/statistics/metrics";
 import type { StatisticsDirectory } from "@/lib/statistics/statisticsService";
@@ -77,6 +78,9 @@ export default function CampaignView({
   showAllHref,
 }: CampaignViewProps) {
   const campaign = directory.campaigns[stats.campaignId];
+  // The whole sheet takes the campaign's own colour (bars, chip, month chart).
+  const color = campaignColor(campaign?.colorSlot ?? 0);
+  const tint = campaignTint(campaign?.colorSlot ?? 0);
   const userName = (id: string) => directory.users[id] ?? id;
   const percent = (value: number) => t("statistics.percent", { value });
   const dmNames = joinNames(
@@ -207,7 +211,11 @@ export default function CampaignView({
                       <span className="font-semibold">
                         {t(`statistics.rhythm.dayTypes.${day.type}`)}
                       </span>
-                      <HBar percent={Math.max(2, pct(day.n, dayMax))} />
+                      <HBar
+                        percent={Math.max(2, pct(day.n, dayMax))}
+                        fill={color}
+                        trackColor={tint}
+                      />
                       <span className="text-right font-bold">{percent(day.pct)}</span>
                     </div>
                   ))}
@@ -258,12 +266,12 @@ export default function CampaignView({
                   <CardLabel>{t("statistics.campaign.playedCanceled")}</CardLabel>
                 </div>
                 <div aria-hidden="true" className="flex h-3 gap-0.5 overflow-hidden rounded-full">
-                  <div style={{ width: `${stats.playedPct}%` }} className="bg-brand" />
+                  <div style={{ width: `${stats.playedPct}%`, background: color }} />
                   <div
                     className="flex-1"
                     style={{
                       background:
-                        "repeating-linear-gradient(135deg, var(--color-ink-muted) 0 1px, var(--color-brand-soft) 1px 5px)",
+                        `repeating-linear-gradient(135deg, ${color} 0 1px, ${tint} 1px 5px)`,
                     }}
                   />
                 </div>

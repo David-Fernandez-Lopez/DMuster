@@ -25,8 +25,11 @@ interface MonthlyStackedChartProps {
 
 /**
  * Stacked bars of sessions per month, one tone per campaign. Tapping a legend
- * chip highlights that campaign (the rest fade to 18% opacity); tapping it
- * again clears the highlight. The highlight is local state, never persisted.
+ * chip, or a bar segment, highlights that campaign (the rest fade to 18%
+ * opacity); tapping it again clears the highlight. Each segment is a button
+ * that names its campaign and count in a tooltip and to screen readers, so the
+ * colour is never the only way to tell campaigns apart. The highlight is local
+ * state, never persisted.
  *
  * @param {MonthlyStackedChartProps} props - Months, scale, legend and campaign data.
  * @returns {JSX.Element}
@@ -57,7 +60,7 @@ export default function MonthlyStackedChart({
         {months.map((month) => (
           <div
             key={month.key}
-            role="img"
+            role="group"
             aria-label={t("statistics.rhythm.chartLabel", {
               month: monthLabel(month.key, locale),
               count: month.total,
@@ -70,15 +73,27 @@ export default function MonthlyStackedChart({
             <div className="flex flex-col-reverse gap-px">
               {month.segments.map((segment) => {
                 const campaign = campaigns[segment.campaignId];
+                const label = t("statistics.rhythm.segmentTitle", {
+                  tag: campaign?.tag,
+                  name: campaign?.name,
+                  count: segment.n,
+                });
                 return (
-                  <div
+                  <button
                     key={segment.campaignId}
+                    type="button"
+                    title={label}
+                    aria-label={label}
+                    aria-pressed={highlight === segment.campaignId}
+                    onClick={() =>
+                      setHighlight(highlight === segment.campaignId ? null : segment.campaignId)
+                    }
                     style={{
                       height: (segment.n / monthMax) * BARS_HEIGHT,
                       background: campaignColor(campaign?.colorSlot ?? 0),
                       opacity: highlight && highlight !== segment.campaignId ? 0.18 : 1,
                     }}
-                    className="rounded-[2px] transition-opacity"
+                    className="block w-full cursor-pointer rounded-[2px] p-0 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand"
                   />
                 );
               })}

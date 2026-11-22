@@ -525,6 +525,8 @@
       "highlightHint": "Toca una campaña para destacarla",
       "highlighting": "Destacando {{name}}",
       "chartLabel": "{{month}}: {{count}}",
+      "segmentTitle_one": "{{tag}} · {{name}}: {{count}} partida",
+      "segmentTitle_other": "{{tag}} · {{name}}: {{count}} partidas",
       "dayTitle": "Día de juego",
       "dayFavourite": "<b>{{day}}</b> es el día favorito: {{pct}} % de las partidas.",
       "dayTypes": {

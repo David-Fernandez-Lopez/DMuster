@@ -178,7 +178,8 @@ and `/forgot-password` / `/reset-password/*` return 404).
   loads data. A *played* session is an active one dated up to today; hours count only sessions with
   start time and duration; a day without an answer counts as `T`. Charts that compare campaigns (sessions per
   month, days between sessions, my sessions by campaign) and campaign chips use each campaign's own colour
-  (`Campaign.colorSlot`), never an index computed from the creation order. Answer lead time uses
+  (`Campaign.colorSlot`), never an index computed from the creation order. A single campaign's sheet (`Mis campañas`) uses that
+  campaign's colour in all its bars; the answer splits (S/O/T/N donuts) keep the state colours. Answer lead time uses
   `Availability.updatedAt`, so it is shown as approximate (≈). Spec: `design/design_handoff_estadisticas/`
 - **Design reference**: the authoritative visual spec lives in `design/README.md` and `design/screenshots/` (local, gitignored — a Claude design handoff). Follow it for layout, tokens, and flows
 

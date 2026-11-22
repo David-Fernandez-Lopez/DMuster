@@ -525,6 +525,8 @@
       "highlightHint": "Tap a campaign to highlight it",
       "highlighting": "Highlighting {{name}}",
       "chartLabel": "{{month}}: {{count}}",
+      "segmentTitle_one": "{{tag}} · {{name}}: {{count}} session",
+      "segmentTitle_other": "{{tag}} · {{name}}: {{count}} sessions",
       "dayTitle": "Day of play",
       "dayFavourite": "<b>{{day}}</b> is the favourite day: {{pct}}% of sessions.",
       "dayTypes": {
