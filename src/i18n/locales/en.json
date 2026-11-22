@@ -277,6 +277,12 @@
       "es": "ES",
       "en": "EN"
     },
+    "colorVision": {
+      "label": "Colour-blind mode",
+      "description": "Status colours and contrasts designed for colour blindness.",
+      "on": "On",
+      "off": "Off"
+    },
     "theme": {
       "label": "Theme",
       "light": "Light",
@@ -329,6 +335,7 @@
       "wrongPassword": "Your current password is not correct.",
       "samePassword": "The new password must differ from the current one.",
       "invalidTheme": "Invalid theme.",
+      "invalidColorVision": "Invalid value.",
       "updateFailed": "Could not save the change. Please try again."
     }
   },

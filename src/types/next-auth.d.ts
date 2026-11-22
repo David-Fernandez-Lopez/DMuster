@@ -11,6 +11,7 @@ declare module "next-auth" {
       id: string;
       locale: Locale;
       theme: Theme | null;
+      colorBlindMode: boolean;
     } & DefaultSession["user"];
   }
 
@@ -18,6 +19,7 @@ declare module "next-auth" {
   interface User {
     locale?: Locale;
     theme?: Theme | null;
+    colorBlindMode?: boolean;
   }
 }
 
@@ -26,6 +28,7 @@ declare module "@auth/core/adapters" {
   interface AdapterUser {
     locale: Locale;
     theme: Theme | null;
+    colorBlindMode: boolean;
   }
 }
 

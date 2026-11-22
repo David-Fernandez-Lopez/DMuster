@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import StatusIcon, { type StatusKind } from "@/components/status/StatusIcon";
 import type { ResponseStatus as StoredResponseStatus } from "@/lib/viability";
 
 /** The user's response for a day, or `null` when unanswered (pending "T"). */
@@ -17,11 +18,13 @@ const OPTIONS: ReadonlyArray<{
   labelKey: string;
   /** Vellum status-chip variant; the active fill is driven by `aria-pressed`. */
   chipClass: string;
+  /** The status icon shown beside the label, so the answer never relies on colour. */
+  icon: StatusKind;
 }> = [
-  { value: "YES", labelKey: "availability.yes", chipClass: "btn-yes" },
-  { value: "ONLINE", labelKey: "availability.online", chipClass: "btn-online" },
-  { value: "MAYBE", labelKey: "availability.maybe", chipClass: "btn-maybe" },
-  { value: "NO", labelKey: "availability.no", chipClass: "btn-no" },
+  { value: "YES", labelKey: "availability.yes", chipClass: "btn-yes", icon: "S" },
+  { value: "ONLINE", labelKey: "availability.online", chipClass: "btn-online", icon: "O" },
+  { value: "MAYBE", labelKey: "availability.maybe", chipClass: "btn-maybe", icon: "T" },
+  { value: "NO", labelKey: "availability.no", chipClass: "btn-no", icon: "N" },
 ];
 
 interface AvailabilityToggleProps {
@@ -112,8 +115,9 @@ export default function AvailabilityToggle({
             onClick={() => handleSelect(option.value)}
             disabled={isPending}
             aria-pressed={status === option.value}
-            className={`btn ${option.chipClass} min-h-[44px] text-sm font-semibold disabled:opacity-60`}
+            className={`btn ${option.chipClass} min-h-[44px] gap-1.5 text-sm font-semibold disabled:opacity-60`}
           >
+            <StatusIcon kind={option.icon} className="h-4 w-4" />
             {t(option.labelKey)}
           </button>
         ))}

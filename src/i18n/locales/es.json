@@ -277,6 +277,12 @@
       "es": "ES",
       "en": "EN"
     },
+    "colorVision": {
+      "label": "Modo daltónico",
+      "description": "Colores de estado y contrastes pensados para daltonismo.",
+      "on": "Activado",
+      "off": "Desactivado"
+    },
     "theme": {
       "label": "Tema",
       "light": "Claro",
@@ -327,6 +333,7 @@
     "errors": {
       "invalidLocale": "Idioma no válido.",
       "invalidTheme": "Tema no válido.",
+      "invalidColorVision": "Valor no válido.",
       "wrongPassword": "La contraseña actual no es correcta.",
       "samePassword": "La contraseña nueva debe ser distinta de la actual.",
       "updateFailed": "No se ha podido guardar el cambio. Inténtalo de nuevo."

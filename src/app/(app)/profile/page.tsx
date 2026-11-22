@@ -6,6 +6,7 @@ import ChangePasswordForm from "@/components/profile/ChangePasswordForm";
 import CloseAllSessionsButton from "@/components/profile/CloseAllSessionsButton";
 import InvitationsSection from "@/components/profile/InvitationsSection";
 import LocaleSelector from "@/components/profile/LocaleSelector";
+import ColorVisionToggle from "@/components/profile/ColorVisionToggle";
 import ThemeSelector from "@/components/profile/ThemeSelector";
 import { CampaignRole } from "@/generated/prisma/enums";
 import { getServerTranslation } from "@/i18n/server";
@@ -74,6 +75,7 @@ export default async function ProfilePage() {
       <section className="mt-8 divide-y divide-border rounded-[var(--radius-card)] border border-border bg-bg-elevated px-6 py-2">
         <LocaleSelector />
         <ThemeSelector initialTheme={initialTheme} />
+        <ColorVisionToggle initialEnabled={session.user.colorBlindMode} />
         <CalendarFeedSection initialUrl={calendarFeedUrl} />
       </section>
 

@@ -91,6 +91,7 @@ const {
           email: user.email,
           locale: user.locale,
           theme: user.theme,
+          colorBlindMode: user.colorBlindMode,
         };
       },
     }),
@@ -123,6 +124,7 @@ const {
           image: user.image,
           locale: user.locale,
           theme: user.theme,
+          colorBlindMode: user.colorBlindMode,
         },
       };
     },

@@ -49,6 +49,40 @@
      saturated than O's blue so the two never read as the same state. */
   --color-b: light-dark(#6a5d96, #a497d6);
   --color-b-soft: light-dark(#e0daec, #2a2640);
+
+  /* Text drawn on a solid state/brand fill (.btn-filled, pressed chips). */
+  --color-on-fill: #fff;
+}
+
+/*
+ * Colour-blind-safe variant (profile "Modo daltónico", stamped by the root
+ * layout as data-color-vision="safe"). A full palette, orthogonal to the
+ * light/dark theme: it redefines the S/O/T/N/B state tokens and the UI tokens
+ * whose contrast is thin by default (muted ink, borders, brand tint). Values
+ * come from an optimiser over the Machado simulations (protanopia,
+ * deuteranopia, tritanopia): the five states stay apart (ΔE OKLab) under every
+ * vision and every text/fill pair keeps WCAG contrast. `colorVisionPalette.test.ts`
+ * parses this block and re-checks all of it, so edit values only with that test.
+ * The states also carry an icon (components/status/StatusIcon.tsx) in every mode.
+ */
+:root[data-color-vision="safe"] {
+  --color-ink-muted: light-dark(#65573f, #a9b9a8);
+  --color-border: light-dark(#8a7b64, #6c8274);
+  --color-brand-soft: light-dark(#e0d0b8, #34493a);
+  --color-brand: light-dark(#7a4a2e, #a9c487);
+
+  --color-s: light-dark(#0c776e, #14bdac);
+  --color-s-soft: light-dark(#d9f5f1, #0a2d28);
+  --color-o: light-dark(#1d486d, #b1e7ff);
+  --color-o-soft: light-dark(#e2f0ff, #0e2a36);
+  --color-t: light-dark(#666601, #ffcf1b);
+  --color-t-soft: light-dark(#eff1da, #2e260e);
+  --color-n: light-dark(#702803, #ef7c03);
+  --color-n-soft: light-dark(#ffe9e1, #362113);
+  --color-b: light-dark(#a13cb8, #ad72fd);
+  --color-b-soft: light-dark(#f8e8fb, #2a2237);
+
+  --color-on-fill: light-dark(#fff, #0d1612);
 }
 
 :root[data-theme="light"] {
@@ -57,6 +91,19 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+}
+
+/*
+ * Safe mode, structural cues. Where the default look separates two states only
+ * by a tint, the safe mode adds a shape: a thicker ring for today and an outline
+ * for a day with a confirmed session (DayCell stamps .day-today / .day-confirmed).
+ */
+:root[data-color-vision="safe"] .day-today {
+  border-width: 3px;
+}
+:root[data-color-vision="safe"] .day-confirmed {
+  outline: 2px solid var(--color-brand);
+  outline-offset: -2px;
 }
 
 /* Expose the tokens as Tailwind v4 theme utilities (bg-bg, text-ink, ...). */
@@ -191,7 +238,7 @@ body {
   .btn-filled {
     background-color: var(--btn-fillet);
     background-image: none;
-    color: #fff;
+    color: var(--color-on-fill);
   }
 
   .btn-yes[aria-pressed="true"]:hover:not(:disabled),

@@ -135,6 +135,36 @@ export async function updateUserTheme(
   }
 }
 
+/** Result of a colour-blind-mode update. `error` holds an i18n key on failure. */
+export type UpdateColorBlindModeResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Persists whether the user wants the colour-blind-safe palette. Failures are
+ * logged server-side and returned as a friendly i18n error key rather than thrown.
+ *
+ * @param {string} userId - Id of the user whose preference is being updated.
+ * @param {boolean} enabled - Whether the safe palette is on.
+ * @returns {Promise<UpdateColorBlindModeResult>} Success, or an error key
+ *   (`profile.errors.updateFailed`).
+ */
+export async function updateUserColorBlindMode(
+  userId: string,
+  enabled: boolean,
+): Promise<UpdateColorBlindModeResult> {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { colorBlindMode: enabled },
+      select: { id: true },
+    });
+
+    return { ok: true };
+  } catch (error) {
+    console.error("[PROFILE/UPDATE_COLOR_VISION] Failed to update colour-blind mode:", error);
+    return { ok: false, error: "profile.errors.updateFailed" };
+  }
+}
+
 /**
  * Reads how many months the user's "Mi disponibilidad" list covers. A missing
  * user or a stored value outside the supported options falls back to the
