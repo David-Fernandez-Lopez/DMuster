@@ -279,9 +279,12 @@
     },
     "colorVision": {
       "label": "Modo daltónico",
-      "description": "Colores de estado y contrastes pensados para daltonismo.",
-      "on": "Activado",
-      "off": "Desactivado"
+      "description": "Paleta de colores adaptada a tu tipo de daltonismo.",
+      "off": "Desactivado",
+      "protan": "Protanopía (rojo)",
+      "deutan": "Deuteranopía (verde)",
+      "tritan": "Tritanopía (azul)",
+      "all": "No lo sé / todos"
     },
     "theme": {
       "label": "Tema",

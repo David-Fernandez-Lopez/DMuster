@@ -20,6 +20,13 @@ enum Locale {
   en
 }
 
+enum ColorVision {
+  protan
+  deutan
+  tritan
+  all
+}
+
 enum Theme {
   light
   dark
@@ -43,10 +50,11 @@ model User {
   // Manual light/dark override. null = follow the OS preference
   // (prefers-color-scheme). Mirrors `locale` for cross-device persistence.
   theme              Theme?
-  // Colour-blind-safe palette ("Modo daltónico" in /profile). A trait of the
-  // person, not of the device, so unlike `theme` it has no cookie: the database
-  // decides, and the root layout stamps `data-color-vision="safe"` from it.
-  colorBlindMode     Boolean   @default(false)
+  // Colour-blind palette ("Modo daltónico" in /profile): which vision type the
+  // palette is tuned for, or null for the regular colours. A trait of the person,
+  // not of the device, so unlike `theme` it has no cookie: the database decides,
+  // and the root layout stamps it as `data-color-vision`.
+  colorVision        ColorVision?
   // How many months "Mi disponibilidad" lists, the current one included. Only
   // widens the default window (at least 16 eligible days through month end),
   // never narrows it.

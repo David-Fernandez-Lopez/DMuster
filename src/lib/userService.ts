@@ -10,6 +10,7 @@ import {
 } from "@/lib/availabilityHorizon";
 import { hashPassword } from "@/lib/passwordHash";
 import { prisma } from "@/lib/prisma";
+import type { ColorVision } from "@/lib/colorVision";
 import type { Theme } from "@/lib/theme";
 
 /** Prisma error code raised on a unique-constraint violation. */
@@ -135,32 +136,33 @@ export async function updateUserTheme(
   }
 }
 
-/** Result of a colour-blind-mode update. `error` holds an i18n key on failure. */
-export type UpdateColorBlindModeResult = { ok: true } | { ok: false; error: string };
+/** Result of a colour-vision update. `error` holds an i18n key on failure. */
+export type UpdateColorVisionResult = { ok: true } | { ok: false; error: string };
 
 /**
- * Persists whether the user wants the colour-blind-safe palette. Failures are
- * logged server-side and returned as a friendly i18n error key rather than thrown.
+ * Persists which colour-vision palette the user wants (`null` = regular colours).
+ * Failures are logged server-side and returned as a friendly i18n error key
+ * rather than thrown.
  *
  * @param {string} userId - Id of the user whose preference is being updated.
- * @param {boolean} enabled - Whether the safe palette is on.
- * @returns {Promise<UpdateColorBlindModeResult>} Success, or an error key
+ * @param {ColorVision | null} colorVision - The vision type, or null for none.
+ * @returns {Promise<UpdateColorVisionResult>} Success, or an error key
  *   (`profile.errors.updateFailed`).
  */
-export async function updateUserColorBlindMode(
+export async function updateUserColorVision(
   userId: string,
-  enabled: boolean,
-): Promise<UpdateColorBlindModeResult> {
+  colorVision: ColorVision | null,
+): Promise<UpdateColorVisionResult> {
   try {
     await prisma.user.update({
       where: { id: userId },
-      data: { colorBlindMode: enabled },
+      data: { colorVision },
       select: { id: true },
     });
 
     return { ok: true };
   } catch (error) {
-    console.error("[PROFILE/UPDATE_COLOR_VISION] Failed to update colour-blind mode:", error);
+    console.error("[PROFILE/UPDATE_COLOR_VISION] Failed to update colour vision:", error);
     return { ok: false, error: "profile.errors.updateFailed" };
   }
 }

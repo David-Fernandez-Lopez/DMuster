@@ -8,12 +8,13 @@ import { z } from "zod";
 import { isAppLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from "@/i18n/settings";
 import { auth } from "@/lib/auth";
 import { buildFeedUrl, ensureFeedToken, regenerateFeedToken } from "@/lib/calendarFeedService";
+import { isColorVision } from "@/lib/colorVision";
 import { clearSessionCookies } from "@/lib/sessionCookie";
 import { isTheme, THEME_COOKIE, THEME_COOKIE_MAX_AGE } from "@/lib/theme";
 import {
   changePassword as changePasswordRequest,
   endAllSessions,
-  updateUserColorBlindMode,
+  updateUserColorVision,
   updateUserLocale,
   updateUserTheme,
 } from "@/lib/userService";
@@ -97,24 +98,25 @@ export async function updateTheme(theme: unknown): Promise<ProfileActionState> {
 }
 
 /**
- * Persists the current user's colour-blind-mode preference to `User.colorBlindMode`.
- * Unlike the theme it has no cookie (the database decides), so the layout is
- * revalidated: the next navigation must not restore the cached `data-color-vision`.
+ * Persists the current user's colour-vision palette to `User.colorVision`
+ * (`null` switches it off). Unlike the theme it has no cookie (the database
+ * decides), so the layout is revalidated: the next navigation must not restore
+ * the cached `data-color-vision`.
  *
- * @param {unknown} enabled - Candidate value from the client; must be a boolean.
+ * @param {unknown} value - Candidate value from the client: `null` or a colour vision.
  * @returns {Promise<ProfileActionState>} An error key on failure, or empty on success.
  */
-export async function updateColorBlindMode(enabled: unknown): Promise<ProfileActionState> {
+export async function updateColorVision(value: unknown): Promise<ProfileActionState> {
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
   }
 
-  if (typeof enabled !== "boolean") {
+  if (value !== null && !isColorVision(value)) {
     return { error: "profile.errors.invalidColorVision" };
   }
 
-  const result = await updateUserColorBlindMode(session.user.id, enabled);
+  const result = await updateUserColorVision(session.user.id, value);
   if (!result.ok) {
     return { error: result.error };
   }

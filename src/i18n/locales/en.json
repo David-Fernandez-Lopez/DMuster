@@ -279,9 +279,12 @@
     },
     "colorVision": {
       "label": "Colour-blind mode",
-      "description": "Status colours and contrasts designed for colour blindness.",
-      "on": "On",
-      "off": "Off"
+      "description": "A colour palette adapted to your type of colour blindness.",
+      "off": "Off",
+      "protan": "Protanopia (red)",
+      "deutan": "Deuteranopia (green)",
+      "tritan": "Tritanopia (blue)",
+      "all": "I don't know / all"
     },
     "theme": {
       "label": "Theme",

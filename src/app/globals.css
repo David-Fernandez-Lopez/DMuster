@@ -55,22 +55,30 @@
 }
 
 /*
- * Colour-blind-safe variant (profile "Modo daltónico", stamped by the root
- * layout as data-color-vision="safe"). A full palette, orthogonal to the
- * light/dark theme: it redefines the S/O/T/N/B state tokens and the UI tokens
- * whose contrast is thin by default (muted ink, borders, brand tint). Values
- * come from an optimiser over the Machado simulations (protanopia,
- * deuteranopia, tritanopia): the five states stay apart (ΔE OKLab) under every
- * vision and every text/fill pair keeps WCAG contrast. `colorVisionPalette.test.ts`
- * parses this block and re-checks all of it, so edit values only with that test.
- * The states also carry an icon (components/status/StatusIcon.tsx) in every mode.
+ * Colour-blind variants (profile "Modo daltónico", stamped by the root layout as
+ * data-color-vision="protan|deutan|tritan|all"). A full palette, orthogonal to the
+ * light/dark theme, in two layers:
+ *  - the block selected by `[data-color-vision]` (any value) redefines the UI tokens
+ *    whose contrast is thin by default (muted ink, borders, brand tint, text on fills);
+ *  - one block per value redefines the S/O/T/N/B state tokens. `protan`, `deutan`
+ *    and `tritan` are tuned for that one vision (so each can use the part of the
+ *    colour space that person does tell apart); `all` is the compromise for
+ *    "I don't know" and keeps the five states apart under all three.
+ * Values come from an optimiser over the Machado simulations; every text/fill pair
+ * keeps WCAG contrast. `colorVisionPalette.test.ts` parses these blocks and
+ * re-checks all of it, so edit values only with that test. The states also carry
+ * an icon (components/status/StatusIcon.tsx) in every mode.
  */
-:root[data-color-vision="safe"] {
+:root[data-color-vision] {
   --color-ink-muted: light-dark(#65573f, #a9b9a8);
   --color-border: light-dark(#8a7b64, #6c8274);
   --color-brand-soft: light-dark(#e0d0b8, #34493a);
   --color-brand: light-dark(#7a4a2e, #a9c487);
 
+  --color-on-fill: light-dark(#fff, #0d1612);
+}
+
+:root[data-color-vision="all"] {
   --color-s: light-dark(#0c776e, #14bdac);
   --color-s-soft: light-dark(#d9f5f1, #0a2d28);
   --color-o: light-dark(#1d486d, #b1e7ff);
@@ -81,8 +89,45 @@
   --color-n-soft: light-dark(#ffe9e1, #362113);
   --color-b: light-dark(#a13cb8, #ad72fd);
   --color-b-soft: light-dark(#f8e8fb, #2a2237);
+}
 
-  --color-on-fill: light-dark(#fff, #0d1612);
+:root[data-color-vision="protan"] {
+  --color-s: light-dark(#005b6b, #59ffc2);
+  --color-s-soft: light-dark(#d9f4fb, #112d21);
+  --color-o: light-dark(#1560cc, #87c2fd);
+  --color-o-soft: light-dark(#e5efff, #162839);
+  --color-t: light-dark(#6d6e00, #debb13);
+  --color-t-soft: light-dark(#eff1da, #2d260e);
+  --color-n: light-dark(#890304, #eb693c);
+  --color-n-soft: light-dark(#ffe9e5, #371f18);
+  --color-b: light-dark(#71006a, #c46aeb);
+  --color-b-soft: light-dark(#fbe8f8, #2e2034);
+}
+
+:root[data-color-vision="deutan"] {
+  --color-s: light-dark(#1b747c, #50ffd2);
+  --color-s-soft: light-dark(#d8f5f8, #0e2d24);
+  --color-o: light-dark(#435ddf, #468fff);
+  --color-o-soft: light-dark(#e8eeff, #1a273a);
+  --color-t: light-dark(#504104, #f7c504);
+  --color-t-soft: light-dark(#f5eed8, #2e260e);
+  --color-n: light-dark(#cb2a0d, #fe5b57);
+  --color-n-soft: light-dark(#ffe9e4, #381e1c);
+  --color-b: light-dark(#572081, #c1aaff);
+  --color-b-soft: light-dark(#f3eaff, #282238);
+}
+
+:root[data-color-vision="tritan"] {
+  --color-s: light-dark(#054f33, #14b139);
+  --color-s-soft: light-dark(#def5e8, #192c1a);
+  --color-o: light-dark(#006eb3, #94dcff);
+  --color-o-soft: light-dark(#e2f1ff, #0f2a36);
+  --color-t: light-dark(#846502, #f6ca76);
+  --color-t-soft: light-dark(#f7eed8, #30240e);
+  --color-n: light-dark(#cb271e, #fb584c);
+  --color-n-soft: light-dark(#ffe9e5, #381f1b);
+  --color-b: light-dark(#6f006d, #bb6fee);
+  --color-b-soft: light-dark(#fbe8f8, #2c2135);
 }
 
 :root[data-theme="light"] {
@@ -94,14 +139,14 @@
 }
 
 /*
- * Safe mode, structural cues. Where the default look separates two states only
- * by a tint, the safe mode adds a shape: a thicker ring for today and an outline
+ * Colour-blind modes, structural cues. Where the default look separates two states only
+ * by a tint, any colour-blind mode adds a shape: a thicker ring for today and an outline
  * for a day with a confirmed session (DayCell stamps .day-today / .day-confirmed).
  */
-:root[data-color-vision="safe"] .day-today {
+:root[data-color-vision] .day-today {
   border-width: 3px;
 }
-:root[data-color-vision="safe"] .day-confirmed {
+:root[data-color-vision] .day-confirmed {
   outline: 2px solid var(--color-brand);
   outline-offset: -2px;
 }
