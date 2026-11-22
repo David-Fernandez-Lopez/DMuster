@@ -90,6 +90,10 @@ model User {
   acceptedInvitations   Invitation[]                @relation("InvitationAcceptedBy")
   passwordResetTokens   PasswordResetToken[]
 
+  // Critical/fumble log: the rolls a user made, and the ones they entered.
+  diceEvents        DiceEvent[] @relation("DiceEventPlayer")
+  createdDiceEvents DiceEvent[] @relation("DiceEventCreatedBy")
+
   @@map("users")
 }
 
@@ -125,6 +129,8 @@ model Campaign {
 
   confirmedSessions ConfirmedSession[]
   invitations       Invitation[]
+  arcs              CampaignArc[]
+  diceEvents        DiceEvent[]
 
   @@map("campaigns")
 }
@@ -219,6 +225,7 @@ model ConfirmedSession {
   confirmedBy    User                       @relation("SessionConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
   cancelledBy    User?                      @relation("SessionCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
   attendees      ConfirmedSessionAttendee[]
+  diceEvents     DiceEvent[]
 
   @@unique([campaignId, activeDate])
   @@index([campaignId, date])
@@ -247,6 +254,66 @@ model ConfirmedSessionAttendee {
 
   @@id([sessionId, userId])
   @@map("confirmed_session_attendees")
+}
+
+// A narrative arc of a campaign ("Arco 1"). Only used to group the critical/
+// fumble log; a campaign without arcs simply records events with no arc.
+model CampaignArc {
+  id         String   @id @default(cuid())
+  campaignId String
+  // Order within the campaign, 1-based. Unique per campaign.
+  number     Int
+  name       String?  @db.VarChar(80)
+  createdAt  DateTime @default(now())
+
+  campaign   Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  diceEvents DiceEvent[]
+
+  @@unique([campaignId, number])
+  @@map("campaign_arcs")
+}
+
+enum DiceEventKind {
+  CRITICAL
+  FUMBLE
+}
+
+// One critical success or fumble a player rolled in a campaign. Its own event
+// with a date: it only optionally links to a confirmed session, because the
+// imported history predates the app and cannot be matched to one reliably.
+model DiceEvent {
+  id         String        @id @default(cuid())
+  campaignId String
+  // The player who rolled it. Must be a member of the campaign when created.
+  userId     String
+  kind       DiceEventKind
+  // Normalised free text (trimmed, single spaces, upper case); suggestions per
+  // campaign come from the distinct values already used.
+  skill      String        @db.VarChar(60)
+  date       DateTime      @db.Date
+  // "HH:MM", local wall time of the roll. Past midnight it stays on the roll's
+  // own date, it is not moved to the session's day.
+  time       String?       @db.VarChar(5)
+  arcId      String?
+  sessionId  String?
+  // Who typed it in (audit; any member may record for any member).
+  createdById String
+  // Idempotency key for imports (e.g. "excel:<player>:<campaign>:<cell>"); null
+  // for events created in the app.
+  importKey  String?       @unique @db.VarChar(120)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  campaign  Campaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user      User              @relation("DiceEventPlayer", fields: [userId], references: [id], onDelete: Restrict)
+  createdBy User              @relation("DiceEventCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  arc       CampaignArc?      @relation(fields: [arcId], references: [id], onDelete: SetNull)
+  session   ConfirmedSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, date])
+  @@index([userId, campaignId])
+  @@index([arcId])
+  @@map("dice_events")
 }
 
 // A single-use, email-bound sign-up link (roadmap #24). Public registration is
