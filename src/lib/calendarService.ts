@@ -62,6 +62,8 @@ export type CampaignDayViability = {
   campaignId: string;
   name: string;
   tag: string;
+  /** Palette slot of the campaign's colour. */
+  colorSlot: number;
   viability: Viability;
   /**
    * The campaign's custom requirements when they govern this day (roadmap
@@ -80,7 +82,7 @@ export type CampaignDayViability = {
 };
 
 /** A campaign the user belongs to, for the calendar filter chips. */
-export type CalendarCampaign = { id: string; name: string; tag: string };
+export type CalendarCampaign = { id: string; name: string; tag: string; colorSlot: number };
 
 /** A DM of one of the user's campaigns, for the calendar's master filter. */
 export type CalendarMaster = { userId: string; name: string };
@@ -125,6 +127,7 @@ function toForeignSession(session: ActiveSessionRecord): ForeignSessionDto {
     campaignId: session.campaignId,
     campaignName: session.campaignName,
     campaignTag: session.campaignTag,
+    campaignColorSlot: session.campaignColorSlot,
     date: session.date,
     startTime: session.startTime,
     durationMinutes: session.durationMinutes,
@@ -173,6 +176,7 @@ export async function getCalendarViability(
       id: true,
       name: true,
       tag: true,
+      colorSlot: true,
       minPlayers: true,
       requirementsSetAt: true,
       players: {
@@ -299,6 +303,7 @@ export async function getCalendarViability(
           campaignId: sessionRecord.campaignId,
           campaignName: sessionRecord.campaignName,
           campaignTag: sessionRecord.campaignTag,
+          campaignColorSlot: sessionRecord.campaignColorSlot,
           date: sessionRecord.date,
           startTime: sessionRecord.startTime,
           durationMinutes: sessionRecord.durationMinutes,
@@ -313,6 +318,7 @@ export async function getCalendarViability(
         campaignId: campaign.id,
         name: campaign.name,
         tag: campaign.tag,
+        colorSlot: campaign.colorSlot,
         viability: computeCampaignViability(
           players.map((p) => ({
             availability: resolveMemberAvailability(p.status, p.busyIn !== null),
@@ -344,7 +350,12 @@ export async function getCalendarViability(
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return {
-    campaigns: campaigns.map((c) => ({ id: c.id, name: c.name, tag: c.tag })),
+    campaigns: campaigns.map((c) => ({
+      id: c.id,
+      name: c.name,
+      tag: c.tag,
+      colorSlot: c.colorSlot,
+    })),
     masters,
     byDate,
     foreignSessionsByDate,

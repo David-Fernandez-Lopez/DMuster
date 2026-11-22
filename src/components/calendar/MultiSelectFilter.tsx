@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { campaignColor, campaignTint } from "@/lib/campaignColor";
+
 /** One selectable option of a `MultiSelectFilter`. */
 export type MultiSelectOption = {
   /** Stable identity used for selection (e.g. campaignId / userId). */
@@ -11,6 +13,8 @@ export type MultiSelectOption = {
   chip: string;
   /** Full label shown in the dropdown list and matched by the search box. */
   label: string;
+  /** Palette slot to tint the chip with (campaign options only). */
+  colorSlot?: number;
 };
 
 interface MultiSelectFilterProps {
@@ -149,7 +153,19 @@ export default function MultiSelectFilter({
             selectedOptions.map((option) => (
               <span
                 key={option.id}
-                className="flex items-center gap-1 rounded-[var(--radius-control)] bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand"
+                style={
+                  option.colorSlot === undefined
+                    ? undefined
+                    : {
+                        background: campaignTint(option.colorSlot),
+                        borderColor: campaignColor(option.colorSlot),
+                      }
+                }
+                className={`flex items-center gap-1 rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-semibold ${
+                  option.colorSlot === undefined
+                    ? "bg-brand-soft text-brand"
+                    : "border-[1.5px] text-ink"
+                }`}
               >
                 {option.chip}
                 <button
@@ -245,6 +261,13 @@ export default function MultiSelectFilter({
                     >
                       {isSelected ? "✓" : ""}
                     </span>
+                    {option.colorSlot !== undefined ? (
+                      <span
+                        aria-hidden="true"
+                        style={{ background: campaignColor(option.colorSlot) }}
+                        className="h-3 w-3 shrink-0 rounded-full"
+                      />
+                    ) : null}
                     <span className="min-w-0 flex-1 truncate">
                       {option.label}
                     </span>

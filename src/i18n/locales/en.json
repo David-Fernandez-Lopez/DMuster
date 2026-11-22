@@ -122,7 +122,11 @@
       "tag": "Tag (2 letters)",
       "description": "Description (optional)",
       "submitCreate": "Create campaign",
-      "submitSave": "Save changes"
+      "submitSave": "Save changes",
+      "color": "Colour",
+      "colorHelp": "Identifies the campaign in charts and labels. It cannot repeat.",
+      "colorTaken": "Used by {{tag}}",
+      "colorOption": "Colour {{number}}"
     },
     "actions": {
       "players": "Players",
@@ -183,7 +187,9 @@
       "unauthorized": "You must log in.",
       "forbidden": "Only a DM of this campaign can do that.",
       "notFound": "Campaign not found.",
-      "unknown": "Something went wrong. Please try again."
+      "unknown": "Something went wrong. Please try again.",
+      "colorTaken": "Another campaign already uses that colour.",
+      "colorInvalid": "Pick a valid colour."
     }
   },
   "holidays": {

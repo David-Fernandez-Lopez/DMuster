@@ -80,6 +80,7 @@ export default function CalendarFilters({
           id: campaign.id,
           chip: campaign.tag,
           label: campaign.name,
+          colorSlot: campaign.colorSlot,
         }))}
         selectedIds={activeCampaignIds}
         onChange={onChangeCampaigns}

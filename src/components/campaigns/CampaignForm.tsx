@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import AuthField from "@/components/auth/AuthField";
 import SubmitButton from "@/components/auth/SubmitButton";
+import ColorSlotPicker from "@/components/campaigns/ColorSlotPicker";
 import { firstFieldErrors } from "@/lib/validation/auth";
 import {
   CAMPAIGN_DESCRIPTION_MAX_LENGTH,
@@ -27,7 +28,10 @@ interface CampaignFormProps {
     name: string;
     tag: string;
     description: string | null;
+    colorSlot: number;
   };
+  /** Colour slots held by other campaigns (edit only), with the holder's tag. */
+  usedColorSlots?: Record<number, string>;
 }
 
 const INITIAL_STATE: CampaignFormState = {};
@@ -41,7 +45,7 @@ const INITIAL_STATE: CampaignFormState = {};
  * @param {CampaignFormProps} props - Optional campaign to edit.
  * @returns {JSX.Element} The campaign form.
  */
-export default function CampaignForm({ campaign }: CampaignFormProps) {
+export default function CampaignForm({ campaign, usedColorSlots = {} }: CampaignFormProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const [state, setState] = useState<CampaignFormState>(INITIAL_STATE);
@@ -64,6 +68,8 @@ export default function CampaignForm({ campaign }: CampaignFormProps) {
       name: formData.get("name"),
       tag: formData.get("tag"),
       description: formData.get("description"),
+      // Only the edit form has the picker; a new campaign gets a free colour.
+      colorSlot: formData.has("colorSlot") ? Number(formData.get("colorSlot")) : undefined,
     });
 
     if (!parsed.success) {
@@ -127,6 +133,14 @@ export default function CampaignForm({ campaign }: CampaignFormProps) {
         inputClassName="uppercase"
         errorKey={state.fieldErrors?.tag}
       />
+
+      {isEdit ? (
+        <ColorSlotPicker
+          name="colorSlot"
+          defaultValue={campaign.colorSlot}
+          used={usedColorSlots}
+        />
+      ) : null}
 
       <div className="flex flex-col gap-1.5">
         <label

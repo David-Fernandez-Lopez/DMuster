@@ -1,5 +1,6 @@
 import { Prisma } from "@/generated/prisma/client";
 import { CampaignRole } from "@/generated/prisma/enums";
+import { nextFreeSlot } from "@/lib/campaignColor";
 import { prisma } from "@/lib/prisma";
 import type { CampaignInput } from "@/lib/validation/campaign";
 
@@ -12,6 +13,8 @@ export type CampaignWithRole = {
   name: string;
   tag: string;
   description: string | null;
+  /** Palette slot of the campaign's colour (see `campaignColor.ts`). */
+  colorSlot: number;
   role: CampaignRole;
 };
 
@@ -28,6 +31,7 @@ type MembershipWithCampaign = {
     name: string;
     tag: string;
     description: string | null;
+    colorSlot: number;
   };
 };
 
@@ -44,6 +48,7 @@ function toCampaignWithRole(membership: MembershipWithCampaign): CampaignWithRol
     name: membership.campaign.name,
     tag: membership.campaign.tag,
     description: membership.campaign.description,
+    colorSlot: membership.campaign.colorSlot,
     role: membership.role,
   };
 }
@@ -63,7 +68,13 @@ export async function listCampaignsForUser(
     select: {
       role: true,
       campaign: {
-        select: { id: true, name: true, tag: true, description: true },
+        select: {
+          id: true,
+          name: true,
+          tag: true,
+          description: true,
+          colorSlot: true,
+        },
       },
     },
     orderBy: { campaign: { name: "asc" } },
@@ -90,7 +101,13 @@ export async function getCampaignForUser(
     select: {
       role: true,
       campaign: {
-        select: { id: true, name: true, tag: true, description: true },
+        select: {
+          id: true,
+          name: true,
+          tag: true,
+          description: true,
+          colorSlot: true,
+        },
       },
     },
   });
@@ -99,9 +116,27 @@ export async function getCampaignForUser(
 }
 
 /**
+ * Lists the colour slots in use, each with the tag of the campaign that holds
+ * it, so the edit form can disable the taken swatches and say who has them.
+ *
+ * @param {string} [excludeCampaignId] - A campaign to leave out (the one being edited).
+ * @returns {Promise<Record<number, string>>} Tag of the holder, by slot.
+ */
+export async function listUsedColorSlots(
+  excludeCampaignId?: string,
+): Promise<Record<number, string>> {
+  const campaigns = await prisma.campaign.findMany({
+    where: excludeCampaignId ? { id: { not: excludeCampaignId } } : undefined,
+    select: { colorSlot: true, tag: true },
+  });
+  return Object.fromEntries(campaigns.map((campaign) => [campaign.colorSlot, campaign.tag]));
+}
+
+/**
  * Creates a campaign and, atomically in the same write, the creator's DM
  * membership. `createdById` records ownership for audit; management rights come
- * from the DM membership row (CLAUDE.md §4).
+ * from the DM membership row (CLAUDE.md §4). The campaign gets the first colour
+ * slot no other campaign uses.
  *
  * @param {string} userId - Id of the creating user (becomes DM).
  * @param {CampaignInput} input - Already Zod-validated campaign payload.
@@ -113,15 +148,19 @@ export async function createCampaign(
   input: CampaignInput,
 ): Promise<CampaignMutationResult> {
   try {
-    const campaign = await prisma.campaign.create({
-      data: {
-        name: input.name,
-        tag: input.tag,
-        description: input.description ?? null,
-        createdById: userId,
-        players: { create: { userId, role: CampaignRole.DM } },
-      },
-      select: { id: true },
+    const campaign = await prisma.$transaction(async (tx) => {
+      const taken = await tx.campaign.findMany({ select: { colorSlot: true } });
+      return tx.campaign.create({
+        data: {
+          name: input.name,
+          tag: input.tag,
+          description: input.description ?? null,
+          colorSlot: nextFreeSlot(taken.map((row) => row.colorSlot)),
+          createdById: userId,
+          players: { create: { userId, role: CampaignRole.DM } },
+        },
+        select: { id: true },
+      });
     });
 
     return { ok: true, campaignId: campaign.id };
@@ -137,21 +176,35 @@ export async function createCampaign(
  * friendly i18n error key rather than throwing.
  *
  * @param {string} campaignId - Id of the campaign to update.
+ * When the payload carries a `colorSlot` it must not be held by another
+ * campaign; omitting it leaves the colour as it is.
+ *
  * @param {CampaignInput} input - Already Zod-validated campaign payload.
  * @returns {Promise<CampaignMutationResult>} Success, or an error key
- *   (`campaigns.errors.notFound` / `campaigns.errors.unknown`).
+ *   (`campaigns.errors.notFound` / `colorTaken` / `unknown`).
  */
 export async function updateCampaign(
   campaignId: string,
   input: CampaignInput,
 ): Promise<CampaignMutationResult> {
   try {
+    if (input.colorSlot !== undefined) {
+      const holder = await prisma.campaign.findFirst({
+        where: { colorSlot: input.colorSlot, id: { not: campaignId } },
+        select: { id: true },
+      });
+      if (holder) {
+        return { ok: false, error: "campaigns.errors.colorTaken" };
+      }
+    }
+
     await prisma.campaign.update({
       where: { id: campaignId },
       data: {
         name: input.name,
         tag: input.tag,
         description: input.description ?? null,
+        ...(input.colorSlot !== undefined ? { colorSlot: input.colorSlot } : {}),
       },
       select: { id: true },
     });

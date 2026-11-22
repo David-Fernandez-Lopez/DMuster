@@ -21,7 +21,7 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 | Entity | Key fields |
 |---|---|
 | `User` | id, name, email, password (hashed), locale, availabilityHorizonMonths, timestamps |
-| `Campaign` | id, name, tag (2-letter chip label), description, createdById, minPlayers, requirementsSetAt, timestamps |
+| `Campaign` | id, name, tag (2-letter chip label), description, createdById, minPlayers, requirementsSetAt, colorSlot, timestamps |
 | `CampaignPlayer` | campaignId, userId, role (DM/PLAYER), optional, alwaysOptional *(M:N join table)* |
 | `Holiday` | id, date (unique), createdById, createdAt |
 | `Availability` | id, date, userId, status (YES/NO/MAYBE/ONLINE), timestamps — unique per (date, user) |
@@ -30,6 +30,17 @@ Role is **per campaign**, stored on `CampaignPlayer.role`: the same user can be 
 campaign and player in another. `User` has no global role. `Campaign.createdById` records
 the creator for audit purposes only; management rights come from holding the DM role in
 that campaign (see §4). A campaign may have **several DMs**.
+
+### Campaign colour
+
+Each campaign has its own colour, stored as a **palette slot** (`Campaign.colorSlot`, an integer; the
+slot maps to an OKLCH colour with light and dark variants in `src/lib/campaignColor.ts`). A new
+campaign gets the smallest slot no other campaign uses; a DM can change it in "Editar campaña", but
+never to one another campaign holds (`campaigns.errors.colorTaken`; uniqueness is enforced by the
+services, not the database, so it can become per-group later). The colour tints the campaign's tag
+wherever it appears (`CampaignBadge`) and identifies it in the charts that compare campaigns. It never
+travels alone — the tag or name is always next to it — and it is not used on the calendar cell, where
+the dot's colour already means viability.
 
 ### Availability model
 

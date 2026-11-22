@@ -102,6 +102,12 @@ model Campaign {
   minPlayers        Int?
   requirementsSetAt DateTime?
 
+  // The campaign's colour, as a slot into the palette (src/lib/campaignColor.ts).
+  // Assigned automatically on creation (the smallest slot no campaign uses) and
+  // editable by a DM. Unique across campaigns by the services, not the database:
+  // with future multi-group support it would only be unique within a group.
+  colorSlot Int @default(0)
+
   createdBy User             @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   players   CampaignPlayer[]
 

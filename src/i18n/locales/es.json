@@ -122,7 +122,11 @@
       "tag": "Etiqueta (2 letras)",
       "description": "Descripción (opcional)",
       "submitCreate": "Crear campaña",
-      "submitSave": "Guardar cambios"
+      "submitSave": "Guardar cambios",
+      "color": "Color",
+      "colorHelp": "Identifica la campaña en gráficas y etiquetas. No puede repetirse.",
+      "colorTaken": "En uso por {{tag}}",
+      "colorOption": "Color {{number}}"
     },
     "actions": {
       "players": "Jugadores",
@@ -183,7 +187,9 @@
       "unauthorized": "Debes iniciar sesión.",
       "forbidden": "Solo un máster de esta campaña puede hacer esto.",
       "notFound": "Campaña no encontrada.",
-      "unknown": "Algo ha ido mal. Inténtalo de nuevo."
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo.",
+      "colorTaken": "Ese color ya lo usa otra campaña.",
+      "colorInvalid": "Elige un color válido."
     }
   },
   "holidays": {

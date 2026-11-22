@@ -7,7 +7,7 @@ import { CampaignRole } from "@/generated/prisma/enums";
 import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
 import { getCampaignRequirements } from "@/lib/campaignRequirementsService";
-import { getCampaignForUser } from "@/lib/campaignService";
+import { getCampaignForUser, listUsedColorSlots } from "@/lib/campaignService";
 
 type EditCampaignPageProps = { params: Promise<{ id: string }> };
 
@@ -38,9 +38,10 @@ export default async function EditCampaignPage({
     redirect("/campaigns");
   }
 
-  const [{ t }, requirements] = await Promise.all([
+  const [{ t }, requirements, usedColorSlots] = await Promise.all([
     getServerTranslation(),
     getCampaignRequirements(campaign.id),
+    listUsedColorSlots(campaign.id),
   ]);
 
   return (
@@ -62,7 +63,9 @@ export default async function EditCampaignPage({
           name: campaign.name,
           tag: campaign.tag,
           description: campaign.description,
+          colorSlot: campaign.colorSlot,
         }}
+        usedColorSlots={usedColorSlots}
       />
 
       {requirements ? (
