@@ -311,6 +311,13 @@ describe("campaignStats", () => {
     expect(lastEligible).toBeLessThan(30);
   });
 
+  it("reports the year of the last played session whatever the period", () => {
+    const stats = campaignStats("ac", sessions, periodBounds("2025", TODAY, null), context())!;
+    expect(stats.played).toBe(0);
+    expect(stats.lastPlayedYear).toBe(2026);
+    expect(campaignStats("ac", [], ALL, context())!.lastPlayedYear).toBeNull();
+  });
+
   it("flags few data under five played sessions and empty with nothing at all", () => {
     expect(campaignStats("ac", sessions, ALL, context())!.few).toBe(true);
     expect(campaignStats("ac", [], ALL, context())!.empty).toBe(true);

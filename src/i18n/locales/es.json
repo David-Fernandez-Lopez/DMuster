@@ -547,8 +547,70 @@
         "LE2": "≤ 2 días",
         "D3_7": "3–7 días",
         "GT7": "más de 7"
+      },
+      "dayTypesInline": {
+        "FRI": "viernes",
+        "SAT": "sábado",
+        "SUN": "domingo",
+        "HOLIDAY": "festivo"
       }
     },
-    "percent": "{{value}} %"
+    "percent": "{{value}} %",
+    "status": {
+      "S": "Sí",
+      "O": "Online",
+      "T": "Tal vez",
+      "N": "No"
+    },
+    "campaign": {
+      "selectLabel": "Campaña",
+      "archivedSuffix": "(archivada)",
+      "noCampaigns": "Todavía no perteneces a ninguna campaña.",
+      "meta_one": "Máster: {{dms}} · {{count}} miembro",
+      "meta_other": "Máster: {{dms}} · {{count}} miembros",
+      "stamp": "Archivada",
+      "archivedNote": "Campaña concluida. Su crónica queda guardada tal y como terminó.",
+      "few_one": "{{count}} partida es poca muestra: tómate los porcentajes con calma.",
+      "few_other": "{{count}} partidas es poca muestra: tómate los porcentajes con calma.",
+      "kpi": {
+        "played_one": "partida",
+        "played_other": "partidas",
+        "hours": "en {{timed}} de {{played}} con hora",
+        "attendance": "asistencia media",
+        "faithful": "más fiel · {{value}}",
+        "last": "última partida",
+        "next": "próxima partida",
+        "archived": "Archivada",
+        "noNext": "Sin fecha"
+      },
+      "every_one": "cada {{count}} día",
+      "every_other": "cada {{count}} días",
+      "scheduleTitle": "Horario y aviso",
+      "cadenceDay": "Se juega <b>{{every}}</b>, sobre todo en <b>{{day}}</b> ({{pct}} %).",
+      "onlyDay": "Se juega sobre todo en <b>{{day}}</b> ({{pct}} %).",
+      "startsAt": "Empieza a las <b>{{start}}</b>, dura <b>{{duration}}</b> y se confirma con {{lead}} días de antelación.",
+      "leadOnly": "Se confirma con {{lead}} días de antelación.",
+      "extrasTitle": "Cancelaciones y extras",
+      "playedCanceled": "Jugadas y canceladas",
+      "playedCount_one": "{{count}} jugada",
+      "playedCount_other": "{{count}} jugadas",
+      "canceledLine_one": "{{count}} cancelada · {{late}} a última hora",
+      "canceledLine_other": "{{count}} canceladas · {{late}} a última hora",
+      "causesTitle": "A quién le surgió algo",
+      "forcedTitle": "Forzadas por el máster",
+      "forcedSome": "El máster forzó {{forced}} de {{played}} ({{pct}} %) aunque no estuvieran todos.",
+      "forcedNone": "El máster nunca tuvo que forzar una partida: siempre estaban todos.",
+      "lateJoinTitle": "Se sumaron a última hora",
+      "nobody": "Nadie todavía.",
+      "reliabilityTitle": "Fiabilidad",
+      "reliabilityBlurb": "Por pura curiosidad: cómo responde cada cual en los días elegibles de la campaña.",
+      "responds": "responde",
+      "dm": "máster",
+      "leadDays": "avisa ≈{{count}} d antes",
+      "noLead": "sin respuestas aún",
+      "noDays_one": "{{count}} día con No",
+      "noDays_other": "{{count}} días con No",
+      "approx": "≈ aproximado: se calcula con la última respuesta guardada de cada día."
+    }
   }
 }

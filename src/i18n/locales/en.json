@@ -547,8 +547,70 @@
         "LE2": "≤ 2 days",
         "D3_7": "3–7 days",
         "GT7": "over 7"
+      },
+      "dayTypesInline": {
+        "FRI": "Friday",
+        "SAT": "Saturday",
+        "SUN": "Sunday",
+        "HOLIDAY": "holidays"
       }
     },
-    "percent": "{{value}}%"
+    "percent": "{{value}}%",
+    "status": {
+      "S": "Yes",
+      "O": "Online",
+      "T": "Maybe",
+      "N": "No"
+    },
+    "campaign": {
+      "selectLabel": "Campaign",
+      "archivedSuffix": "(archived)",
+      "noCampaigns": "You don't belong to any campaign yet.",
+      "meta_one": "DM: {{dms}} · {{count}} member",
+      "meta_other": "DM: {{dms}} · {{count}} members",
+      "stamp": "Archived",
+      "archivedNote": "Concluded campaign. Its chronicle is kept exactly as it ended.",
+      "few_one": "{{count}} session is a small sample: take the percentages with a pinch of salt.",
+      "few_other": "{{count}} sessions is a small sample: take the percentages with a pinch of salt.",
+      "kpi": {
+        "played_one": "session",
+        "played_other": "sessions",
+        "hours": "in {{timed}} of {{played}} with a time",
+        "attendance": "average attendance",
+        "faithful": "most loyal · {{value}}",
+        "last": "last session",
+        "next": "next session",
+        "archived": "Archived",
+        "noNext": "No date"
+      },
+      "every_one": "every {{count}} day",
+      "every_other": "every {{count}} days",
+      "scheduleTitle": "Schedule and notice",
+      "cadenceDay": "It plays <b>{{every}}</b>, mostly on <b>{{day}}</b> ({{pct}}%).",
+      "onlyDay": "It plays mostly on <b>{{day}}</b> ({{pct}}%).",
+      "startsAt": "It starts at <b>{{start}}</b>, lasts <b>{{duration}}</b> and is confirmed {{lead}} days ahead.",
+      "leadOnly": "It is confirmed {{lead}} days ahead.",
+      "extrasTitle": "Cancellations and extras",
+      "playedCanceled": "Played and cancelled",
+      "playedCount_one": "{{count}} played",
+      "playedCount_other": "{{count}} played",
+      "canceledLine_one": "{{count}} cancelled · {{late}} at the last minute",
+      "canceledLine_other": "{{count}} cancelled · {{late}} at the last minute",
+      "causesTitle": "Whose plans changed",
+      "forcedTitle": "Forced by the DM",
+      "forcedSome": "The DM forced {{forced}} of {{played}} ({{pct}}%) even though not everyone could come.",
+      "forcedNone": "The DM never had to force a session: everyone was always there.",
+      "lateJoinTitle": "Joined at the last minute",
+      "nobody": "No one yet.",
+      "reliabilityTitle": "Reliability",
+      "reliabilityBlurb": "Out of pure curiosity: how each person answers on the campaign's eligible days.",
+      "responds": "answers",
+      "dm": "DM",
+      "leadDays": "gives ≈{{count}} d notice",
+      "noLead": "no answers yet",
+      "noDays_one": "{{count}} day with No",
+      "noDays_other": "{{count}} days with No",
+      "approx": "≈ approximate: based on the last saved answer for each day."
+    }
   }
 }

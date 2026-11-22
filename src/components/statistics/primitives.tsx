@@ -121,3 +121,23 @@ export function SectionTitle({ children }: { children: ReactNode }) {
     </h2>
   );
 }
+
+/**
+ * Chip with a person's initial and a count ("Adri · 1").
+ *
+ * @param {{ name: string; count: number }} props - The person and the count.
+ * @returns {JSX.Element}
+ */
+export function PersonChip({ name, count }: { name: string; count: number }) {
+  return (
+    <span className="flex items-center gap-1.5 rounded-full border border-border bg-bg py-[3px] pl-[3px] pr-[10px] text-xs font-semibold">
+      <span
+        aria-hidden="true"
+        className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-soft text-[10px] font-extrabold uppercase text-brand"
+      >
+        {name[0]}
+      </span>
+      {name} · {count}
+    </span>
+  );
+}

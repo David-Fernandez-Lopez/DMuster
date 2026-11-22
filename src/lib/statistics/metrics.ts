@@ -185,6 +185,8 @@ export type CampaignStats = {
   attendancePct: number;
   faithful: RankRow | null;
   lastDate: string | null;
+  /** Year of the campaign's last played session, whatever the period (the stamp). */
+  lastPlayedYear: number | null;
   next: { date: string; startTime: string | null } | null;
   canceled: number;
   playedPct: number;
@@ -843,6 +845,7 @@ export function campaignStats(
       : 0,
     faithful,
     lastDate: played.length ? played[played.length - 1].date : null,
+    lastPlayedYear: lastPlayedYear(own, context.today),
     next: campaign.archivedDay === null ? campaign.next : null,
     canceled: canceled.length,
     playedPct: pct(played.length, total),
@@ -862,6 +865,22 @@ export function campaignStats(
     rhythm: rhythm(played, bounds, { ...context, campaigns: [campaign] }),
     members,
   };
+}
+
+/**
+ * Year of the latest played session up to today, ignoring the period.
+ *
+ * @param {StatSession[]} sessions - The campaign's sessions.
+ * @param {string} today - Today as "YYYY-MM-DD".
+ * @returns {number | null} The year, or null when nothing was played.
+ */
+function lastPlayedYear(sessions: StatSession[], today: string): number | null {
+  const last = sessions
+    .filter((session) => session.status === "PLAYED" && session.date <= today)
+    .map((session) => session.date)
+    .sort()
+    .pop();
+  return last ? Number(last.slice(0, 4)) : null;
 }
 
 // ---------- me ----------
