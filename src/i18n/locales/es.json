@@ -295,6 +295,29 @@
       "confirm": "¿Cerrar todas las sesiones? Se cerrará también la de este dispositivo.",
       "confirmYes": "Sí, cerrar todas"
     },
+    "calendarFeed": {
+      "title": "Calendario",
+      "description": "Suscribe tu calendario (Google, Apple, Outlook…) a un enlace personal y verás tus partidas confirmadas sin conectar ninguna cuenta. Las partidas nuevas o cambiadas aparecen cuando tu aplicación de calendario actualiza la suscripción.",
+      "generate": "Generar enlace de calendario",
+      "urlLabel": "Tu enlace de suscripción",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "copyManual": "Selecciona el enlace y cópialo a mano.",
+      "open": "Abrir en mi aplicación de calendario",
+      "regenerate": "Generar un enlace nuevo",
+      "regenerateConfirm": "¿Generar un enlace nuevo? El actual dejará de funcionar y tendrás que volver a suscribirte.",
+      "regenerateYes": "Sí, generar nuevo",
+      "secretHint": "Quien tenga este enlace puede ver tus partidas. No lo compartas.",
+      "howTo": {
+        "title": "Cómo suscribirte",
+        "google": "Google Calendar: «Otros calendarios» → «Desde URL» y pega el enlace. Google tarda entre 8 y 24 horas en reflejar los cambios.",
+        "apple": "Apple Calendar: Archivo → «Nueva suscripción a calendario» y pega el enlace.",
+        "outlook": "Outlook: «Agregar calendario» → «Suscribirse desde la web» y pega el enlace."
+      },
+      "errors": {
+        "failed": "No se ha podido generar el enlace. Inténtalo de nuevo."
+      }
+    },
     "errors": {
       "invalidLocale": "Idioma no válido.",
       "invalidTheme": "Tema no válido.",
@@ -302,6 +325,14 @@
       "samePassword": "La contraseña nueva debe ser distinta de la actual.",
       "updateFailed": "No se ha podido guardar el cambio. Inténtalo de nuevo."
     }
+  },
+  "calendarFeed": {
+    "name": "DMuster: mis partidas",
+    "eventDescription": "Juegan: {{players}}",
+    "eventDescriptionOnline": "Online: {{players}}",
+    "eventOnlineSuffix": "(Online)",
+    "reminderTitle": "REVISAR CALENDARIO ROL",
+    "reminderDescription": "Tienes días sin responder en {{month}}. Entra en DMuster y completa tu disponibilidad."
   },
   "integrations": {
     "google": {

@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import { isAppLocale, LOCALE_COOKIE, LOCALE_COOKIE_MAX_AGE } from "@/i18n/settings";
 import { auth } from "@/lib/auth";
+import { buildFeedUrl, ensureFeedToken, regenerateFeedToken } from "@/lib/calendarFeedService";
 import { clearSessionCookies } from "@/lib/sessionCookie";
 import { isTheme, THEME_COOKIE, THEME_COOKIE_MAX_AGE } from "@/lib/theme";
 import {
@@ -169,4 +170,48 @@ export async function changePassword(
   // to return to.
   clearSessionCookies(await cookies());
   redirect("/login");
+}
+
+/** Result of a calendar-feed action: the subscription URL, or an i18n error key. */
+export type CalendarFeedActionResult = { url: string } | { error: string };
+
+/**
+ * Creates the current user's calendar subscription link, or returns the one
+ * they already have.
+ *
+ * @returns {Promise<CalendarFeedActionResult>} The feed URL, or an error key.
+ */
+export async function createCalendarFeed(): Promise<CalendarFeedActionResult> {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  try {
+    return { url: buildFeedUrl(await ensureFeedToken(session.user.id)) };
+  } catch (error) {
+    console.error("[PROFILE/CALENDAR-FEED] Failed to create the feed link:", error);
+    return { error: "profile.calendarFeed.errors.failed" };
+  }
+}
+
+/**
+ * Replaces the current user's calendar subscription link. The previous URL
+ * stops working at once, so anyone who had it (or a calendar app still
+ * subscribed to it) loses access.
+ *
+ * @returns {Promise<CalendarFeedActionResult>} The new feed URL, or an error key.
+ */
+export async function regenerateCalendarFeed(): Promise<CalendarFeedActionResult> {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  try {
+    return { url: buildFeedUrl(await regenerateFeedToken(session.user.id)) };
+  } catch (error) {
+    console.error("[PROFILE/CALENDAR-FEED] Failed to regenerate the feed link:", error);
+    return { error: "profile.calendarFeed.errors.failed" };
+  }
 }

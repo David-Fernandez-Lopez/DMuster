@@ -125,6 +125,70 @@ export function todayIsoIn(timeZone: string): string {
   return toIsoDateIn(new Date(), timeZone);
 }
 
+/**
+ * Returns the offset of a timezone from UTC at a given instant, in minutes
+ * (positive east of UTC). Reads the zone's wall-clock components for the
+ * instant through `Intl` and compares them with the same instant read as UTC.
+ *
+ * @param {Date} instant - The point in time to measure the offset at.
+ * @param {string} timeZone - IANA timezone name, e.g. "Europe/Madrid".
+ * @returns {number} Minutes the zone is ahead of UTC at that instant.
+ */
+function zoneOffsetMinutes(instant: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(instant);
+
+  const part = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(parts.find((candidate) => candidate.type === type)?.value ?? "0");
+
+  const wallAsUtc = Date.UTC(
+    part("year"),
+    part("month") - 1,
+    part("day"),
+    part("hour"),
+    part("minute"),
+    part("second"),
+  );
+
+  // Dropping the milliseconds keeps both sides on whole seconds.
+  return Math.round((wallAsUtc - Math.floor(instant.getTime() / 1000) * 1000) / 60000);
+}
+
+/**
+ * Converts a wall-clock day and time in a timezone to the instant it denotes.
+ *
+ * Session times are stored as timezone-less "HH:MM" strings, so turning one
+ * into an absolute instant needs the zone's offset on that very day, DST
+ * included. The offset is resolved in two passes: a first guess treats the wall
+ * time as UTC, and the offset found at that guess corrects it. A wall time that
+ * does not exist (the spring-forward gap) lands one hour later; an ambiguous one
+ * (the autumn repeat) resolves to its second occurrence, after the clocks go back.
+ *
+ * @param {string} dateIso - The calendar day, "YYYY-MM-DD".
+ * @param {string} time - The wall-clock time, "HH:MM".
+ * @param {string} timeZone - IANA timezone name, e.g. "Europe/Madrid".
+ * @returns {Date} The instant that wall time denotes in that zone.
+ * @throws {RangeError} If `timeZone` is not a recognised IANA name.
+ */
+export function zonedWallTimeToUtc(dateIso: string, time: string, timeZone: string): Date {
+  const [hours, minutes] = time.split(":").map(Number);
+  const [year, month, day] = dateIso.split("-").map(Number);
+  const wallAsUtc = Date.UTC(year, month - 1, day, hours, minutes);
+
+  const firstGuess = wallAsUtc - zoneOffsetMinutes(new Date(wallAsUtc), timeZone) * 60000;
+  const secondOffset = zoneOffsetMinutes(new Date(firstGuess), timeZone);
+
+  return new Date(wallAsUtc - secondOffset * 60000);
+}
+
 /** Matches a strict "YYYY-MM" month with a month component in 01–12. */
 const ISO_MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 

@@ -102,6 +102,11 @@ model User {
   // widens the default window (at least 16 eligible days through month end),
   // never narrows it.
   availabilityHorizonMonths Int @default(2)
+  // Secret in the user's personal iCalendar subscription URL
+  // (`/api/calendar/<token>.ics`). Null until they generate one from /profile.
+  // Stored raw, unlike one-shot tokens (invitations, password resets), because
+  // the URL must be shown again; regenerating replaces it and kills the old URL.
+  calendarFeedToken String? @unique @db.VarChar(64)
   // Opt-in for Google Calendar sync (roadmap #23), independent of having a
   // Google `Account` row — lets a user pause sync without disconnecting.
   googleSyncEnabled  Boolean   @default(false)

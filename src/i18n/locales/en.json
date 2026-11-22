@@ -295,6 +295,29 @@
       "confirm": "Close all sessions? This device's session ends too.",
       "confirmYes": "Yes, close them all"
     },
+    "calendarFeed": {
+      "title": "Calendar",
+      "description": "Subscribe your calendar (Google, Apple, Outlook…) to a personal link and your confirmed sessions show up without connecting any account. New or changed sessions appear when your calendar app refreshes the subscription.",
+      "generate": "Generate calendar link",
+      "urlLabel": "Your subscription link",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyManual": "Select the link and copy it by hand.",
+      "open": "Open in my calendar app",
+      "regenerate": "Generate a new link",
+      "regenerateConfirm": "Generate a new link? The current one will stop working and you will need to subscribe again.",
+      "regenerateYes": "Yes, generate new",
+      "secretHint": "Anyone with this link can see your sessions. Don't share it.",
+      "howTo": {
+        "title": "How to subscribe",
+        "google": "Google Calendar: \"Other calendars\" → \"From URL\" and paste the link. Google takes 8 to 24 hours to show changes.",
+        "apple": "Apple Calendar: File → \"New Calendar Subscription\" and paste the link.",
+        "outlook": "Outlook: \"Add calendar\" → \"Subscribe from web\" and paste the link."
+      },
+      "errors": {
+        "failed": "The link could not be generated. Please try again."
+      }
+    },
     "errors": {
       "invalidLocale": "Invalid language.",
       "wrongPassword": "Your current password is not correct.",
@@ -302,6 +325,14 @@
       "invalidTheme": "Invalid theme.",
       "updateFailed": "Could not save the change. Please try again."
     }
+  },
+  "calendarFeed": {
+    "name": "DMuster: my sessions",
+    "eventDescription": "Playing: {{players}}",
+    "eventDescriptionOnline": "Online: {{players}}",
+    "eventOnlineSuffix": "(Online)",
+    "reminderTitle": "REVIEW RPG CALENDAR",
+    "reminderDescription": "You have unanswered days in {{month}}. Open DMuster and fill in your availability."
   },
   "integrations": {
     "google": {

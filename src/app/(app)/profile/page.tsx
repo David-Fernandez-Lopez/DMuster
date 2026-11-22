@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import CalendarFeedSection from "@/components/profile/CalendarFeedSection";
 import ChangePasswordForm from "@/components/profile/ChangePasswordForm";
 import CloseAllSessionsButton from "@/components/profile/CloseAllSessionsButton";
 import GoogleCalendarConnection from "@/components/profile/GoogleCalendarConnection";
@@ -11,6 +12,7 @@ import { CampaignRole } from "@/generated/prisma/enums";
 import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
 import { isDmOfAnyCampaign } from "@/lib/authz";
+import { getFeedUrlForUser } from "@/lib/calendarFeedService";
 import { type CampaignWithRole, listCampaignsForUser } from "@/lib/campaignService";
 import { getConnectionStatus } from "@/lib/google/connectionService";
 import { type InvitationDto, listInvitations } from "@/lib/invitationService";
@@ -45,6 +47,7 @@ export default async function ProfilePage({
   const cookieTheme = (await cookies()).get(THEME_COOKIE)?.value;
   const initialTheme = resolveTheme(cookieTheme, session.user.theme) ?? null;
 
+  const calendarFeedUrl = await getFeedUrlForUser(session.user.id);
   const googleConnectionStatus = await getConnectionStatus(session.user.id);
   const { google: rawCallbackOutcome } = await searchParams;
   const callbackOutcome = CALLBACK_OUTCOMES.find((outcome) => outcome === rawCallbackOutcome) ?? null;
@@ -84,6 +87,7 @@ export default async function ProfilePage({
       <section className="mt-8 divide-y divide-border rounded-[var(--radius-card)] border border-border bg-bg-elevated px-6 py-2">
         <LocaleSelector />
         <ThemeSelector initialTheme={initialTheme} />
+        <CalendarFeedSection initialUrl={calendarFeedUrl} />
         <GoogleCalendarConnection status={googleConnectionStatus} callbackOutcome={callbackOutcome} />
       </section>
 

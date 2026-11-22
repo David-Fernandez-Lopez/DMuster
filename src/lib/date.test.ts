@@ -12,6 +12,7 @@ import {
   todayIsoIn,
   toUtcDate,
   upcomingEligibleDaysThroughMonth,
+  zonedWallTimeToUtc,
 } from "@/lib/date";
 
 // Seed holidays (extra weekday-eligible dates, CLAUDE.md §7). 2026-07-15 is a
@@ -262,5 +263,56 @@ describe("todayIsoIn", () => {
     const gap = Math.abs(Date.parse(`${madrid}T00:00:00Z`) - Date.parse(`${utc}T00:00:00Z`));
 
     expect(gap).toBeLessThanOrEqual(24 * 60 * 60 * 1000);
+  });
+});
+
+describe("zonedWallTimeToUtc", () => {
+  const MADRID = "Europe/Madrid";
+
+  it("applies the winter offset (UTC+1)", () => {
+    expect(zonedWallTimeToUtc("2026-01-16", "21:00", MADRID).toISOString()).toBe(
+      "2026-01-16T20:00:00.000Z",
+    );
+  });
+
+  it("applies the summer offset (UTC+2)", () => {
+    expect(zonedWallTimeToUtc("2026-07-17", "21:00", MADRID).toISOString()).toBe(
+      "2026-07-17T19:00:00.000Z",
+    );
+  });
+
+  it("uses the offset in force on the day, either side of the spring change", () => {
+    // Spring forward is Sunday 2026-03-29 at 02:00 local.
+    expect(zonedWallTimeToUtc("2026-03-28", "22:00", MADRID).toISOString()).toBe(
+      "2026-03-28T21:00:00.000Z",
+    );
+    expect(zonedWallTimeToUtc("2026-03-29", "22:00", MADRID).toISOString()).toBe(
+      "2026-03-29T20:00:00.000Z",
+    );
+  });
+
+  it("uses the offset in force on the day, either side of the autumn change", () => {
+    // Clocks go back on Sunday 2026-10-25 at 03:00 local.
+    expect(zonedWallTimeToUtc("2026-10-24", "22:00", MADRID).toISOString()).toBe(
+      "2026-10-24T20:00:00.000Z",
+    );
+    expect(zonedWallTimeToUtc("2026-10-25", "22:00", MADRID).toISOString()).toBe(
+      "2026-10-25T21:00:00.000Z",
+    );
+  });
+
+  it("moves a wall time inside the spring gap one hour later", () => {
+    expect(zonedWallTimeToUtc("2026-03-29", "02:30", MADRID).toISOString()).toBe(
+      "2026-03-29T01:30:00.000Z",
+    );
+  });
+
+  it("handles midnight and zones west of UTC", () => {
+    expect(zonedWallTimeToUtc("2026-01-16", "00:00", MADRID).toISOString()).toBe(
+      "2026-01-15T23:00:00.000Z",
+    );
+    expect(zonedWallTimeToUtc("2026-01-16", "21:00", "America/New_York").toISOString()).toBe(
+      "2026-01-17T02:00:00.000Z",
+    );
   });
 });

@@ -1,11 +1,22 @@
-import { changePassword, closeAllSessions } from "@/app/(app)/profile/actions";
+import {
+  changePassword,
+  closeAllSessions,
+  createCalendarFeed,
+  regenerateCalendarFeed,
+} from "@/app/(app)/profile/actions";
 import { auth, signOut } from "@/lib/auth";
+import { ensureFeedToken, regenerateFeedToken } from "@/lib/calendarFeedService";
 import { SECURE_SESSION_COOKIE, SESSION_COOKIE } from "@/lib/sessionCookie";
 import { changePassword as changePasswordRequest, endAllSessions } from "@/lib/userService";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 jest.mock("@/lib/auth", () => ({ auth: jest.fn(), signOut: jest.fn() }));
+jest.mock("@/lib/calendarFeedService", () => ({
+  buildFeedUrl: jest.fn((token: string) => `https://dmuster.example/api/calendar/${token}.ics`),
+  ensureFeedToken: jest.fn(),
+  regenerateFeedToken: jest.fn(),
+}));
 jest.mock("@/lib/userService", () => ({
   changePassword: jest.fn(),
   endAllSessions: jest.fn(),
@@ -128,6 +139,61 @@ describe("profile security actions", () => {
       expect(state.error).toBe("profile.errors.wrongPassword");
       expect(deleteCookie).not.toHaveBeenCalled();
       expect(redirectTo).not.toHaveBeenCalled();
+    });
+  });
+});
+
+describe("calendar feed actions", () => {
+  const ensureToken = ensureFeedToken as jest.Mock;
+  const regenerateToken = regenerateFeedToken as jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(console, "error").mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it.each([
+    ["createCalendarFeed", createCalendarFeed],
+    ["regenerateCalendarFeed", regenerateCalendarFeed],
+  ])("%s sends an anonymous visitor to the login page", async (_name, action) => {
+    session.mockResolvedValue(null);
+
+    await expect(action()).rejects.toThrow("NEXT_REDIRECT");
+    expect(redirectTo).toHaveBeenCalledWith("/login");
+    expect(ensureToken).not.toHaveBeenCalled();
+    expect(regenerateToken).not.toHaveBeenCalled();
+  });
+
+  it("createCalendarFeed returns the feed URL for the signed-in user", async () => {
+    session.mockResolvedValue({ user: { id: "u1" } });
+    ensureToken.mockResolvedValue("tok");
+
+    await expect(createCalendarFeed()).resolves.toEqual({
+      url: "https://dmuster.example/api/calendar/tok.ics",
+    });
+    expect(ensureToken).toHaveBeenCalledWith("u1");
+  });
+
+  it("regenerateCalendarFeed returns the new feed URL", async () => {
+    session.mockResolvedValue({ user: { id: "u1" } });
+    regenerateToken.mockResolvedValue("fresh");
+
+    await expect(regenerateCalendarFeed()).resolves.toEqual({
+      url: "https://dmuster.example/api/calendar/fresh.ics",
+    });
+    expect(regenerateToken).toHaveBeenCalledWith("u1");
+  });
+
+  it("reports a safe error key when the service throws", async () => {
+    session.mockResolvedValue({ user: { id: "u1" } });
+    ensureToken.mockRejectedValue(new Error("db down"));
+
+    await expect(createCalendarFeed()).resolves.toEqual({
+      error: "profile.calendarFeed.errors.failed",
     });
   });
 });

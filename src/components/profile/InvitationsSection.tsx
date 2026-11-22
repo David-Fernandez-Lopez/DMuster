@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import RevokeInvitationButton from "@/components/profile/RevokeInvitationButton";
+import { useCopyToClipboard } from "@/components/useCopyToClipboard";
 import type { InvitationStatus } from "@/lib/invitation";
 import type { InvitationDto } from "@/lib/invitationService";
 
@@ -52,7 +53,7 @@ export default function InvitationsSection({
   const emailInputId = useId();
   const campaignSelectId = useId();
   const roleSelectId = useId();
-  const linkInputRef = useRef<HTMLInputElement>(null);
+  const { copyState, inputRef: linkInputRef, copy, reset: resetCopyState } = useCopyToClipboard();
 
   const [email, setEmail] = useState("");
   const [campaignId, setCampaignId] = useState("");
@@ -60,7 +61,6 @@ export default function InvitationsSection({
   const [isPending, setIsPending] = useState(false);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [readyLink, setReadyLink] = useState<string | null>(null);
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "manual">("idle");
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
 
   /**
@@ -115,7 +115,7 @@ export default function InvitationsSection({
     }
 
     setReadyLink(result.url);
-    setCopyState("idle");
+    resetCopyState();
     setEmail("");
     setCampaignId("");
     setRole("PLAYER");
@@ -158,33 +158,17 @@ export default function InvitationsSection({
       }
 
       setReadyLink(result.url);
-      setCopyState("idle");
+      resetCopyState();
     } finally {
       setRegeneratingId(null);
     }
   }
 
-  /**
-   * Copies the one-time link via the Clipboard API when available; otherwise
-   * selects the (read-only) link input so the user can copy it manually —
-   * `navigator.clipboard` is undefined over plain HTTP on a non-localhost
-   * address, which a LAN deployment can easily hit.
-   */
+  /** Copies the one-time link, or selects it for a manual copy (see `useCopyToClipboard`). */
   async function handleCopy() {
-    if (!readyLink) {
-      return;
+    if (readyLink) {
+      await copy(readyLink);
     }
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(readyLink);
-        setCopyState("copied");
-        return;
-      } catch {
-        // Fall through to the manual selection below.
-      }
-    }
-    linkInputRef.current?.select();
-    setCopyState("manual");
   }
 
   return (
