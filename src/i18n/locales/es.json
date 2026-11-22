@@ -16,7 +16,8 @@
     "profile": "Perfil",
     "logout": "Cerrar sesión",
     "openMenu": "Abrir menú",
-    "closeMenu": "Cerrar menú"
+    "closeMenu": "Cerrar menú",
+    "statistics": "Estadísticas"
   },
   "calendar": {
     "title": "Calendario de sesiones",
@@ -454,5 +455,100 @@
       "expiry": "El enlace caduca en {{minutes}} minutos y solo se puede usar una vez.",
       "ignore": "Si no lo has solicitado tú, ignora este mensaje: tu contraseña no cambiará."
     }
+  },
+  "statistics": {
+    "title": "Estadísticas",
+    "period": {
+      "label": "Periodo",
+      "all": "Todo",
+      "last12": "Últimos 12 meses"
+    },
+    "tabs": {
+      "label": "Secciones de estadísticas",
+      "group": "Grupo",
+      "campaigns": "Mis campañas",
+      "me": "Yo"
+    },
+    "comingSoon": "Esta pestaña llegará pronto.",
+    "tie": "empate",
+    "joinMore": "{{names}} y {{count}} más",
+    "units": {
+      "session_one": "{{count}} partida",
+      "session_other": "{{count}} partidas",
+      "directed_one": "{{count}} dirigida",
+      "directed_other": "{{count}} dirigidas",
+      "week_one": "{{count}} semana",
+      "week_other": "{{count}} semanas",
+      "campaign_one": "{{count}} campaña",
+      "campaign_other": "{{count}} campañas",
+      "player_one": "{{count}} jugador",
+      "player_other": "{{count}} jugadores",
+      "day_one": "{{count}} día",
+      "day_other": "{{count}} días",
+      "dayWord_one": "día",
+      "dayWord_other": "días"
+    },
+    "empty": {
+      "title": "Sin partidas en {{period}}",
+      "text": "No hay ninguna partida registrada en este periodo.",
+      "showAll": "Ver todo el historial"
+    },
+    "few_one": "Solo hay {{count}} partida en este periodo. Los rankings ganarán sentido con más historial.",
+    "few_other": "Solo hay {{count}} partidas en este periodo. Los rankings ganarán sentido con más historial.",
+    "group": {
+      "summary_one": "La compañía se ha reunido <big>{{count}}</big> vez en <b>{{campaigns}}</b>, con <b>{{players}}</b> distintos.",
+      "summary_other": "La compañía se ha reunido <big>{{count}}</big> veces en <b>{{campaigns}}</b>, con <b>{{players}}</b> distintos.",
+      "hours_one": "Hay <big>{{hours}} h</big> de juego anotadas, en {{timed}} de esa partida.",
+      "hours_other": "Hay <big>{{hours}} h</big> de juego anotadas, en {{timed}} de esas {{count}} partidas.",
+      "fameTitle": "Salón de la fama",
+      "rhythmTitle": "Ritmo"
+    },
+    "fame": {
+      "campaign": "Campaña más jugada",
+      "month": "Mes más jugado",
+      "dm": "Máster con más partidas",
+      "attendanceTotal": "Más partidas, en total",
+      "attendancePct": "Más partidas, en % de sus campañas",
+      "pair": "Pareja que más coincide",
+      "recordMonth": "Récord en un mes",
+      "streak": "Racha más larga",
+      "pctNote": "Compara a quien está en 2 campañas con quien está en 9.",
+      "ofTotal": "{{attended}} de {{of}}"
+    },
+    "rhythm": {
+      "perMonth": "Partidas por mes",
+      "highlightHint": "Toca una campaña para destacarla",
+      "highlighting": "Destacando {{name}}",
+      "chartLabel": "{{month}}: {{count}}",
+      "dayTitle": "Día de juego",
+      "dayFavourite": "<b>{{day}}</b> es el día favorito: {{pct}} % de las partidas.",
+      "dayTypes": {
+        "FRI": "Viernes",
+        "SAT": "Sábado",
+        "SUN": "Domingo",
+        "HOLIDAY": "Festivo"
+      },
+      "scheduleTitle": "Horario",
+      "schedule": "Se suele empezar a las <b>{{start}}</b> ({{share}} % de las veces) y la partida dura <b>{{duration}}</b> de media.",
+      "scheduleNone": "Aún no hay partidas con hora anotada.",
+      "afternoon": "Tarde · {{pct}} %",
+      "evening": "Noche · {{pct}} %",
+      "heatTitle": "Días con partida",
+      "heatEligible": "elegible",
+      "heatOne": "1",
+      "heatTwo": "2",
+      "gapsTitle": "Días entre partidas",
+      "gapDays": "{{count}} d",
+      "forgottenTitle": "Campaña olvidada",
+      "forgottenText": "Duerme desde el {{date}}. ¿Le toca ya?",
+      "leadTitle": "Antelación al confirmar",
+      "lead": "Las partidas se confirman con <b>{{avg}} días</b> de antelación de media; {{late}} % a dos días o menos.",
+      "leadBuckets": {
+        "LE2": "≤ 2 días",
+        "D3_7": "3–7 días",
+        "GT7": "más de 7"
+      }
+    },
+    "percent": "{{value}} %"
   }
 }

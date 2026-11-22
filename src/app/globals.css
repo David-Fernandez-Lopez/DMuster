@@ -32,6 +32,7 @@
   --color-border: light-dark(#d8cbb8, #39493f);
   --color-brand: light-dark(#7a4a2e, #9cb878);
   --color-brand-soft: light-dark(#e9dece, #2c3e2f);
+  --color-on-brand: light-dark(#f8f3ea, #12201a);
 
   --color-s: light-dark(#3e9a63, #5fbe85);
   --color-s-soft: light-dark(#cde9d5, #233b2c);
@@ -68,6 +69,7 @@
   --color-border: var(--color-border);
   --color-brand: var(--color-brand);
   --color-brand-soft: var(--color-brand-soft);
+  --color-on-brand: var(--color-on-brand);
   --color-s: var(--color-s);
   --color-s-soft: var(--color-s-soft);
   --color-n: var(--color-n);

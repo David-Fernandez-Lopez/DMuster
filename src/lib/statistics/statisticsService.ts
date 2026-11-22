@@ -42,6 +42,18 @@ type StatisticsData = {
   firstDate: string | null;
 };
 
+/** Names and campaign display data for the ids a view-model refers to. */
+export type StatisticsDirectory = {
+  campaigns: Record<
+    string,
+    { tag: string; name: string; colorIndex: number; archived: boolean }
+  >;
+  users: Record<string, string>;
+};
+
+/** A view-model together with the directory needed to render its ids. */
+export type StatisticsView<T> = { stats: T; directory: StatisticsDirectory };
+
 /** A campaign the user belongs to, as listed in the campaign selector. */
 export type MyCampaign = {
   id: string;
@@ -187,6 +199,29 @@ async function loadStatisticsData(): Promise<StatisticsData> {
 }
 
 /**
+ * Builds the directory of campaigns and users a view-model's ids refer to.
+ *
+ * @param {StatContext} context - The loaded context.
+ * @returns {StatisticsDirectory} Display data by id.
+ */
+function directoryOf(context: StatContext): StatisticsDirectory {
+  return {
+    campaigns: Object.fromEntries(
+      context.campaigns.map((campaign) => [
+        campaign.id,
+        {
+          tag: campaign.tag,
+          name: campaign.name,
+          colorIndex: campaign.colorIndex,
+          archived: campaign.archivedDay !== null,
+        },
+      ]),
+    ),
+    users: Object.fromEntries(context.names),
+  };
+}
+
+/**
  * Resolves the period against the loaded data.
  *
  * @param {Period} period - The selected period.
@@ -214,11 +249,16 @@ export async function getAvailablePeriods(): Promise<Period[]> {
  * The group tab (everyone signed in may see it).
  *
  * @param {Period} period - The selected period.
- * @returns {Promise<GroupStats>} The view-model.
+ * @returns {Promise<StatisticsView<GroupStats>>} The view-model and its directory.
  */
-export async function getGroupStats(period: Period): Promise<GroupStats> {
+export async function getGroupStats(
+  period: Period,
+): Promise<StatisticsView<GroupStats>> {
   const data = await loadStatisticsData();
-  return groupStats(data.sessions, boundsFor(period, data), data.context);
+  return {
+    stats: groupStats(data.sessions, boundsFor(period, data), data.context),
+    directory: directoryOf(data.context),
+  };
 }
 
 /**
@@ -228,19 +268,20 @@ export async function getGroupStats(period: Period): Promise<GroupStats> {
  * @param {string} campaignId - The campaign.
  * @param {string} userId - The requesting user.
  * @param {Period} period - The selected period.
- * @returns {Promise<CampaignStats | null>} The view-model, or null.
+ * @returns {Promise<StatisticsView<CampaignStats> | null>} The view-model, or null.
  */
 export async function getCampaignStats(
   campaignId: string,
   userId: string,
   period: Period,
-): Promise<CampaignStats | null> {
+): Promise<StatisticsView<CampaignStats> | null> {
   const data = await loadStatisticsData();
   const campaign = data.context.campaigns.find((candidate) => candidate.id === campaignId);
   if (!campaign?.members.some((member) => member.userId === userId)) {
     return null;
   }
-  return campaignStats(campaignId, data.sessions, boundsFor(period, data), data.context);
+  const stats = campaignStats(campaignId, data.sessions, boundsFor(period, data), data.context);
+  return stats ? { stats, directory: directoryOf(data.context) } : null;
 }
 
 /**
@@ -248,11 +289,17 @@ export async function getCampaignStats(
  *
  * @param {string} userId - The requesting user.
  * @param {Period} period - The selected period.
- * @returns {Promise<MeStats>} The view-model.
+ * @returns {Promise<StatisticsView<MeStats>>} The view-model and its directory.
  */
-export async function getMeStats(userId: string, period: Period): Promise<MeStats> {
+export async function getMeStats(
+  userId: string,
+  period: Period,
+): Promise<StatisticsView<MeStats>> {
   const data = await loadStatisticsData();
-  return meStats(userId, data.sessions, boundsFor(period, data), data.context);
+  return {
+    stats: meStats(userId, data.sessions, boundsFor(period, data), data.context),
+    directory: directoryOf(data.context),
+  };
 }
 
 /**

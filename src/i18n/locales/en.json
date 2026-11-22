@@ -16,7 +16,8 @@
     "profile": "Profile",
     "logout": "Log out",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "statistics": "Statistics"
   },
   "calendar": {
     "title": "Session calendar",
@@ -454,5 +455,100 @@
       "expiry": "The link expires in {{minutes}} minutes and can only be used once.",
       "ignore": "If you didn't request this, ignore this message: your password won't change."
     }
+  },
+  "statistics": {
+    "title": "Statistics",
+    "period": {
+      "label": "Period",
+      "all": "All time",
+      "last12": "Last 12 months"
+    },
+    "tabs": {
+      "label": "Statistics sections",
+      "group": "Group",
+      "campaigns": "My campaigns",
+      "me": "Me"
+    },
+    "comingSoon": "This tab is coming soon.",
+    "tie": "tie",
+    "joinMore": "{{names}} and {{count}} more",
+    "units": {
+      "session_one": "{{count}} session",
+      "session_other": "{{count}} sessions",
+      "directed_one": "{{count}} session run",
+      "directed_other": "{{count}} sessions run",
+      "week_one": "{{count}} week",
+      "week_other": "{{count}} weeks",
+      "campaign_one": "{{count}} campaign",
+      "campaign_other": "{{count}} campaigns",
+      "player_one": "{{count}} player",
+      "player_other": "{{count}} players",
+      "day_one": "{{count}} day",
+      "day_other": "{{count}} days",
+      "dayWord_one": "day",
+      "dayWord_other": "days"
+    },
+    "empty": {
+      "title": "No sessions in {{period}}",
+      "text": "No session was recorded in this period.",
+      "showAll": "See the whole history"
+    },
+    "few_one": "There is only {{count}} session in this period. Rankings will mean more with more history.",
+    "few_other": "There are only {{count}} sessions in this period. Rankings will mean more with more history.",
+    "group": {
+      "summary_one": "The company has met <big>{{count}}</big> time in <b>{{campaigns}}</b>, with <b>{{players}}</b> involved.",
+      "summary_other": "The company has met <big>{{count}}</big> times in <b>{{campaigns}}</b>, with <b>{{players}}</b> involved.",
+      "hours_one": "There are <big>{{hours}} h</big> of play on record, in {{timed}} of that session.",
+      "hours_other": "There are <big>{{hours}} h</big> of play on record, in {{timed}} of those {{count}} sessions.",
+      "fameTitle": "Hall of fame",
+      "rhythmTitle": "Rhythm"
+    },
+    "fame": {
+      "campaign": "Most played campaign",
+      "month": "Most played month",
+      "dm": "DM with most sessions",
+      "attendanceTotal": "Most sessions, overall",
+      "attendancePct": "Most sessions, as % of their campaigns",
+      "pair": "Pair that meets most",
+      "recordMonth": "Record in a month",
+      "streak": "Longest streak",
+      "pctNote": "Compares someone in 2 campaigns with someone in 9.",
+      "ofTotal": "{{attended}} of {{of}}"
+    },
+    "rhythm": {
+      "perMonth": "Sessions per month",
+      "highlightHint": "Tap a campaign to highlight it",
+      "highlighting": "Highlighting {{name}}",
+      "chartLabel": "{{month}}: {{count}}",
+      "dayTitle": "Day of play",
+      "dayFavourite": "<b>{{day}}</b> is the favourite day: {{pct}}% of sessions.",
+      "dayTypes": {
+        "FRI": "Friday",
+        "SAT": "Saturday",
+        "SUN": "Sunday",
+        "HOLIDAY": "Holiday"
+      },
+      "scheduleTitle": "Schedule",
+      "schedule": "Sessions usually start at <b>{{start}}</b> ({{share}}% of the time) and last <b>{{duration}}</b> on average.",
+      "scheduleNone": "No session with a time on record yet.",
+      "afternoon": "Afternoon · {{pct}}%",
+      "evening": "Evening · {{pct}}%",
+      "heatTitle": "Days with a session",
+      "heatEligible": "eligible",
+      "heatOne": "1",
+      "heatTwo": "2",
+      "gapsTitle": "Days between sessions",
+      "gapDays": "{{count}} d",
+      "forgottenTitle": "Forgotten campaign",
+      "forgottenText": "Asleep since {{date}}. Is it time yet?",
+      "leadTitle": "Notice when confirming",
+      "lead": "Sessions are confirmed <b>{{avg}} days</b> ahead on average; {{late}}% two days or less before.",
+      "leadBuckets": {
+        "LE2": "≤ 2 days",
+        "D3_7": "3–7 days",
+        "GT7": "over 7"
+      }
+    },
+    "percent": "{{value}}%"
   }
 }
