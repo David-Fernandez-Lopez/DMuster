@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { campaignColor } from "@/lib/campaignColor";
 import type { Rhythm } from "@/lib/statistics/metrics";
 
-import { campaignColor, monthInitial, monthLabel, monthShort } from "./format";
+import { monthInitial, monthLabel, monthShort } from "./format";
 import StatCard, { CardLabel } from "./StatCard";
 
 /** Height of the bars area, in px. */
@@ -19,7 +20,7 @@ interface MonthlyStackedChartProps {
   monthMax: number;
   /** Campaigns to list in the legend, in the fixed ramp order. */
   legend: { campaignId: string }[];
-  campaigns: Record<string, { tag: string; name: string; colorIndex: number }>;
+  campaigns: Record<string, { tag: string; name: string; colorSlot: number }>;
 }
 
 /**
@@ -74,7 +75,7 @@ export default function MonthlyStackedChart({
                     key={segment.campaignId}
                     style={{
                       height: (segment.n / monthMax) * BARS_HEIGHT,
-                      background: campaignColor(campaign?.colorIndex ?? 0),
+                      background: campaignColor(campaign?.colorSlot ?? 0),
                       opacity: highlight && highlight !== segment.campaignId ? 0.18 : 1,
                     }}
                     className="rounded-[2px] transition-opacity"
@@ -114,7 +115,7 @@ export default function MonthlyStackedChart({
             >
               <span
                 aria-hidden="true"
-                style={{ background: campaignColor(campaign?.colorIndex ?? 0) }}
+                style={{ background: campaignColor(campaign?.colorSlot ?? 0) }}
                 className="h-3 w-3 rounded-full"
               />
               {campaign?.tag}

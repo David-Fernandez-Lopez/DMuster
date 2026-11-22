@@ -5,6 +5,9 @@ import {
 } from "@/lib/campaignService";
 import { prisma } from "@/lib/prisma";
 
+jest.mock("@/lib/today", () => ({ todayIso: () => "2026-10-25" }));
+jest.mock("@/lib/env", () => ({ env: { APP_TIMEZONE: "Europe/Madrid" } }));
+
 // The generated Prisma client is ESM and uses `import.meta.url`, which ts-jest
 // cannot parse under the current CommonJS setup: only the error class is needed.
 jest.mock("@/generated/prisma/client", () => ({

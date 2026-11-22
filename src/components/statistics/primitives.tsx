@@ -1,22 +1,29 @@
 import type { ReactNode } from "react";
 
+import { campaignColor, campaignTint } from "@/lib/campaignColor";
+
 /**
- * Two-letter campaign chip (tag), brand-soft pill.
+ * Two-letter campaign chip (tag), a pill tinted with the campaign's own colour.
+ * Not hidden from assistive tech: in the charts the tag is the row's only label.
  *
- * @param {{ tag: string; size?: "sm" | "md" }} props - The tag and size.
+ * @param {{ tag: string; colorSlot: number; size?: "sm" | "md" }} props - The tag, the
+ *   campaign's palette slot and the size.
  * @returns {JSX.Element}
  */
 export function CampaignChip({
   tag,
+  colorSlot,
   size = "sm",
 }: {
   tag: string;
+  colorSlot: number;
   size?: "sm" | "md";
 }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-brand-soft font-extrabold uppercase text-brand ${
-        size === "md" ? "px-[10px] py-1 text-xs" : "min-w-[30px] px-2 py-0.5 text-[10px]"
+      style={{ background: campaignTint(colorSlot), borderColor: campaignColor(colorSlot) }}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full border-[1.5px] font-extrabold uppercase text-ink ${
+        size === "md" ? "px-[10px] py-0.5 text-xs" : "min-w-[30px] px-2 text-[10px]"
       }`}
     >
       {tag}

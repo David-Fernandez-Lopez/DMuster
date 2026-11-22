@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 
+import { campaignColor } from "@/lib/campaignColor";
 import type { Rhythm } from "@/lib/statistics/metrics";
 
 import { monthInitial, monthLabel, monthShort } from "./format";
@@ -17,12 +18,14 @@ interface SimpleMonthlyBarsProps {
   title: string;
   /** Text at the top right (e.g. "cada 18 días"). */
   aside?: string;
+  /** Palette slot of the campaign, which colours the bars. */
+  colorSlot: number;
   t: TFunction;
   locale: string;
 }
 
 /**
- * Single-colour bars of sessions per month, for one campaign.
+ * Single-colour bars of sessions per month, in the campaign's own colour.
  *
  * @param {SimpleMonthlyBarsProps} props - Months, scale and labels.
  * @returns {JSX.Element}
@@ -32,6 +35,7 @@ export default function SimpleMonthlyBars({
   monthMax,
   title,
   aside,
+  colorSlot,
   t,
   locale,
 }: SimpleMonthlyBarsProps) {
@@ -58,8 +62,11 @@ export default function SimpleMonthlyBars({
               {month.total || ""}
             </div>
             <div
-              style={{ height: (month.total / monthMax) * BARS_HEIGHT }}
-              className="rounded-[2px] bg-brand"
+              style={{
+                height: (month.total / monthMax) * BARS_HEIGHT,
+                background: campaignColor(colorSlot),
+              }}
+              className="rounded-[2px]"
             />
           </div>
         ))}

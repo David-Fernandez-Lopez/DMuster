@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 
+import { campaignColor, campaignTint } from "@/lib/campaignColor";
 import type { MeStats } from "@/lib/statistics/metrics";
 import type { StatisticsDirectory } from "@/lib/statistics/statisticsService";
 
@@ -13,9 +14,19 @@ import StatusDonut from "./StatusDonut";
 /** The answer states, in legend order. */
 const STATES = ["S", "O", "T", "N"] as const;
 
-/** Stripes that mark the DM share of a bar. */
-const DM_STRIPES =
-  "repeating-linear-gradient(135deg, var(--color-brand) 0 2px, var(--color-brand-soft) 2px 5px)";
+/** Stripes of the legend swatch for the DM share (neutral: the bars use each campaign's colour). */
+const LEGEND_DM_STRIPES =
+  "repeating-linear-gradient(135deg, var(--color-ink-muted) 0 2px, var(--color-bg-elevated) 2px 5px)";
+
+/**
+ * Stripes that mark the DM share of a campaign's bar, in that campaign's colour.
+ *
+ * @param {number} slot - The campaign's palette slot.
+ * @returns {string} A CSS `repeating-linear-gradient(...)`.
+ */
+function dmStripes(slot: number): string {
+  return `repeating-linear-gradient(135deg, ${campaignColor(slot)} 0 2px, ${campaignTint(slot)} 2px 5px)`;
+}
 
 interface MeViewProps {
   stats: MeStats;
@@ -110,14 +121,14 @@ export default function MeView({
                 {stats.isDm ? (
                   <span className="flex gap-2 text-[10px] font-bold text-ink-muted">
                     <span className="flex items-center gap-1">
-                      <span aria-hidden="true" className="h-2 w-2.5 rounded-[2px] bg-brand" />
+                      <span aria-hidden="true" className="h-2 w-2.5 rounded-[2px] bg-ink-muted" />
                       {t("statistics.me.legendPlayer")}
                     </span>
                     <span className="flex items-center gap-1">
                       <span
                         aria-hidden="true"
                         className="h-2 w-2.5 rounded-[2px]"
-                        style={{ background: DM_STRIPES }}
+                        style={{ background: LEGEND_DM_STRIPES }}
                       />
                       {t("statistics.me.legendDm")}
                     </span>
@@ -130,21 +141,27 @@ export default function MeView({
                     key={campaign.campaignId}
                     className="grid grid-cols-[30px_1fr_30px_44px] items-center gap-2 text-xs"
                   >
-                    <CampaignChip tag={directory.campaigns[campaign.campaignId]?.tag ?? ""} />
+                    <CampaignChip
+                      tag={directory.campaigns[campaign.campaignId]?.tag ?? ""}
+                      colorSlot={directory.campaigns[campaign.campaignId]?.colorSlot ?? 0}
+                    />
                     <div
                       role="img"
                       aria-label={`${directory.campaigns[campaign.campaignId]?.name}: ${campaign.total}`}
                       className="flex h-3 gap-px"
                     >
                       <div
-                        style={{ width: `${(campaign.asPlayer / maxTotal) * 100}%` }}
-                        className="rounded-[2px] bg-brand"
+                        style={{
+                          width: `${(campaign.asPlayer / maxTotal) * 100}%`,
+                          background: campaignColor(directory.campaigns[campaign.campaignId]?.colorSlot ?? 0),
+                        }}
+                        className="rounded-[2px]"
                       />
                       {stats.isDm ? (
                         <div
                           style={{
                             width: `${(campaign.asDm / maxTotal) * 100}%`,
-                            background: DM_STRIPES,
+                            background: dmStripes(directory.campaigns[campaign.campaignId]?.colorSlot ?? 0),
                           }}
                           className="rounded-[2px]"
                         />

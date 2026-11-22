@@ -139,17 +139,6 @@ export function joinNames(names: string[], t: TFunction, locale: string): string
 }
 
 /**
- * Background of a campaign's tone in the fixed ramp (darkest first). Always
- * shown next to a text label: colour only helps to group.
- *
- * @param {number} index - Campaign index, 0..8.
- * @returns {string} A CSS colour.
- */
-export function campaignColor(index: number): string {
-  return `color-mix(in oklch, var(--color-brand) ${100 - 8 * index}%, var(--color-bg-elevated))`;
-}
-
-/**
  * Ordinal position: "2.º" in Spanish, "2nd" in English.
  *
  * @param {number} position - 1-based position.

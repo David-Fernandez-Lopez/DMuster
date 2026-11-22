@@ -171,7 +171,9 @@ and `/forgot-password` / `/reset-password/*` return 404).
   (`?period=all|last12|<year>`). Metrics are pure functions in `src/lib/statistics/metrics.ts`
   (view-models carry numbers and keys, never text; wording lives in i18n); `statisticsService.ts` only
   loads data. A *played* session is an active one dated up to today; hours count only sessions with
-  start time and duration; a day without an answer counts as `T`. Answer lead time uses
+  start time and duration; a day without an answer counts as `T`. Charts that compare campaigns (sessions per
+  month, days between sessions, my sessions by campaign) and campaign chips use each campaign's own colour
+  (`Campaign.colorSlot`), never an index computed from the creation order. Answer lead time uses
   `Availability.updatedAt`, so it is shown as approximate (≈). Spec: `design/design_handoff_estadisticas/`
 - **Design reference**: the authoritative visual spec lives in `design/README.md` and `design/screenshots/` (local, gitignored — a Claude design handoff). Follow it for layout, tokens, and flows
 

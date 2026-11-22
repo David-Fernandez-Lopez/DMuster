@@ -117,7 +117,7 @@ export default function CampaignView({
               ) : null}
             </div>
           ) : null}
-          <CampaignChip tag={campaign?.tag ?? ""} size="md" />
+          <CampaignChip tag={campaign?.tag ?? ""} colorSlot={campaign?.colorSlot ?? 0} size="md" />
           <h2 className="font-display text-xl font-semibold">{campaign?.name}</h2>
         </div>
         <div className="text-xs text-ink-muted">
@@ -190,6 +190,7 @@ export default function CampaignView({
                 monthMax={rhythm.monthMax}
                 title={t("statistics.rhythm.perMonth")}
                 aside={every ?? undefined}
+                colorSlot={campaign?.colorSlot ?? 0}
                 t={t}
                 locale={locale}
               />

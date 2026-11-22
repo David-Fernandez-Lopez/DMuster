@@ -46,7 +46,7 @@ type StatisticsData = {
 export type StatisticsDirectory = {
   campaigns: Record<
     string,
-    { tag: string; name: string; colorIndex: number; archived: boolean }
+    { tag: string; name: string; colorSlot: number; archived: boolean }
   >;
   users: Record<string, string>;
 };
@@ -79,6 +79,7 @@ async function loadStatisticsData(): Promise<StatisticsData> {
         id: true,
         tag: true,
         name: true,
+        colorSlot: true,
         archivedAt: true,
         players: {
           select: {
@@ -176,11 +177,11 @@ async function loadStatisticsData(): Promise<StatisticsData> {
     }
   }
 
-  const statCampaigns: StatCampaign[] = campaigns.map((campaign, index) => ({
+  const statCampaigns: StatCampaign[] = campaigns.map((campaign) => ({
     id: campaign.id,
     tag: campaign.tag,
     name: campaign.name,
-    colorIndex: Math.min(index, 8),
+    colorSlot: campaign.colorSlot,
     archivedDay: campaign.archivedAt ? toIsoDateIn(campaign.archivedAt, timeZone) : null,
     members: campaign.players.map((player) => ({
       userId: player.userId,
@@ -212,7 +213,7 @@ function directoryOf(context: StatContext): StatisticsDirectory {
         {
           tag: campaign.tag,
           name: campaign.name,
-          colorIndex: campaign.colorIndex,
+          colorSlot: campaign.colorSlot,
           archived: campaign.archivedDay !== null,
         },
       ]),

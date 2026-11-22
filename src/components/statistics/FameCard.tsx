@@ -1,3 +1,5 @@
+import { campaignColor, campaignTint } from "@/lib/campaignColor";
+
 import StatCard, { CardLabel } from "./StatCard";
 import { Avatar, TiePill } from "./primitives";
 
@@ -14,7 +16,7 @@ export type FameRowView = {
 interface FameCardProps {
   title: string;
   /** The winner's badge: a round avatar or a campaign-style chip. */
-  badge: { kind: "round" | "chip"; text: string };
+  badge: { kind: "round" | "chip"; text: string; colorSlot?: number };
   rows: FameRowView[];
   note?: string;
   tieLabel: string;
@@ -50,7 +52,19 @@ export default function FameCard({
           ) : (
             <span
               aria-hidden="true"
-              className="flex h-6 min-w-[34px] shrink-0 items-center justify-center rounded-full bg-brand-soft px-2 text-[11px] font-extrabold uppercase text-brand"
+              style={
+                badge.colorSlot === undefined
+                  ? undefined
+                  : {
+                      background: campaignTint(badge.colorSlot),
+                      borderColor: campaignColor(badge.colorSlot),
+                    }
+              }
+              className={`flex h-6 min-w-[34px] shrink-0 items-center justify-center rounded-full px-2 text-[11px] font-extrabold uppercase ${
+                badge.colorSlot === undefined
+                  ? "bg-brand-soft text-brand"
+                  : "border-[1.5px] text-ink"
+              }`}
             >
               {badge.text}
             </span>

@@ -55,8 +55,8 @@ export type StatCampaign = {
   id: string;
   tag: string;
   name: string;
-  /** Stable 0..8 index of the campaign's tone in the colour ramp. */
-  colorIndex: number;
+  /** Palette slot of the campaign's own colour (see `campaignColor.ts`). */
+  colorSlot: number;
   /** Day the campaign was archived, or null while active. */
   archivedDay: string | null;
   members: StatMember[];

@@ -1,5 +1,6 @@
 import type { TFunction } from "i18next";
 
+import { campaignColor } from "@/lib/campaignColor";
 import type { GroupStats, RankRow } from "@/lib/statistics/metrics";
 import { pct } from "@/lib/statistics/metrics";
 import type { StatisticsDirectory } from "@/lib/statistics/statisticsService";
@@ -47,7 +48,7 @@ type FameSpec = {
     key: string,
     meta: Record<string, string | number> | undefined,
     value: number,
-  ) => { kind: "round" | "chip"; text: string };
+  ) => { kind: "round" | "chip"; text: string; colorSlot?: number };
   note?: string;
 };
 
@@ -107,7 +108,11 @@ export default function GroupView({
       id: "campaign",
       name: campaignName,
       value: sessions,
-      badge: (key) => ({ kind: "chip", text: directory.campaigns[key]?.tag ?? "" }),
+      badge: (key) => ({
+        kind: "chip",
+        text: directory.campaigns[key]?.tag ?? "",
+        colorSlot: directory.campaigns[key]?.colorSlot,
+      }),
     },
     {
       id: "month",
@@ -305,12 +310,15 @@ export default function GroupView({
                   key={gap.campaignId}
                   className="grid grid-cols-[30px_1fr_38px] items-center gap-2 text-xs"
                 >
-                  <CampaignChip tag={directory.campaigns[gap.campaignId]?.tag ?? ""} />
+                  <CampaignChip
+                    tag={directory.campaigns[gap.campaignId]?.tag ?? ""}
+                    colorSlot={directory.campaigns[gap.campaignId]?.colorSlot ?? 0}
+                  />
                   <HBar
                     percent={pct(gap.days, gapMax)}
                     height={8}
                     track="bg-bg"
-                    fill="color-mix(in oklch, var(--color-brand) 70%, var(--color-bg-elevated))"
+                    fill={campaignColor(directory.campaigns[gap.campaignId]?.colorSlot ?? 0)}
                   />
                   <span className="text-right font-bold">
                     {t("statistics.rhythm.gapDays", { count: gap.days })}
@@ -330,6 +338,7 @@ export default function GroupView({
                   <CampaignChip
                     size="md"
                     tag={directory.campaigns[stats.forgotten.campaignId]?.tag ?? ""}
+                    colorSlot={directory.campaigns[stats.forgotten.campaignId]?.colorSlot ?? 0}
                   />
                   <span className="flex-1 text-[15px] font-bold">
                     {campaignName(stats.forgotten.campaignId)}
