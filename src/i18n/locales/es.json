@@ -469,7 +469,6 @@
       "campaigns": "Mis campañas",
       "me": "Yo"
     },
-    "comingSoon": "Esta pestaña llegará pronto.",
     "tie": "empate",
     "joinMore": "{{names}} y {{count}} más",
     "units": {
@@ -611,6 +610,28 @@
       "noDays_one": "{{count}} día con No",
       "noDays_other": "{{count}} días con No",
       "approx": "≈ aproximado: se calcula con la última respuesta guardada de cada día."
+    },
+    "me": {
+      "line_one": "{{count}} campaña · {{role}}",
+      "line_other": "{{count}} campañas · {{role}}",
+      "roleBoth": "jugador y máster",
+      "rolePlayer": "jugador",
+      "summary_one": "{{name}}, te has sentado a la mesa <big>{{count}}</big> vez: el {{pct}} % de las partidas de tus campañas.",
+      "summary_other": "{{name}}, te has sentado a la mesa <big>{{count}}</big> veces: el {{pct}} % de las partidas de tus campañas.",
+      "dmSentence": " De ellas, {{count}} tras la pantalla del máster.",
+      "streak": "Tu racha más larga: <b>{{weeks}}</b> seguidas ({{range}}).",
+      "emptyTitle": "No jugaste en {{period}}",
+      "emptyText": "Tus campañas no tuvieron partidas en este periodo.",
+      "emptyAction": "Ver todo mi historial",
+      "byCampaignTitle": "Mis partidas por campaña",
+      "legendPlayer": "Jugador",
+      "legendDm": "Máster",
+      "byCampaignNote": "Número de partidas · % de asistencia en esa campaña",
+      "companionsTitle": "Con quién juego más",
+      "reliabilityTitle": "Mi fiabilidad",
+      "reliabilityText": "Has respondido el <b>{{rate}} %</b> de los días elegibles, con <approx>≈ {{lead}} días</approx> de antelación, y has bloqueado <b>{{no}}</b> con un No.",
+      "reliabilityNoLead": "Has respondido el <b>{{rate}} %</b> de los días elegibles y has bloqueado <b>{{no}}</b> con un No.",
+      "approxShort": "≈ aproximado"
     }
   }
 }

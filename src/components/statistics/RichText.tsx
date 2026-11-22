@@ -1,11 +1,12 @@
 import { Fragment } from "react";
 
-/** Matches `<b>…</b>` and `<big>…</big>` in a translated string. */
-const TAG_PATTERN = /<(b|big)>(.*?)<\/\1>/g;
+/** Matches `<b>`, `<big>` and `<approx>` markers in a translated string. */
+const TAG_PATTERN = /<(b|big|approx)>(.*?)<\/\1>/g;
 
 /**
- * Renders a translated string that carries `<b>` (secondary figure) and
- * `<big>` (headline figure, Cinzel in brand colour) markers. The text is split
+ * Renders a translated string that carries `<b>` (secondary figure), `<big>`
+ * (headline figure, Cinzel in brand colour) and `<approx>` (an approximate
+ * figure: bold with a dotted underline) markers. The text is split
  * and rebuilt as React nodes, never injected as HTML, so interpolated values
  * cannot add markup.
  *
@@ -24,6 +25,10 @@ export default function RichText({ text }: { text: string }) {
     nodes.push(
       match[1] === "big" ? (
         <b key={`b${index}`} className="font-display text-[22px] text-brand">
+          {match[2]}
+        </b>
+      ) : match[1] === "approx" ? (
+        <b key={`b${index}`} className="border-b border-dotted border-ink-muted">
           {match[2]}
         </b>
       ) : (

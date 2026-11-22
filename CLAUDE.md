@@ -155,6 +155,13 @@ and `/forgot-password` / `/reset-password/*` return 404).
 - **Calendar feed**: `/profile` lets each user generate a personal iCalendar subscription URL (`/api/calendar/<token>.ics`) listing the active confirmed sessions they attend (last 90 days onwards) plus the monthly "REVISAR CALENDARIO ROL" reminder. Generated from the database on every request; the token (`User.calendarFeedToken`) can be regenerated, and a disabled account's feed answers 404. There is no Google Calendar integration
 - Status colors: green (S — all needed confirmed), blue (O — all needed can play, someone online), red (N — someone needed cannot), amber (T — pending/no response), slate-violet (B — someone already plays another campaign's session)
 - The calendar shows **every** active confirmed session of the group: the user's own campaigns' in bold with the cell tinted, other campaigns' as muted chips (no tint) plus a read-only "Otras partidas este día" section in the day modal, with name, time and players. A "Filtros" toggle hides the muted chips. Viability is still computed only for the user's own campaigns, and "Próximas partidas" (`/sessions`) lists only their own campaigns' sessions
+- **Estadísticas** (`/statistics`): nav entry with three tabs — **Grupo** (everyone), **Mis campañas**
+  (members only; a non-member gets a 404) and **Yo** — sharing a period selector kept in the URL
+  (`?period=all|last12|<year>`). Metrics are pure functions in `src/lib/statistics/metrics.ts`
+  (view-models carry numbers and keys, never text; wording lives in i18n); `statisticsService.ts` only
+  loads data. A *played* session is an active one dated up to today; hours count only sessions with
+  start time and duration; a day without an answer counts as `T`. Answer lead time uses
+  `Availability.updatedAt`, so it is shown as approximate (≈). Spec: `design/design_handoff_estadisticas/`
 - **Design reference**: the authoritative visual spec lives in `design/README.md` and `design/screenshots/` (local, gitignored — a Claude design handoff). Follow it for layout, tokens, and flows
 
 ## 6. Conventions

@@ -469,7 +469,6 @@
       "campaigns": "My campaigns",
       "me": "Me"
     },
-    "comingSoon": "This tab is coming soon.",
     "tie": "tie",
     "joinMore": "{{names}} and {{count}} more",
     "units": {
@@ -611,6 +610,28 @@
       "noDays_one": "{{count}} day with No",
       "noDays_other": "{{count}} days with No",
       "approx": "≈ approximate: based on the last saved answer for each day."
+    },
+    "me": {
+      "line_one": "{{count}} campaign · {{role}}",
+      "line_other": "{{count}} campaigns · {{role}}",
+      "roleBoth": "player and DM",
+      "rolePlayer": "player",
+      "summary_one": "{{name}}, you've sat at the table <big>{{count}}</big> time: {{pct}}% of your campaigns' sessions.",
+      "summary_other": "{{name}}, you've sat at the table <big>{{count}}</big> times: {{pct}}% of your campaigns' sessions.",
+      "dmSentence": " {{count}} of them behind the DM screen.",
+      "streak": "Your longest streak: <b>{{weeks}}</b> in a row ({{range}}).",
+      "emptyTitle": "You didn't play in {{period}}",
+      "emptyText": "Your campaigns had no sessions in this period.",
+      "emptyAction": "See my whole history",
+      "byCampaignTitle": "My sessions by campaign",
+      "legendPlayer": "Player",
+      "legendDm": "DM",
+      "byCampaignNote": "Number of sessions · attendance % in that campaign",
+      "companionsTitle": "Who I play with most",
+      "reliabilityTitle": "My reliability",
+      "reliabilityText": "You answered <b>{{rate}}%</b> of the eligible days, with <approx>≈ {{lead}} days</approx> of notice, and blocked <b>{{no}}</b> with a No.",
+      "reliabilityNoLead": "You answered <b>{{rate}}%</b> of the eligible days and blocked <b>{{no}}</b> with a No.",
+      "approxShort": "≈ approximate"
     }
   }
 }
