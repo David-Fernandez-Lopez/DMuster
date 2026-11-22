@@ -495,8 +495,8 @@
     "few_one": "There is only {{count}} session in this period. Rankings will mean more with more history.",
     "few_other": "There are only {{count}} sessions in this period. Rankings will mean more with more history.",
     "group": {
-      "summary_one": "The company has met <big>{{count}}</big> time in <b>{{campaigns}}</b>, with <b>{{players}}</b> involved.",
-      "summary_other": "The company has met <big>{{count}}</big> times in <b>{{campaigns}}</b>, with <b>{{players}}</b> involved.",
+      "summary_one": "You have met <big>{{count}}</big> time in <b>{{campaigns}}</b>, with <b>{{players}}</b> involved.",
+      "summary_other": "You have met <big>{{count}}</big> times in <b>{{campaigns}}</b>, with <b>{{players}}</b> involved.",
       "hours_one": "There are <big>{{hours}} h</big> of play on record, in {{timed}} of that session.",
       "hours_other": "There are <big>{{hours}} h</big> of play on record, in {{timed}} of those {{count}} sessions.",
       "fameTitle": "Hall of fame",

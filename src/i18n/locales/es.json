@@ -495,8 +495,8 @@
     "few_one": "Solo hay {{count}} partida en este periodo. Los rankings ganarán sentido con más historial.",
     "few_other": "Solo hay {{count}} partidas en este periodo. Los rankings ganarán sentido con más historial.",
     "group": {
-      "summary_one": "La compañía se ha reunido <big>{{count}}</big> vez en <b>{{campaigns}}</b>, con <b>{{players}}</b> distintos.",
-      "summary_other": "La compañía se ha reunido <big>{{count}}</big> veces en <b>{{campaigns}}</b>, con <b>{{players}}</b> distintos.",
+      "summary_one": "Os habéis reunido <big>{{count}}</big> vez en <b>{{campaigns}}</b>, con <b>{{players}}</b> distintos.",
+      "summary_other": "Os habéis reunido <big>{{count}}</big> veces en <b>{{campaigns}}</b>, con <b>{{players}}</b> distintos.",
       "hours_one": "Hay <big>{{hours}} h</big> de juego anotadas, en {{timed}} de esa partida.",
       "hours_other": "Hay <big>{{hours}} h</big> de juego anotadas, en {{timed}} de esas {{count}} partidas.",
       "fameTitle": "Salón de la fama",

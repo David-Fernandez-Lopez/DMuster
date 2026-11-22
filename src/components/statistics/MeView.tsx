@@ -103,7 +103,7 @@ export default function MeView({
             ) : null}
           </div>
 
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-[10px]">
+          <div className="flex flex-wrap gap-[10px] [&>*]:min-w-0 [&>*]:grow [&>*]:basis-[340px]">
             <StatCard>
               <div className="mb-3 flex items-center justify-between">
                 <CardLabel>{t("statistics.me.byCampaignTitle")}</CardLabel>
