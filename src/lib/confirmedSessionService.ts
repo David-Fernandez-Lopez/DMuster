@@ -10,11 +10,6 @@ import {
 import { loadRequirementWindows } from "@/lib/campaignRequirementsService";
 import { isEligible, toIsoDate, toUtcDate } from "@/lib/date";
 import { todayIso } from "@/lib/today";
-import {
-  enqueueDeletion,
-  enqueueForSession,
-  enqueueUpdateForSession,
-} from "@/lib/google/calendarSyncService";
 import { listHolidays } from "@/lib/holidayService";
 import { prisma } from "@/lib/prisma";
 import { lockRow } from "@/lib/rowLock";
@@ -583,12 +578,6 @@ export async function confirmSession({
       return session;
     });
 
-    try {
-      await enqueueForSession(created.id, attendees);
-    } catch (syncError) {
-      console.error("[GOOGLE-SYNC/CONFIRM] Failed to enqueue calendar sync:", syncError);
-    }
-
     return {
       ok: true,
       session: {
@@ -701,12 +690,6 @@ export async function updateSession(
       select: { date: true, startTime: true, durationMinutes: true },
     });
 
-    try {
-      await enqueueUpdateForSession(id);
-    } catch (syncError) {
-      console.error("[GOOGLE-SYNC/UPDATE] Failed to enqueue calendar sync:", syncError);
-    }
-
     return {
       ok: true,
       session: {
@@ -758,12 +741,6 @@ export async function cancelSession(
     return { ok: false, error: "sessions.errors.notFound" };
   }
 
-  try {
-    await enqueueDeletion(id);
-  } catch (syncError) {
-    console.error("[GOOGLE-SYNC/CANCEL] Failed to enqueue calendar sync:", syncError);
-  }
-
   return { ok: true, id };
 }
 
@@ -801,7 +778,7 @@ export async function addAttendee(
   // render consults it: the self-join button sends an empty body, so there is
   // no field a schema could reject and nothing downstream re-asserted the date.
   // Anyone posting to this route directly could join — or be added to — a
-  // session from any point in the past, which then enqueues a calendar event
+  // session from any point in the past, putting it in someone's calendar feed
   // for a day that has been and gone. Applies to the DM path too: adding
   // someone to a session that has already happened is not a correction the
   // product offers anywhere.
@@ -899,12 +876,6 @@ export async function addAttendee(
     return { ok: false, error: "sessions.errors.unknown" };
   }
 
-  try {
-    await enqueueForSession(sessionId, [targetUserId]);
-  } catch (syncError) {
-    console.error("[GOOGLE-SYNC/ADD_ATTENDEE] Failed to enqueue calendar sync:", syncError);
-  }
-
   return { ok: true, sessionId, userId: targetUserId };
 }
 
@@ -990,12 +961,6 @@ export async function removeAttendee(
 
     console.error("[SESSIONS/REMOVE_ATTENDEE] Failed to remove attendee:", error);
     return { ok: false, error: "sessions.errors.unknown" };
-  }
-
-  try {
-    await enqueueDeletion(sessionId, targetUserId);
-  } catch (syncError) {
-    console.error("[GOOGLE-SYNC/REMOVE_ATTENDEE] Failed to enqueue calendar sync:", syncError);
   }
 
   return { ok: true, sessionId, userId: targetUserId };

@@ -38,7 +38,7 @@ describe("removeHoliday", () => {
 
   // Removing the holiday does not remove the session: it keeps its activeDate,
   // keeps occupying the one-session-per-day slot so the campaign cannot confirm
-  // that date again, and its events stay in the attendees' Google calendars.
+  // that date again, and it stays in the attendees' calendar feeds.
   it("refuses while a confirmed session depends on the date", async () => {
     holidayOn("2026-09-15", 1);
 

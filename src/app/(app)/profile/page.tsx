@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import CalendarFeedSection from "@/components/profile/CalendarFeedSection";
 import ChangePasswordForm from "@/components/profile/ChangePasswordForm";
 import CloseAllSessionsButton from "@/components/profile/CloseAllSessionsButton";
-import GoogleCalendarConnection from "@/components/profile/GoogleCalendarConnection";
 import InvitationsSection from "@/components/profile/InvitationsSection";
 import LocaleSelector from "@/components/profile/LocaleSelector";
 import ThemeSelector from "@/components/profile/ThemeSelector";
@@ -14,27 +13,18 @@ import { auth } from "@/lib/auth";
 import { isDmOfAnyCampaign } from "@/lib/authz";
 import { getFeedUrlForUser } from "@/lib/calendarFeedService";
 import { type CampaignWithRole, listCampaignsForUser } from "@/lib/campaignService";
-import { getConnectionStatus } from "@/lib/google/connectionService";
 import { type InvitationDto, listInvitations } from "@/lib/invitationService";
 import { resolveTheme, THEME_COOKIE } from "@/lib/theme";
 
-const CALLBACK_OUTCOMES = ["connected", "already_linked", "error"] as const;
-
 /**
  * Profile page. Shows the user's identity (avatar initial, name, email) and a
- * settings card with language, theme and Google Calendar sync controls.
- * Requires an authenticated session (the proxy redirects anonymous users;
- * verified again here).
+ * settings card with language, theme and calendar-feed controls. Requires an
+ * authenticated session (the proxy redirects anonymous users; verified again
+ * here).
  *
- * @param {{ searchParams: Promise<{ google?: string }> }} props - Carries the
- *   one-time `?google=...` outcome from a just-completed OAuth round trip.
  * @returns {Promise<JSX.Element>}
  */
-export default async function ProfilePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ google?: string }>;
-}) {
+export default async function ProfilePage() {
   const session = await auth();
   if (!session?.user) {
     redirect("/login");
@@ -48,9 +38,6 @@ export default async function ProfilePage({
   const initialTheme = resolveTheme(cookieTheme, session.user.theme) ?? null;
 
   const calendarFeedUrl = await getFeedUrlForUser(session.user.id);
-  const googleConnectionStatus = await getConnectionStatus(session.user.id);
-  const { google: rawCallbackOutcome } = await searchParams;
-  const callbackOutcome = CALLBACK_OUTCOMES.find((outcome) => outcome === rawCallbackOutcome) ?? null;
 
   // Invitations (roadmap #24): only a DM of at least one campaign may send
   // them (no global admin role — CLAUDE.md §4), same signal as /holidays.
@@ -88,7 +75,6 @@ export default async function ProfilePage({
         <LocaleSelector />
         <ThemeSelector initialTheme={initialTheme} />
         <CalendarFeedSection initialUrl={calendarFeedUrl} />
-        <GoogleCalendarConnection status={googleConnectionStatus} callbackOutcome={callbackOutcome} />
       </section>
 
       <h2 className="mt-8 mb-3 font-display text-xl font-semibold text-ink">

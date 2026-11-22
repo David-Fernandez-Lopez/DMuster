@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 import { addAttendee } from "@/lib/confirmedSessionService";
-import { scheduleSyncSweep } from "@/lib/google/calendarSyncService";
 import { firstFieldErrors } from "@/lib/validation/auth";
 import { addAttendeeSchema } from "@/lib/validation/confirmedSession";
 
@@ -81,8 +80,6 @@ export async function POST(
       { status: attendeeMutationStatus(result.error) },
     );
   }
-
-  scheduleSyncSweep();
 
   return NextResponse.json(
     { data: { sessionId: result.sessionId, userId: result.userId } },

@@ -55,12 +55,12 @@ export const acceptInvitationSchema = z
       .min(1, { error: "auth.errors.nameRequired" })
       .max(NAME_MAX_LENGTH, { error: "auth.errors.nameTooLong" })
       // The name is fixed here once and for all — there is no way to change it
-      // afterwards — and it travels into the description of a calendar event on
-      // every campaign-mate's Google Calendar. Google renders a subset of HTML
-      // in that field, so a name shaped like a tag or an anchor would show
+      // afterwards — and it travels into the description of a calendar event in
+      // every campaign-mate's calendar feed. Google Calendar renders a subset of
+      // HTML in that field, so a name shaped like a tag or an anchor would show
       // interpreted rather than literal in someone else's calendar. Restricting
       // the character set at the only point a name is set is the fix that holds
-      // for the whole application; `buildDescription` escapes as well.
+      // for the whole application; `buildSessionEvent` escapes as well.
       .regex(SAFE_NAME_PATTERN, { error: "auth.errors.nameInvalidCharacters" }),
     password: z
       .string()

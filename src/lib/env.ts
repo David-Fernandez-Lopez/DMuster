@@ -35,18 +35,6 @@ function loadEnv(): Env {
 export const env = loadEnv();
 
 /**
- * True when every variable required to run the Google OAuth consent flow is
- * present. Gates the `/profile` integration UI and the
- * `/api/integrations/google/*` routes (404 when false) so a deployment that
- * never set up Google Cloud credentials is entirely unaffected.
- *
- * @returns {boolean} Whether Google Calendar sync can be offered.
- */
-export const isGoogleSyncConfigured: boolean = Boolean(
-  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_OAUTH_REDIRECT_URI
-);
-
-/**
  * True when outgoing mail is configured. Gates password recovery: the login
  * page hides its link and the recovery routes 404 when false, so a deployment
  * without SMTP is unaffected.

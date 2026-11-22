@@ -55,13 +55,36 @@ export type ReminderEventInput = {
 };
 
 /**
+ * Escapes the four characters that let a person's name be read as markup:
+ * `< > & "`. Deliberately not i18next's own escaping, which also rewrites `'`
+ * and `/`: a name like "D'Arc" is valid, and calendar apps that do not render
+ * HTML (Apple, Outlook) would show it as a literal `&#39;`.
+ *
+ * Names are restricted at the only place they are set (`SAFE_NAME_PATTERN`), so
+ * for every valid name this returns its input unchanged. It exists for the day
+ * that restriction is loosened, or for a row written before it existed:
+ * Google Calendar renders a subset of HTML in an event's description, and each
+ * attendee's name lands in every campaign-mate's calendar.
+ *
+ * @param {string} text - A person-supplied string about to be interpolated.
+ * @returns {string} The text with `< > & "` replaced by HTML entities.
+ */
+export function escapeMarkup(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
  * Creates the translator for one feed's texts. A fresh i18next instance is
  * created per call so feeds for different locales never share state; resolution
  * is synchronous because `getOptions` bundles resources statically.
  *
- * Escaping is off: the output is plain iCalendar text, whose own escaping
- * (`escapeIcsText`) is applied by the serializer, and HTML-escaping here would
- * show up as literal `&amp;` in people's calendars.
+ * i18next's own escaping is off: the output is plain iCalendar text, whose own
+ * escaping (`escapeIcsText`) is applied by the serializer. Person-supplied
+ * values are escaped by the caller with `escapeMarkup` instead.
  *
  * @param {AppLocale} locale - Locale of the feed's owner.
  * @returns {TFunction} A translator fixed to that locale.
@@ -115,10 +138,13 @@ export function buildSessionEvent(input: SessionEventInput): IcsEvent {
   const t = createFeedTranslator(input.locale);
   const isOnline = input.onlineAttendeeNames.length > 0;
 
-  const lines = [t("calendarFeed.eventDescription", { players: input.attendeeNames.join(", ") })];
+  const players = input.attendeeNames.map(escapeMarkup).join(", ");
+  const lines = [t("calendarFeed.eventDescription", { players })];
   if (isOnline) {
     lines.push(
-      t("calendarFeed.eventDescriptionOnline", { players: input.onlineAttendeeNames.join(", ") }),
+      t("calendarFeed.eventDescriptionOnline", {
+        players: input.onlineAttendeeNames.map(escapeMarkup).join(", "),
+      }),
     );
   }
 

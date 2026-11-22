@@ -3,7 +3,6 @@ import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 import { confirmSession } from "@/lib/confirmedSessionService";
-import { scheduleSyncSweep } from "@/lib/google/calendarSyncService";
 import { firstFieldErrors } from "@/lib/validation/auth";
 import { confirmSessionSchema } from "@/lib/validation/confirmedSession";
 
@@ -95,8 +94,6 @@ export async function POST(request: Request): Promise<NextResponse> {
       { status: mutationErrorStatus(result.error) },
     );
   }
-
-  scheduleSyncSweep();
 
   return NextResponse.json({ data: result.session }, { status: 201 });
 }

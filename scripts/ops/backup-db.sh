@@ -9,8 +9,8 @@
 # the password so it never appears in `ps` output.
 #
 # A dump is the entire credential store in the clear — password hashes, session
-# tokens (which are themselves the credential) and unencrypted Google OAuth
-# tokens. So it is written OUTSIDE the repository by default: the repo tree is
+# tokens (which are themselves the credential) and each person's calendar-feed
+# token (the secret in their subscription URL). So it is written OUTSIDE the repository by default: the repo tree is
 # bind-mounted into the app container, which runs as root, and anything the
 # application can reach is within reach of a compromise of the application.
 # Files are created 0600 in a 0700 directory.
@@ -77,5 +77,5 @@ SIZE="$(du -h "$OUT_FILE" | cut -f1)"
 echo "[BACKUP/DB] Done: $OUT_FILE ($SIZE)"
 echo "[BACKUP/DB] Restore with: scripts/ops/restore-db.sh $OUT_FILE"
 echo "[BACKUP/DB] Treat this file as the credential store it is: it carries every"
-echo "            password hash, every live session token and the Google OAuth"
-echo "            tokens, all unencrypted."
+echo "            password hash, every live session token and every calendar-feed"
+echo "            token, all unencrypted."

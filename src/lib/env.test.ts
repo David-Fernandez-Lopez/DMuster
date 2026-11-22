@@ -57,25 +57,6 @@ describe("envSchema", () => {
     });
   });
 
-  describe("CRON_SECRET", () => {
-    // Unset disables the sweeper routes entirely, which is a legitimate way to
-    // run this app — so absence must stay valid while a weak value must not.
-    it.each([[undefined], [""]])("accepts %p, which disables the cron routes", (secret) => {
-      expect(parse({ CRON_SECRET: secret }).ok).toBe(true);
-    });
-
-    it("rejects a short secret", () => {
-      const { ok, messages } = parse({ CRON_SECRET: "hunter2" });
-
-      expect(ok).toBe(false);
-      expect(messages).toMatch(/at least 32 characters/);
-    });
-
-    it("accepts a real one", () => {
-      expect(parse({ CRON_SECRET: "b".repeat(44) }).ok).toBe(true);
-    });
-  });
-
   describe("AUTH_URL", () => {
     // Deliberately not required to be https. This deployment is served over
     // plain HTTP; demanding a scheme it cannot provide would stop the app

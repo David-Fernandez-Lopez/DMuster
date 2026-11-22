@@ -3,12 +3,6 @@ import { prisma } from "@/lib/prisma";
 
 jest.mock("@/lib/today", () => ({ todayIso: () => "2026-10-25" }));
 jest.mock("@/lib/rowLock", () => ({ lockRow: jest.fn() }));
-jest.mock("@/lib/google/calendarSyncService", () => ({
-  DISCONNECT_PROCESS_LIMIT: 10,
-  enqueueDeletion: jest.fn(),
-  enqueueUpdateForSession: jest.fn(),
-  processPending: jest.fn(),
-}));
 
 // The generated Prisma client is ESM and uses `import.meta.url`, which ts-jest
 // cannot parse — same stand-in as the other service tests.

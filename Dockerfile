@@ -87,18 +87,7 @@ COPY docker/migrate/entrypoint.sh /usr/local/bin/dmuster-migrate
 CMD ["sh", "/usr/local/bin/dmuster-migrate"]
 
 # =============================================================================
-# Stage 6: cron
-# Fires the CRON_SECRET-protected /api/cron/* routes on a schedule. The script
-# is baked into the image so the production stack needs no bind mounts.
-# =============================================================================
-FROM alpine:3.22 AS cron
-
-COPY docker/cron/entrypoint.sh /entrypoint.sh
-
-ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
-
-# =============================================================================
-# Stage 7: runner  (default target — must stay the last stage)
+# Stage 6: runner  (default target — must stay the last stage)
 # Minimal production image. Copies only the standalone bundle, static assets,
 # and public folder. Runs as non-root user for security.
 # =============================================================================

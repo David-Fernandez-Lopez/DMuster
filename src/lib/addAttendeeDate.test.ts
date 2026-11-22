@@ -26,11 +26,6 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 jest.mock("@/lib/authz", () => ({ getCampaignRole: jest.fn() }));
-jest.mock("@/lib/google/calendarSyncService", () => ({
-  enqueueDeletion: jest.fn(),
-  enqueueForSession: jest.fn(),
-  enqueueUpdateForSession: jest.fn(),
-}));
 jest.mock("@/lib/holidayService", () => ({ listHolidays: jest.fn() }));
 
 const findSession = prisma.confirmedSession.findFirst as jest.Mock;

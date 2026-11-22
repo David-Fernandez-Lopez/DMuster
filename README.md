@@ -105,82 +105,36 @@ the seed import it. Run it again whenever `prisma/schema.prisma` changes.
 ## Environment
 
 Every variable is documented with comments in `.env.example`. Most deployments only need the
-MySQL, Prisma and Auth.js sections; the two below are optional add-ons.
+MySQL, Prisma and Auth.js sections; the rest are optional.
 
-### Google Calendar sync (optional)
+### Calendar feed (ICS)
 
-Lets users connect their Google account from `/profile` so confirmed sessions are mirrored to
-their primary calendar. Leave `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` /
-`GOOGLE_OAUTH_REDIRECT_URI` unset to skip this entirely — the app boots normally and `/profile`
-hides the integration.
+Each user gets a personal subscription link from `/profile` ("Calendario" → "Generar enlace de
+calendario"): `<AUTH_URL>/api/calendar/<token>.ics`. Add it once to Google Calendar ("Other
+calendars" → "From URL"), Apple Calendar or Outlook, and their confirmed sessions show up there —
+no account connection, no OAuth, nothing to renew. It needs no configuration beyond `AUTH_URL`
+(the link is built from it, never from request headers) and `APP_TIMEZONE`.
 
-To set it up, in [Google Cloud Console](https://console.cloud.google.com):
+What the feed contains, generated on every request from the database:
 
-1. Create a project and enable the **Google Calendar API** (APIs & Services → Library).
-2. **OAuth consent screen** → User Type **External** → add the scope
-   `https://www.googleapis.com/auth/calendar.events` under Scopes (search and add it manually —
-   it is a sensitive scope and is not suggested by default; make sure it is saved) → add each
-   player's email under **Test users**.
-   > The app stays in **Testing** status — publishing to production would require Google's
-   > verification review. Testing supports up to 100 test users, but Google expires each
-   > `refresh_token` **7 days** after it is issued in this mode, however much it is used; a user
-   > seeing a "reconnect" prompt in `/profile` a week after connecting is expected, not a bug.
-3. **Credentials** → Create credentials → **OAuth client ID** → Web application. Add
-   `<your-app-url>/api/integrations/google/callback` as an authorized redirect URI — it must
-   match `GOOGLE_OAUTH_REDIRECT_URI` character-for-character.
-4. Copy the Client ID and Client secret into `.env`, and recreate the app container
-   (`docker compose up -d`) so it picks them up — `docker-compose.yml` only forwards variables
-   it knows about at container creation time, not on every `.env` edit.
+- Every active confirmed session the user attends, from the last 90 days onwards, with an
+  "(Online)" suffix and a line naming who plays remotely when anyone does. Sessions with a start
+  time become timed events (converted to UTC from `APP_TIMEZONE`, DST included); sessions without
+  one are all-day events.
+- The monthly reminder, "REVISAR CALENDARIO ROL" ("REVIEW RPG CALENDAR" for English users): an
+  all-day event on the last day of the current month while *next* month still has an eligible day
+  the user has not answered. It disappears from the feed once they finish answering.
 
-### Cron sweeper (optional)
+Things worth knowing:
 
-Two routes, both authorized by the same `CRON_SECRET` shared-secret header (not a user session)
-and both entirely inert (404) when it is unset:
-
-- `POST /api/cron/calendar-sync` retries failed Google Calendar session syncs on a schedule, for
-  when no one has used the app recently to trigger the normal post-action sync. Manual retry
-  from `/profile` works without it.
-- `POST /api/cron/availability-reminders` runs once a day: for every user with Google Calendar
-  sync enabled, it checks whether *next* month still has an eligible day they have not answered
-  and creates an all-day reminder event on the last day of the *current* month if so — titled
-  "REVISAR CALENDARIO ROL", or "REVIEW RPG CALENDAR" for users with English as their language —
-  clearing it again once they finish answering. Only affects users who both have Google
-  connected and belong to at least one campaign.
-
-A `cron` service is already wired into `docker-compose.yml` (`docker/cron/entrypoint.sh`,
-Alpine's `crond`) that calls `calendar-sync` every 15 minutes and `availability-reminders` once a
-day, both over the compose network — no external scheduler needed for local/self-hosted use. Set
-`CRON_SECRET` in `.env` (`openssl rand -base64 32`, same recipe as `AUTH_SECRET`) and recreate the
-containers (`docker compose up -d`) so both `app` and `cron` pick it up. Leaving it unset keeps
-the `cron` service running but idle (it just sleeps — see the entrypoint script).
-
-For a hosted deployment with its own scheduler (Vercel Cron, a scheduled GitHub Action, a cloud
-provider's Cloud Scheduler, …), point it at the same routes with the same header instead of
-relying on the compose sidecar.
-
-### Sync audit logs
-
-Every real write to the Google Calendar API and every cron execution is recorded for
-troubleshooting — there is no admin screen for these, they are meant to be queried directly:
-
-```sql
--- Recent cron executions, with duration and per-job details.
-SELECT job, status, startedAt, finishedAt, durationMs, processed, failed, details
-  FROM cron_runs ORDER BY startedAt DESC LIMIT 10;
-
--- Recent Google Calendar writes (converted to a local timezone for reading).
--- `trigger` is a reserved word in MySQL, so it must stay backquoted.
-SELECT kind, action, `trigger`, success, googleEventId,
-       CONVERT_TZ(executedAt, '+00:00', 'Europe/Madrid') AS executedLocal
-  FROM calendar_event_logs ORDER BY executedAt DESC LIMIT 10;
-```
-
-Timestamps are stored in UTC. The `mysql` image loads the time zone tables, so a zone name
-converts with daylight saving time taken into account.
-
-`calendar_event_logs` only gains a row per real Google API call (insert/patch/delete) and is kept
-indefinitely; `cron_runs` gains a row on every sweep tick (as often as every 15 minutes) and is
-pruned after 90 days.
+- **Refresh is up to the calendar app.** The feed asks clients to refresh hourly, but Google
+  Calendar ignores that and re-reads subscriptions every 8–24 hours, so a newly confirmed session
+  can take that long to appear there. Apple Calendar and Outlook refresh sooner.
+- **The URL is the credential.** Anyone holding it can read that person's sessions. "Generar un
+  enlace nuevo" in `/profile` replaces the token and kills the old URL at once; a disabled account's
+  URL answers 404 too (see `scripts/ops/README.md`).
+- **It must be reachable from the internet over HTTPS** for Google to fetch it, so a feed from a
+  `localhost` install works in a local client but not in Google Calendar.
 
 ## Deployment
 

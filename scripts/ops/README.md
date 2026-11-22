@@ -18,7 +18,7 @@ writes anything until explicitly told to.
 | `backup-db.sh` | Timestamped, gzipped `mysqldump` of the whole database into `~/dmuster-backups`. Verifies the dump completed before accepting it |
 | `restore-db.sh` | Restores one of those dumps, after showing the row counts it is about to replace |
 | `purge-expired-sessions.sh` | Deletes `sessions` rows whose `expires` is already past. Auth.js never prunes them |
-| `rotate-secrets.sh` | Generates fresh `AUTH_SECRET` and `CRON_SECRET` values to paste into `.env` |
+| `rotate-secrets.sh` | Generates a fresh `AUTH_SECRET` value to paste into `.env` |
 | `rotatePasswords.ts` | Gives every account a fresh random password with its own bcrypt salt |
 | `disableAccount.ts` | Revokes (or restores) one account's access and ends its sessions |
 
@@ -89,15 +89,12 @@ its own row and never consults the user's state, so it would keep working.
 **It does not delete the row, and cannot.** Six foreign keys reference a user
 with `Restrict` — campaigns and holidays created, sessions confirmed and
 cancelled, invitations sent and accepted — so anyone who has used the app is
-undeletable. Deleting would also be the wrong thing: it cascades away their
-`Account` row, leaving the Google token alive on Google's side with nothing
-pointing at it, and their `CalendarEventLog` history, which is exactly the
-record worth keeping when an account is suspect.
+undeletable.
 
-**It does not revoke their Google Calendar token.** DMuster can only do that
-while the person is signed in and disconnecting from `/profile`. Once the
-account is disabled, revoking it is theirs to do from their Google account
-settings.
+**Disabling also cuts off their calendar feed.** The subscription URL stops
+answering (404) the moment the account is disabled, so a calendar app that was
+subscribed stops receiving sessions on its next refresh. Re-enabling the
+account brings the same URL back.
 
 A person acting on their own account does not need any of this: `/profile` now
 offers a password change and "close all sessions", both of which end every
@@ -124,8 +121,8 @@ survives. Do that before rotating for real.
 
 **A dump is the whole credential store**, in the clear: every password hash,
 every live session token — which *is* the credential, no password needed — and
-the Google OAuth tokens, which grant read/write access to the calendars of
-whoever connected their account.
+the calendar-feed tokens, each of which is the secret in someone's
+subscription URL and lets whoever holds it read that person's sessions.
 
 So `backup-db.sh` writes to `~/dmuster-backups` (override with
 `$DMUSTER_BACKUP_DIR` or a first argument), owner-only, in a `0700` directory.

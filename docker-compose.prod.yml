@@ -3,7 +3,7 @@
 #
 # Everything is built from the repository; there are no bind mounts, so a clean
 # git checkout is all the host needs. Start order on every deploy:
-#   db (healthy) -> migrate (runs `prisma migrate deploy`, exits 0) -> app -> cron
+#   db (healthy) -> migrate (runs `prisma migrate deploy`, exits 0) -> app
 #
 # Required variables (Coolify lists them in the Environment Variables tab):
 #   MYSQL_ROOT_PASSWORD, MYSQL_PASSWORD, AUTH_SECRET, AUTH_URL
@@ -33,10 +33,6 @@ services:
       AUTH_TRUST_HOST: "true"
       DEFAULT_LOCALE: ${DEFAULT_LOCALE:-es}
       APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Madrid}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-}
-      CRON_SECRET: ${CRON_SECRET:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-}
       SMTP_SECURE: ${SMTP_SECURE:-}
@@ -75,19 +71,6 @@ services:
       db:
         condition: service_healthy
     restart: "no"
-
-  # Fires the CRON_SECRET-protected /api/cron/* routes on a schedule. Inert
-  # (just sleeps) when CRON_SECRET is unset — see docker/cron/entrypoint.sh.
-  cron:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: cron
-    environment:
-      CRON_SECRET: ${CRON_SECRET:-}
-    depends_on:
-      - app
-    restart: unless-stopped
 
   db:
     image: mysql:8.4

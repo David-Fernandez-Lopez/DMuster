@@ -129,9 +129,8 @@ async function decideRequest(
 /**
  * Deletes `PasswordResetLog` rows past their retention and tokens that expired
  * more than a day ago (every token expires within the hour, so this covers
- * used and superseded ones too). Same contract as `pruneCronRuns`: run
- * opportunistically, never fails the caller. Run on every request rather than
- * from the cron routes so it also works where `CRON_SECRET` is unset.
+ * used and superseded ones too). Runs opportunistically on every request and
+ * never fails the caller, so it needs no scheduler.
  *
  * @returns {Promise<void>}
  */

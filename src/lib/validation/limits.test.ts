@@ -90,8 +90,8 @@ describe("display name characters", () => {
   const base = { password: "una-contrasena-larga", confirmPassword: "una-contrasena-larga" };
 
   // The name is set here once and for all — there is no way to change it — and
-  // it lands in the description of a calendar event on every campaign-mate's
-  // Google Calendar, a field where Google interprets a subset of HTML.
+  // it lands in the description of a calendar event in every campaign-mate's
+  // calendar feed, a field where Google Calendar interprets a subset of HTML.
   it.each([
     ["<b>Ana</b>"],
     ['<a href="http://x">click</a>'],

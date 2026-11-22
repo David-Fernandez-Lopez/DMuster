@@ -9,10 +9,7 @@
 // deleting is not available: six foreign keys reference a user with `Restrict`
 // (campaigns and holidays created, sessions confirmed and cancelled,
 // invitations sent and accepted), so anyone who has used the app cannot be
-// deleted at all. Deleting would also cascade away their `Account` row —
-// leaving the Google token alive on Google's side with nothing left pointing at
-// it — and their `CalendarEventLog`, which is exactly the history worth keeping
-// when an account is suspect.
+// deleted at all.
 //
 // Runs inside the `app` container, because the database has no published port:
 //
@@ -25,9 +22,9 @@
 //   --enable            restore access instead of revoking it
 //   --apply             actually write (without it the script only reports)
 //
-// Disabling does NOT revoke the person's Google Calendar token. If that matters,
-// have them disconnect from /profile first, or revoke it in their Google
-// account settings — DMuster cannot do it on their behalf.
+// Disabling also stops their calendar feed (/api/calendar/<token>.ics) from
+// answering, because the feed refuses disabled accounts. Their calendar app keeps
+// whatever it already downloaded until it next refreshes.
 import "dotenv/config";
 
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
@@ -158,10 +155,7 @@ async function main(): Promise<void> {
     );
 
     if (!options.enable) {
-      console.log(
-        "[OPS/DISABLE] Their Google Calendar token, if any, is untouched — DMuster " +
-          "cannot revoke it on their behalf.",
-      );
+      console.log("[OPS/DISABLE] Their calendar feed URL now answers 404.");
     }
   } finally {
     await prisma.$disconnect();

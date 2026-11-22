@@ -90,10 +90,27 @@ describe("buildSessionEvent", () => {
     expect(event.description).toBe("Juegan: Ana, Luis\nOnline: Luis");
   });
 
-  it("does not HTML-escape names", () => {
-    const event = buildSessionEvent({ ...BASE, attendeeNames: ["Tom & Jerry"] });
+  it("neutralises markup in a name", () => {
+    const event = buildSessionEvent({
+      ...BASE,
+      attendeeNames: ['<a href="http://x">Ana</a>', "Tom & Jerry"],
+      onlineAttendeeNames: ["<b>Luis</b>"],
+    });
 
-    expect(event.description).toBe("Juegan: Tom & Jerry");
+    expect(event.description).toBe(
+      "Juegan: &lt;a href=&quot;http://x&quot;&gt;Ana&lt;/a&gt;, Tom &amp; Jerry\n" +
+        "Online: &lt;b&gt;Luis&lt;/b&gt;",
+    );
+    expect(event.description).not.toContain("<");
+  });
+
+  it("leaves valid names with apostrophes and accents untouched", () => {
+    const event = buildSessionEvent({
+      ...BASE,
+      attendeeNames: ["D'Arc", "Núñez-O’Brien (Nico)"],
+    });
+
+    expect(event.description).toBe("Juegan: D'Arc, Núñez-O’Brien (Nico)");
   });
 
   it("omits the link without an app URL", () => {

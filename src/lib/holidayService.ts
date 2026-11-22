@@ -83,8 +83,8 @@ export async function addHoliday(
  * only from the person tapping the button. What happens to a session already
  * confirmed on that day is worse than it disappearing — it stays in the
  * database with its `activeDate`, keeps occupying the one-session-per-day slot
- * so its campaign cannot confirm that date again, and its events remain in the
- * attendees' Google calendars. Invisible in the app, alive everywhere else.
+ * so its campaign cannot confirm that date again, and it stays in the
+ * attendees' calendar feeds. Invisible in the app, alive everywhere else.
  *
  * The guard only applies from today onwards. A past holiday cannot cost anyone
  * a session that has not happened yet, and blocking those would leave the list

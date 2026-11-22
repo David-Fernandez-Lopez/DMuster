@@ -334,47 +334,6 @@
     "reminderTitle": "REVISAR CALENDARIO ROL",
     "reminderDescription": "Tienes días sin responder en {{month}}. Entra en DMuster y completa tu disponibilidad."
   },
-  "integrations": {
-    "google": {
-      "title": "Google Calendar",
-      "description": "Conecta tu cuenta de Google para que tus partidas confirmadas aparezcan automáticamente en tu calendario principal. Se crea un evento por cada partida en la que juegas; puedes pausarlo o desconectarlo cuando quieras.",
-      "connect": "Conectar Google Calendar",
-      "connectedNotice": "Cuenta de Google conectada correctamente.",
-      "warnings": {
-        "notRevokedAtGoogle": "Hemos desconectado la cuenta aquí, pero no hemos podido confirmárselo a Google. Retira el permiso de DMuster desde la configuración de tu cuenta de Google.",
-        "calendarCleanupFailed": "Algunos eventos no se han podido borrar de tu calendario. Revísalo y elimina a mano los que sobren."
-      },
-      "connectedAs": "Conectado como {{email}}",
-      "enable": "Activada",
-      "paused": "Pausada",
-      "lastSync": "Última sincronización: {{date}}",
-      "neverSynced": "Todavía no se ha sincronizado ninguna partida.",
-      "pendingSummary": "Pendientes de sincronizar: {{count}}",
-      "failedSummary": "Con error de sincronización: {{count}}",
-      "lastCronRun": "Última comprobación automática: {{date}}",
-      "cronNeverRan": "La comprobación automática no se ha ejecutado nunca. Puede que el programador no esté funcionando.",
-      "retry": "Reintentar",
-      "disconnect": "Desconectar",
-      "disconnectPrompt": "¿Desconectar Google Calendar? Se eliminarán de tu calendario los eventos de tus próximas partidas.",
-      "disconnectYes": "Sí, desconectar",
-      "broken": "La conexión con Google se ha interrumpido.",
-      "reconnect": "Reconectar",
-      "eventDescription": "Juegan: {{players}}",
-      "eventDescriptionOnline": "Online: {{players}}",
-      "eventOnlineSuffix": "(Online)",
-      "reminderTitle": "REVISAR CALENDARIO ROL",
-      "reminderDescription": "Tienes días sin responder en {{month}}. Entra en DMuster y completa tu disponibilidad.",
-      "errors": {
-        "unauthorized": "Debes iniciar sesión.",
-        "notConfigured": "Esta integración no está disponible.",
-        "notConnected": "No tienes conectada tu cuenta de Google.",
-        "exchange": "No se ha podido completar la conexión con Google. Inténtalo de nuevo.",
-        "revoked": "El acceso a tu Google Calendar ha caducado o ha sido revocado. Reconéctalo desde tu perfil.",
-        "alreadyLinked": "Esa cuenta de Google ya está conectada a otro usuario de DMuster.",
-        "unknown": "Algo ha ido mal. Inténtalo de nuevo."
-      }
-    }
-  },
   "auth": {
     "login": {
       "title": "Iniciar sesión",

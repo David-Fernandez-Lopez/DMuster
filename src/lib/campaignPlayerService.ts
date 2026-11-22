@@ -1,12 +1,6 @@
 import { Prisma } from "@/generated/prisma/client";
 import { CampaignRole } from "@/generated/prisma/enums";
 import { toUtcDate } from "@/lib/date";
-import {
-  DISCONNECT_PROCESS_LIMIT,
-  enqueueDeletion,
-  enqueueUpdateForSession,
-  processPending,
-} from "@/lib/google/calendarSyncService";
 import { prisma } from "@/lib/prisma";
 import { lockRow } from "@/lib/rowLock";
 import { todayIso } from "@/lib/today";
@@ -197,49 +191,6 @@ export async function setPlayerAlwaysOptional(
 }
 
 /**
- * Takes the departing person's events out of their calendar, and refreshes
- * everyone else's so their name stops appearing in it.
- *
- * Runs after the removal has committed. The ledger rows survive it — they are
- * keyed on session and user, not on the attendee row — so nothing is lost by
- * cleaning up afterwards, and the sessions to clean are the ones captured
- * before the attendee rows went.
- *
- * Ordered: the departing person's rows are marked for deletion first, so the
- * refresh below (which only touches SYNCED rows) leaves them alone rather than
- * queuing one last update for someone on their way out.
- *
- * Failures here never fail the removal — the person is out of the campaign
- * either way — but they are logged, because what is left behind is an event in
- * a calendar this app can no longer reach.
- *
- * @param {string} userId - The person who was removed.
- * @param {string[]} sessionIds - Future active sessions they were attending.
- */
-async function cleanUpCalendarsAfterRemoval(
-  userId: string,
-  sessionIds: string[],
-): Promise<void> {
-  if (sessionIds.length === 0) {
-    return;
-  }
-
-  try {
-    for (const sessionId of sessionIds) {
-      await enqueueDeletion(sessionId, userId);
-      await enqueueUpdateForSession(sessionId);
-    }
-    await processPending({ limit: DISCONNECT_PROCESS_LIMIT });
-  } catch (syncError) {
-    console.error(
-      `[CAMPAIGN_PLAYERS/REMOVE] Calendar cleanup failed for user ${userId} on sessions ` +
-        `${sessionIds.join(", ")}:`,
-      syncError,
-    );
-  }
-}
-
-/**
  * Removes a user from a campaign. Refuses to remove the campaign's last DM,
  * which would leave it unmanageable (there is no global admin to recover it).
  * A user who is not a member surfaces as a friendly i18n error key.
@@ -262,7 +213,7 @@ export async function removePlayerFromCampaign(
 ): Promise<CampaignPlayerMutationResult> {
   try {
     const outcome = await prisma.$transaction(
-      async (tx): Promise<{ ok: false; error: string } | { ok: true; sessionIds: string[] }> => {
+      async (tx): Promise<{ ok: false; error: string } | { ok: true }> => {
         await lockRow(tx, "campaign", campaignId);
 
         const membership = await tx.campaignPlayer.findUnique({
@@ -304,22 +255,17 @@ export async function removePlayerFromCampaign(
         // and leaving used to touch only the second. The person stayed on the
         // attendee list of every future session: their calendar kept receiving
         // updates for a campaign they were no longer in, and everyone else's
-        // event description kept listing their name. Not residue left behind —
+        // calendar event kept listing their name. Not residue left behind —
         // a feed that carried on.
         await tx.confirmedSessionAttendee.deleteMany({
           where: { userId, sessionId: { in: affected.map((session) => session.id) } },
         });
 
-        return { ok: true, sessionIds: affected.map((session) => session.id) };
+        return { ok: true };
       },
     );
 
-    if (!outcome.ok) {
-      return outcome;
-    }
-
-    await cleanUpCalendarsAfterRemoval(userId, outcome.sessionIds);
-    return { ok: true };
+    return outcome;
   } catch (error) {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&

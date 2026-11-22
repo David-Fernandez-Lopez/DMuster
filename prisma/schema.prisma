@@ -32,61 +32,6 @@ enum AvailabilityStatus {
   ONLINE
 }
 
-// Lifecycle of one (session, user) row's Google Calendar event. PENDING/FAILED
-// are actionable by `processPending` (roadmap #23); SYNCED and DELETED are
-// terminal until the next `enqueue*` call flips them back to PENDING.
-enum SyncStatus {
-  PENDING
-  SYNCED
-  FAILED
-  DELETED
-}
-
-// What `processPending` should do with a PENDING/FAILED row. Kept separate
-// from `SyncStatus` because a failed deletion must stay distinguishable from
-// a failed creation/update on retry — a single enum couldn't carry both without
-// losing which operation to resume.
-enum SyncOperation {
-  UPSERT
-  DELETE
-}
-
-// What kind of Google Calendar event a `CalendarEventLog` row is about.
-enum CalendarEventKind {
-  SESSION
-  REMINDER
-}
-
-// What actually happened to the Google event: insert, patch, or delete.
-enum CalendarEventAction {
-  CREATE
-  UPDATE
-  DELETE
-}
-
-// Who triggered the Google API call being logged — lets the audit trail
-// separate cron-driven traffic from the traffic normal app usage generates.
-enum SyncTrigger {
-  AFTER_RESPONSE
-  MANUAL_RETRY
-  CRON
-}
-
-// Which scheduled sweep a `CronRun` row is for.
-enum CronJob {
-  CALENDAR_SYNC
-  AVAILABILITY_REMINDERS
-}
-
-// Lifecycle of one cron execution: opened as RUNNING, closed as SUCCESS or
-// FAILED. A row stuck in RUNNING with no `finishedAt` means the process died
-// mid-run instead of vanishing without a trace.
-enum CronRunStatus {
-  RUNNING
-  SUCCESS
-  FAILED
-}
-
 model User {
   id                 String    @id @default(cuid())
   name               String
@@ -107,24 +52,13 @@ model User {
   // Stored raw, unlike one-shot tokens (invitations, password resets), because
   // the URL must be shown again; regenerating replaces it and kills the old URL.
   calendarFeedToken String? @unique @db.VarChar(64)
-  // Opt-in for Google Calendar sync (roadmap #23), independent of having a
-  // Google `Account` row — lets a user pause sync without disconnecting.
-  googleSyncEnabled  Boolean   @default(false)
-  // Set when Google reports the OAuth consent as revoked/expired
-  // (`invalid_grant` on refresh). Surfaces a "reconnect" prompt in /profile;
-  // cleared on a fresh, successful connect.
-  googleSyncBrokenAt DateTime?
   // Set to revoke an account's access without deleting it. `authorize` refuses
   // to sign a disabled account in, and clearing it restores access.
   //
   // A soft flag rather than a row deletion because deleting the row is not
   // available: six foreign keys reference a user with `Restrict` (campaigns and
   // holidays created, sessions confirmed and cancelled, invitations sent and
-  // accepted), so anyone who has used the app is undeletable. It would also
-  // cascade away their `Account` row — leaving the Google token alive on
-  // Google's side with nothing left pointing at it — and their
-  // `CalendarEventLog` history, which is exactly the record a compromised
-  // account makes worth keeping.
+  // accepted), so anyone who has used the app is undeletable.
   disabledAt         DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
@@ -140,9 +74,6 @@ model User {
   cancelledSessions     ConfirmedSession[]          @relation("SessionCancelledBy")
   sessionAttendances    ConfirmedSessionAttendee[]  @relation("SessionAttendee")
   addedSessionAttendees ConfirmedSessionAttendee[]  @relation("SessionAttendeeAddedBy")
-  calendarEvents        SessionCalendarEvent[]
-  calendarEventLogs     CalendarEventLog[]
-  reminderEvents        AvailabilityReminderEvent[]
   sentInvitations       Invitation[]                @relation("InvitationInvitedBy")
   acceptedInvitations   Invitation[]                @relation("InvitationAcceptedBy")
   passwordResetTokens   PasswordResetToken[]
@@ -239,7 +170,7 @@ model Availability {
 // A DM's confirmation that a campaign is playing on a given eligible day. Soft
 // delete only: cancelling a session stamps `cancelledAt`/`cancelledById` and
 // never removes the row, so cancelled attempts stay available for the Phase 2
-// statistics view and for #23's Google Calendar cleanup. Named `ConfirmedSession`
+// statistics view. Named `ConfirmedSession`
 // (not `Session`) to avoid colliding with the Auth.js session table.
 model ConfirmedSession {
   id              String    @id @default(cuid())
@@ -270,7 +201,6 @@ model ConfirmedSession {
   confirmedBy    User                       @relation("SessionConfirmedBy", fields: [confirmedById], references: [id], onDelete: Restrict)
   cancelledBy    User?                      @relation("SessionCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
   attendees      ConfirmedSessionAttendee[]
-  calendarEvents SessionCalendarEvent[]
 
   @@unique([campaignId, activeDate])
   @@index([campaignId, date])
@@ -299,140 +229,6 @@ model ConfirmedSessionAttendee {
 
   @@id([sessionId, userId])
   @@map("confirmed_session_attendees")
-}
-
-// Retry ledger and delivery record for one attendee's Google Calendar event of
-// one confirmed session (roadmap #23). `enqueue*` helpers in
-// calendarSyncService.ts write PENDING/FAILED rows here; `processPending` is
-// the only code that calls Google and advances `status`. Kept as its own table
-// (not columns on ConfirmedSessionAttendee) because a cancelled/removed
-// attendee still needs a row to track deleting their event.
-//
-// `@@unique([sessionId, userId])` is what makes every `enqueue*` call an
-// idempotent upsert instead of risking duplicate rows (and duplicate Google
-// events) for the same person.
-model SessionCalendarEvent {
-  id            String        @id @default(cuid())
-  sessionId     String
-  userId        String
-  // Google's event id, set once `status` first reaches SYNCED. Needed to
-  // PATCH/DELETE the right event later; null before the first successful sync.
-  googleEventId String?
-  status        SyncStatus    @default(PENDING)
-  operation     SyncOperation @default(UPSERT)
-  attempts      Int           @default(0)
-  lastError     String?       @db.Text
-  lastAttemptAt DateTime?
-  syncedAt      DateTime?
-  // Reservation held by the sweep currently working this row, so two overlapping
-  // sweeps cannot both drive it to Google. `claimedBy` identifies the sweep, and
-  // `claimedAt` lets a claim left behind by a crashed process go stale and be
-  // taken again instead of stranding the row forever.
-  claimedAt     DateTime?
-  claimedBy     String?   @db.VarChar(36)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  session ConfirmedSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([sessionId, userId])
-  // Serves processPending's "oldest due PENDING/FAILED row first" query.
-  @@index([status, lastAttemptAt])
-  @@map("session_calendar_events")
-}
-
-// Retry ledger and delivery record for one user's monthly "REVISAR CALENDARIO
-// ROL" reminder (roadmap #23.4): a Google Calendar all-day event placed on the
-// last day of the current month when NEXT month still has unanswered eligible
-// days. Mirrors `SessionCalendarEvent`'s PENDING/SYNCED/FAILED/DELETED
-// lifecycle and UPSERT/DELETE operation, but keyed on (user, month) instead of
-// (session, user) — `reminderSyncService.reconcileReminders` is what decides
-// whether a user needs one, `processPendingReminders` is the only code that
-// calls Google.
-model AvailabilityReminderEvent {
-  id            String        @id @default(cuid())
-  userId        String
-  // The month being checked for completeness, "YYYY-MM". The reminder event
-  // itself sits on the last day of the month BEFORE this one, so the row
-  // describes itself without needing a separate date column.
-  month         String        @db.VarChar(7)
-  googleEventId String?
-  status        SyncStatus    @default(PENDING)
-  operation     SyncOperation @default(UPSERT)
-  attempts      Int           @default(0)
-  lastError     String?       @db.Text
-  lastAttemptAt DateTime?
-  syncedAt      DateTime?
-  // Same reservation as `SessionCalendarEvent.claimedAt`/`claimedBy`.
-  claimedAt     DateTime?
-  claimedBy     String?       @db.VarChar(36)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, month])
-  @@index([status, lastAttemptAt])
-  @@map("availability_reminder_events")
-}
-
-// Append-only audit trail of every REAL call to the Google Calendar API
-// (insert/patch/delete), for both session events and reminder events —
-// unlike `SessionCalendarEvent`/`AvailabilityReminderEvent`, which are ledgers
-// of current state (one row per subject, overwritten in place), this is a
-// history of what actually happened, and nothing ever updates or deletes a
-// row here. `subjectId` is a loose scalar (no FK) on purpose: a log entry
-// must outlive the campaign/session it was about.
-model CalendarEventLog {
-  id            String              @id @default(cuid())
-  userId        String
-  kind          CalendarEventKind
-  action        CalendarEventAction
-  trigger       SyncTrigger
-  // What the write was about: a ConfirmedSession id for SESSION rows, or a
-  // "YYYY-MM" month for REMINDER rows. No FK (see above).
-  subjectId     String?
-  googleEventId String?
-  success       Boolean
-  error         String?             @db.Text
-  // The CronRun that triggered this write, when there was one (null for the
-  // opportunistic post-response sweep or the manual "Reintentar" button).
-  cronRunId     String?
-  // When the Google API call actually happened (UTC, like the rest of the app).
-  executedAt    DateTime            @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, executedAt])
-  @@index([executedAt])
-  @@map("calendar_event_logs")
-}
-
-// One row per execution of a scheduled sweep (roadmap #23.2/#23.4). Opened in
-// RUNNING when the run starts and closed with SUCCESS/FAILED when it ends, so
-// a run that crashed mid-way stays visible as a stale RUNNING row instead of
-// leaving no trace at all.
-model CronRun {
-  id         String        @id @default(cuid())
-  job        CronJob
-  status     CronRunStatus @default(RUNNING)
-  startedAt  DateTime      @default(now())
-  finishedAt DateTime?
-  durationMs Int?
-  processed  Int           @default(0)
-  failed     Int           @default(0)
-  // Job-specific counters (e.g. the reminder sweep's evaluated/enqueued/cleared).
-  // Deliberately schemaless — each job shapes its own summary.
-  details    Json?
-  error      String?       @db.Text
-
-  @@index([job, startedAt])
-  // The retention purge filters on `startedAt` alone, and the composite above
-  // leads with `job`, so InnoDB could not use it: a full table scan every
-  // fifteen minutes, on both cron routes, on the success path and the error one.
-  @@index([startedAt])
-  @@map("cron_runs")
 }
 
 // A single-use, email-bound sign-up link (roadmap #24). Public registration is

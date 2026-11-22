@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Generates fresh values for AUTH_SECRET and CRON_SECRET and prints them.
+# Generates a fresh value for AUTH_SECRET and prints it.
 #
 # It deliberately does NOT edit .env: that file is the only copy of the running
 # configuration and a botched in-place edit is harder to undo than a paste.
@@ -30,12 +30,10 @@ ENV_FILE="$REPO_ROOT/.env"
 # 32 raw bytes: the length `openssl rand -base64 32` produces and the minimum
 # the env schema will require once the corresponding code fix lands.
 AUTH_SECRET_NEW="$(openssl rand -base64 32)"
-CRON_SECRET_NEW="$(openssl rand -base64 32)"
 
 echo "[SECRETS/ROTATE] New values — paste them into $ENV_FILE:"
 echo
 echo "AUTH_SECRET=$AUTH_SECRET_NEW"
-echo "CRON_SECRET=$CRON_SECRET_NEW"
 echo
 
 if [ -f "$ENV_FILE" ]; then
@@ -47,10 +45,8 @@ cat <<'STEPS'
 
 [SECRETS/ROTATE] Then, in order:
   1. cp .env .env.bak-$(date +%Y%m%d-%H%M%S)   # keep a way back
-  2. edit .env with the two values above
-  3. docker compose up -d --force-recreate app cron
+  2. edit .env with the value above
+  3. docker compose up -d --force-recreate app
        (recreate, not restart: the containers read .env at creation time)
   4. reload the app in a browser and confirm you can still reach /login
-  5. confirm the cron sidecar still authenticates:
-       docker compose logs --tail 50 cron
 STEPS

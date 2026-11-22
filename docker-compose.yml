@@ -25,12 +25,6 @@ services:
       AUTH_URL: ${AUTH_URL:-http://localhost:3000}
       DEFAULT_LOCALE: ${DEFAULT_LOCALE:-es}
       APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Madrid}
-      # Optional Google Calendar sync (roadmap #23) — blank is fine, src/lib/env.ts
-      # treats an empty value the same as unset and hides the integration.
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-}
-      CRON_SECRET: ${CRON_SECRET:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-}
       SMTP_SECURE: ${SMTP_SECURE:-}
@@ -40,20 +34,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    restart: unless-stopped
-
-  # Fires the CRON_SECRET-protected /api/cron/* sweep routes on a schedule.
-  # Entirely inert (just sleeps) when CRON_SECRET is unset — see
-  # docker/cron/entrypoint.sh — so no deployment is forced to configure it.
-  cron:
-    image: alpine:3.22
-    environment:
-      CRON_SECRET: ${CRON_SECRET:-}
-    volumes:
-      - ./docker/cron/entrypoint.sh:/entrypoint.sh:ro
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
-    depends_on:
-      - app
     restart: unless-stopped
 
   db:
