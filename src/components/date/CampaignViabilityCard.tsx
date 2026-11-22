@@ -2,6 +2,7 @@
 
 import { useTranslation } from "react-i18next";
 
+import CampaignBadge from "@/components/campaigns/CampaignBadge";
 import PlayerStatusRow from "@/components/date/PlayerStatusRow";
 import AttendeeControls, {
   type AttendeeListMember,
@@ -141,12 +142,7 @@ export default function CampaignViabilityCard({
       className={`group rounded-[var(--radius-card)] border border-border ${confirmedSession ? "bg-brand-soft" : "bg-bg"}`}
     >
       <summary className="flex cursor-pointer list-none items-center gap-2 p-3 [&::-webkit-details-marker]:hidden">
-        <span
-          aria-hidden="true"
-          className="flex h-7 w-7 shrink-0 items-center justify-center font-display text-sm font-semibold text-ink-muted"
-        >
-          {campaign.tag}
-        </span>
+        <CampaignBadge tag={campaign.tag} colorSlot={campaign.colorSlot} />
         <h3 className="min-w-0 flex-1 truncate font-display text-sm font-semibold text-ink">
           {campaign.name}
         </h3>

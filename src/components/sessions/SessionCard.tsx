@@ -2,6 +2,7 @@
 
 import { useTranslation } from "react-i18next";
 
+import CampaignBadge from "@/components/campaigns/CampaignBadge";
 import AttendeeControls, {
   type AttendeeListMember,
 } from "@/components/sessions/AttendeeControls";
@@ -51,12 +52,11 @@ export default function SessionCard({ session }: SessionCardProps) {
         {longDate}
       </p>
       <div className="mt-1 flex items-center gap-2">
-        <span
-          aria-hidden="true"
-          className="flex h-6 w-6 shrink-0 items-center justify-center font-display text-xs font-semibold text-ink-muted"
-        >
-          {session.campaignTag}
-        </span>
+        <CampaignBadge
+          tag={session.campaignTag}
+          colorSlot={session.campaignColorSlot}
+          className="h-6 min-w-6 rounded-full px-1.5 text-[11px]"
+        />
         <h2 className="min-w-0 truncate font-display text-base font-semibold text-ink">
           {session.campaignName}
         </h2>

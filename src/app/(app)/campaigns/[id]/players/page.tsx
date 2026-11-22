@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import AddPlayerPicker from "@/components/campaigns/AddPlayerPicker";
 import AlwaysOptionalToggle from "@/components/campaigns/AlwaysOptionalToggle";
+import CampaignBadge from "@/components/campaigns/CampaignBadge";
 import RemovePlayerButton from "@/components/campaigns/RemovePlayerButton";
 import { CampaignRole } from "@/generated/prisma/enums";
 import { getServerTranslation } from "@/i18n/server";
@@ -62,12 +63,11 @@ export default async function CampaignPlayersPage({
       </Link>
 
       <div className="mt-4 flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold uppercase text-brand"
-        >
-          {campaign.tag}
-        </span>
+        <CampaignBadge
+          tag={campaign.tag}
+          colorSlot={campaign.colorSlot}
+          className="h-10 w-10 rounded-full text-sm"
+        />
         <h1 className="min-w-0 flex-1 truncate font-display text-2xl font-semibold text-ink">
           {campaign.name}
         </h1>

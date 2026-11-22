@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { MAX_COLOR_SLOT } from "@/lib/campaignColor";
+
 // Validation error messages are i18n keys, not user-facing text: the client
 // resolves them through `t(...)` so no copy is ever hardcoded here.
 
@@ -36,6 +38,14 @@ export const campaignSchema = z.object({
     })
     .transform((value) => (value === "" ? null : value))
     .nullish(),
+  // Palette slot (src/lib/campaignColor.ts). Only the edit form sends it; a new
+  // campaign always gets the first free one.
+  colorSlot: z
+    .number({ error: "campaigns.errors.colorInvalid" })
+    .int({ error: "campaigns.errors.colorInvalid" })
+    .min(0, { error: "campaigns.errors.colorInvalid" })
+    .max(MAX_COLOR_SLOT, { error: "campaigns.errors.colorInvalid" })
+    .optional(),
 });
 
 export type CampaignInput = z.infer<typeof campaignSchema>;

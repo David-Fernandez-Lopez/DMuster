@@ -47,6 +47,8 @@ export type ConfirmedSessionDto = {
   campaignId: string;
   campaignName: string;
   campaignTag: string;
+  /** Palette slot of the campaign's colour. */
+  campaignColorSlot: number;
   /** The session's calendar day, "YYYY-MM-DD". */
   date: string;
   /** "HH:MM" local wall time, or `null` for an all-day session. */
@@ -150,7 +152,7 @@ export async function listActiveSessions(
       date: true,
       startTime: true,
       durationMinutes: true,
-      campaign: { select: { name: true, tag: true } },
+      campaign: { select: { name: true, tag: true, colorSlot: true } },
       attendees: { select: { userId: true, user: { select: { name: true } } } },
     },
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
@@ -162,6 +164,7 @@ export async function listActiveSessions(
     campaignId: session.campaignId,
     campaignName: session.campaign.name,
     campaignTag: session.campaign.tag,
+    campaignColorSlot: session.campaign.colorSlot,
     date: toIsoDate(session.date),
     startTime: session.startTime,
     durationMinutes: session.durationMinutes,
@@ -318,6 +321,7 @@ export async function listUpcomingSessions(
         select: {
           name: true,
           tag: true,
+          colorSlot: true,
           players: {
             select: { userId: true, role: true, user: { select: { name: true } } },
           },
@@ -408,6 +412,7 @@ export async function listUpcomingSessions(
       campaignId: session.campaignId,
       campaignName: session.campaign.name,
       campaignTag: session.campaign.tag,
+      campaignColorSlot: session.campaign.colorSlot,
       date: dateIso,
       startTime: session.startTime,
       durationMinutes: session.durationMinutes,
@@ -470,6 +475,7 @@ export async function confirmSession({
     select: {
       name: true,
       tag: true,
+      colorSlot: true,
       minPlayers: true,
       requirementsSetAt: true,
       archivedAt: true,
@@ -589,6 +595,7 @@ export async function confirmSession({
         campaignId,
         campaignName: campaign.name,
         campaignTag: campaign.tag,
+        campaignColorSlot: campaign.colorSlot,
         date: dateIso,
         startTime,
         durationMinutes,
@@ -622,18 +629,21 @@ export async function confirmSession({
  *
  * @param {string} id - The session id.
  * @param {string} userId - The requesting user.
- * @returns {Promise<{ campaignId: string; campaignName: string; campaignTag: string } | { error: string }>}
+ * @returns {Promise<{ campaignId: string; campaignName: string; campaignTag: string; campaignColorSlot: number } | { error: string }>}
  */
 export async function authorizeSessionMutation(
   id: string,
   userId: string,
 ): Promise<
-  | { campaignId: string; campaignName: string; campaignTag: string }
+  | { campaignId: string; campaignName: string; campaignTag: string; campaignColorSlot: number }
   | { error: string }
 > {
   const session = await prisma.confirmedSession.findFirst({
     where: { id, ...ACTIVE_SESSION },
-    select: { campaignId: true, campaign: { select: { name: true, tag: true } } },
+    select: {
+      campaignId: true,
+      campaign: { select: { name: true, tag: true, colorSlot: true } },
+    },
   });
   if (!session) {
     return { error: "sessions.errors.notFound" };
@@ -651,6 +661,7 @@ export async function authorizeSessionMutation(
     campaignId: session.campaignId,
     campaignName: session.campaign.name,
     campaignTag: session.campaign.tag,
+    campaignColorSlot: session.campaign.colorSlot,
   };
 }
 
@@ -664,13 +675,13 @@ export async function authorizeSessionMutation(
  * passed in so this does not re-query it.
  *
  * @param {string} id - The session id.
- * @param {{ campaignId: string; campaignName: string; campaignTag: string }} authorized - Result of `authorizeSessionMutation`.
+ * @param {{ campaignId: string; campaignName: string; campaignTag: string; campaignColorSlot: number }} authorized - Result of `authorizeSessionMutation`.
  * @param {{ startTime: string | null; durationMinutes: number | null }} input - The new time fields.
  * @returns {Promise<ConfirmedSessionMutationResult>} The updated session, or an error key.
  */
 export async function updateSession(
   id: string,
-  authorized: { campaignId: string; campaignName: string; campaignTag: string },
+  authorized: { campaignId: string; campaignName: string; campaignTag: string; campaignColorSlot: number },
   input: { startTime: string | null; durationMinutes: number | null },
 ): Promise<ConfirmedSessionMutationResult> {
   try {
@@ -701,6 +712,7 @@ export async function updateSession(
         campaignId: authorized.campaignId,
         campaignName: authorized.campaignName,
         campaignTag: authorized.campaignTag,
+        campaignColorSlot: authorized.campaignColorSlot,
         date: toIsoDate(updated.date),
         startTime: updated.startTime,
         durationMinutes: updated.durationMinutes,

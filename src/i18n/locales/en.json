@@ -125,7 +125,11 @@
       "tag": "Tag (2 letters)",
       "description": "Description (optional)",
       "submitCreate": "Create campaign",
-      "submitSave": "Save changes"
+      "submitSave": "Save changes",
+      "color": "Colour",
+      "colorHelp": "Identifies the campaign in charts and labels. It cannot repeat.",
+      "colorTaken": "Used by {{tag}}",
+      "colorOption": "Colour {{number}}"
     },
     "actions": {
       "players": "Players",
@@ -193,7 +197,9 @@
       "unknown": "Something went wrong. Please try again.",
       "hasUpcomingSessions": "Cancel this campaign's upcoming sessions first.",
       "alreadyArchived": "The campaign is already archived.",
-      "notArchived": "The campaign is not archived."
+      "notArchived": "The campaign is not archived.",
+      "colorTaken": "Another campaign already uses that colour.",
+      "colorInvalid": "Pick a valid colour."
     },
     "archivedBadge": "Archived"
   },

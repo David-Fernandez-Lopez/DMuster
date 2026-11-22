@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CampaignRole } from "@/generated/prisma/enums";
 import type { CampaignWithRole } from "@/lib/campaignService";
 
+import CampaignBadge from "./CampaignBadge";
 import DeleteCampaignButton from "./DeleteCampaignButton";
 import LeaveCampaignButton from "./LeaveCampaignButton";
 
@@ -34,12 +35,11 @@ export default function CampaignCard({ campaign, viewerId, t }: CampaignCardProp
   return (
     <li className="rounded-[var(--radius-card)] border border-border bg-bg-elevated p-4">
       <div className="flex items-center gap-3">
-        <span
-          aria-hidden="true"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-bold uppercase text-brand"
-        >
-          {campaign.tag}
-        </span>
+        <CampaignBadge
+          tag={campaign.tag}
+          colorSlot={campaign.colorSlot}
+          className="h-10 w-10 rounded-full text-sm"
+        />
         <p className="min-w-0 flex-1 truncate font-bold text-ink">
           {campaign.name}
         </p>

@@ -125,7 +125,11 @@
       "tag": "Etiqueta (2 letras)",
       "description": "Descripción (opcional)",
       "submitCreate": "Crear campaña",
-      "submitSave": "Guardar cambios"
+      "submitSave": "Guardar cambios",
+      "color": "Color",
+      "colorHelp": "Identifica la campaña en gráficas y etiquetas. No puede repetirse.",
+      "colorTaken": "En uso por {{tag}}",
+      "colorOption": "Color {{number}}"
     },
     "actions": {
       "players": "Jugadores",
@@ -193,7 +197,9 @@
       "unknown": "Algo ha ido mal. Inténtalo de nuevo.",
       "hasUpcomingSessions": "Cancela primero las partidas próximas de esta campaña.",
       "alreadyArchived": "La campaña ya está archivada.",
-      "notArchived": "La campaña no está archivada."
+      "notArchived": "La campaña no está archivada.",
+      "colorTaken": "Ese color ya lo usa otra campaña.",
+      "colorInvalid": "Elige un color válido."
     },
     "archivedBadge": "Archivada"
   },
