@@ -34,7 +34,12 @@ that campaign (see §4). A campaign may have **several DMs**.
 ### Campaign colour
 
 Each campaign has its own colour, stored as a **palette slot** (`Campaign.colorSlot`, an integer; the
-slot maps to an OKLCH colour with light and dark variants in `src/lib/campaignColor.ts`). A new
+slot maps to an OKLCH colour with light and dark variants in `src/lib/campaignColor.ts`). Slots 0–11 come from
+a palette chosen by an optimiser, not by eye: the smallest distance between any two colours stays well
+above the distinguishable threshold under normal vision **and** under protanopia, deuteranopia and
+tritanopia (one player is colour-blind), and every colour keeps 3:1 contrast against the card background;
+`campaignColor.test.ts` recomputes those guarantees. Slots from 12 up fall back to a generated colour
+without that guarantee. A new
 campaign gets the smallest slot no other campaign uses; a DM can change it in "Editar campaña", but
 never to one another campaign holds (`campaigns.errors.colorTaken`; uniqueness is enforced by the
 services, not the database, so it can become per-group later). The colour tints the campaign's tag
