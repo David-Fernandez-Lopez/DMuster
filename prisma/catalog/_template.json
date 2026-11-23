@@ -30,6 +30,12 @@
       "requiresDetail": true
     },
     {
+      "key": "STRENGTH",
+      "category": "ATTRIBUTE",
+      "es": "Fuerza",
+      "en": "Strength"
+    },
+    {
       "key": "DYING",
       "category": "CONDITION",
       "es": "A punto de morir",

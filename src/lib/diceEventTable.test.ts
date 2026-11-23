@@ -39,6 +39,8 @@ function row(userId: string, kind: "CRITICAL" | "FUMBLE", skill: string, arcId: 
     kind,
     skill: { id: `sk-${skill}`, key: skill, category: "SKILL", nameEs: skill, nameEn: skill, allowsDetail: false, requiresDetail: false },
     detail: null,
+    originalText: null,
+    note: null,
     date: "2025-12-06",
     time: null,
     arc,

@@ -73,7 +73,8 @@
       "key": "PERFORMANCE",
       "category": "SKILL",
       "es": "Interpretación",
-      "en": "Performance"
+      "en": "Performance",
+      "allowsDetail": true
     },
     {
       "key": "RELIGION",
@@ -148,6 +149,42 @@
       "en": "Custom",
       "allowsDetail": true,
       "requiresDetail": true
+    },
+    {
+      "key": "STRENGTH",
+      "category": "ATTRIBUTE",
+      "es": "Fuerza",
+      "en": "Strength"
+    },
+    {
+      "key": "DEXTERITY",
+      "category": "ATTRIBUTE",
+      "es": "Destreza",
+      "en": "Dexterity"
+    },
+    {
+      "key": "CONSTITUTION",
+      "category": "ATTRIBUTE",
+      "es": "Constitución",
+      "en": "Constitution"
+    },
+    {
+      "key": "INTELLIGENCE",
+      "category": "ATTRIBUTE",
+      "es": "Inteligencia",
+      "en": "Intelligence"
+    },
+    {
+      "key": "WISDOM",
+      "category": "ATTRIBUTE",
+      "es": "Sabiduría",
+      "en": "Wisdom"
+    },
+    {
+      "key": "CHARISMA",
+      "category": "ATTRIBUTE",
+      "es": "Carisma",
+      "en": "Charisma"
     },
     {
       "key": "BLINDED",

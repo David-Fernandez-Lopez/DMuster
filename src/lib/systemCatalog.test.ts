@@ -42,6 +42,16 @@ describe("catalogFileSchema", () => {
     expect(file.skills[1].allowsDetail).toBe(true);
   });
 
+  it("accepts the three categories and nothing else", () => {
+    for (const category of ["SKILL", "ATTRIBUTE", "CONDITION"]) {
+      const ok = { key: "x", name: "X", skills: [{ key: "A", category, es: "a", en: "a" }] };
+      expect(catalogFileSchema.safeParse(ok).success).toBe(true);
+    }
+    expect(
+      catalogFileSchema.safeParse({ key: "x", name: "X", skills: [{ key: "A", category: "OTHER", es: "a", en: "a" }] }).success,
+    ).toBe(false);
+  });
+
   it("defaults requiresDetail to false and needs allowsDetail when it is true", () => {
     expect(file.skills[1].requiresDetail).toBe(false);
 
@@ -169,6 +179,21 @@ describe("the catalogue files in prisma/catalog", () => {
         ["CUSTOM_SKILL", "SKILL", true, true],
         ["CUSTOM_CONDITION", "CONDITION", true, true],
       ]);
+    }
+  });
+
+  it("gives every system its attributes, and Performance an optional detail where it exists", () => {
+    const load = (name: string) => catalogFileSchema.parse(JSON.parse(readFileSync(join(dir, name), "utf8")));
+    const attrs = (name: string) =>
+      load(name).skills.filter((s) => s.category === "ATTRIBUTE").map((s) => s.key);
+
+    expect(attrs("pathfinder-2e.json")).toEqual(["STRENGTH", "DEXTERITY", "CONSTITUTION", "INTELLIGENCE", "WISDOM", "CHARISMA"]);
+    expect(attrs("stormlight-rpg.json")).toEqual(["STRENGTH", "SPEED", "INTELLECT", "WILLPOWER", "AWARENESS", "PRESENCE"]);
+    expect(attrs("vampiro-v5.json")).toHaveLength(9);
+
+    for (const name of ["pathfinder-2e.json", "vampiro-v5.json"]) {
+      const performance = load(name).skills.find((s) => s.key === "PERFORMANCE");
+      expect(performance).toMatchObject({ allowsDetail: true, requiresDetail: false });
     }
   });
 

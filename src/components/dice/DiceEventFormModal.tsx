@@ -45,8 +45,8 @@ const KINDS: DiceEventKind[] = ["CRITICAL", "FUMBLE"];
 /**
  * Modal form to log a critical or fumble, or to edit one. Any member may log
  * for any member of the campaign. What was rolled is picked from the closed
- * catalogue of the campaign's role system (skills and conditions in two
- * groups), with a free "detail" only for entries that allow it (a Lore), and
+ * catalogue of the campaign's role system (skills, attributes and conditions in
+ * three groups), with a free "detail" only for entries that allow it (a Lore), and
  * mandatory for the "Custom" ones. A
  * campaign without a system cannot log anything, so the form says so instead.
  * The date and time are not asked when logging (the server stamps the moment
@@ -92,7 +92,7 @@ export default function DiceEventFormModal({
     ...(event && campaign && !campaign.skills.some((s) => s.id === event.skill.id) ? [event.skill] : []),
   ];
   const chosen = options.find((s) => s.id === skillId);
-  const groups = (["SKILL", "CONDITION"] as const)
+  const groups = (["SKILL", "ATTRIBUTE", "CONDITION"] as const)
     .map((category) => ({ category, entries: options.filter((s) => s.category === category) }))
     .filter((group) => group.entries.length > 0);
 

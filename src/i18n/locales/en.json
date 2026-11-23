@@ -544,13 +544,21 @@
     "cell": {
       "when": "Date",
       "loggedBy": "Logged by",
-      "type": "Type"
+      "type": "Type",
+      "note": "Note",
+      "originalText": "Original text"
     },
     "noSystem": "This campaign has no role system yet, so there are no skills to choose from. A DM can set it in \"Edit campaign\".",
     "noSystemAction": "Edit campaign",
     "category": {
       "SKILL": "Skills",
-      "CONDITION": "Conditions"
+      "CONDITION": "Conditions",
+      "ATTRIBUTE": "Attributes"
+    },
+    "categoryOne": {
+      "SKILL": "Skill",
+      "ATTRIBUTE": "Attribute",
+      "CONDITION": "Condition"
     }
   },
   "arcs": {

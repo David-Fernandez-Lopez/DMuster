@@ -20,6 +20,10 @@ const catalog = [
   entry("sk-attack", "ATTACK"),
   entry("sk-deception", "DECEPTION"),
   entry("sk-lore", "LORE", { allowsDetail: true }),
+  entry("sk-performance", "PERFORMANCE", { allowsDetail: true }),
+  entry("sk-strength", "STRENGTH"),
+  entry("sk-dexterity", "DEXTERITY"),
+  entry("sk-wisdom", "WISDOM"),
   entry("sk-custom", "CUSTOM_SKILL", { allowsDetail: true, requiresDetail: true }),
   entry("sk-dying", "DYING"),
   entry("sk-old", "OLD", { active: false }),
@@ -296,6 +300,66 @@ describe("planDiceEventImport", () => {
 
     expect(result.issues).toHaveLength(1);
     expect(result.issues[0].blocking).toBe(true);
+  });
+});
+
+describe("the enriched history format", () => {
+  const one = (entry: Record<string, unknown>) => ({
+    Paola: { "La Orden de San Jorge": { critico: [{ fecha: "2026-01-01", celda: "A1", ...entry }] } },
+  });
+
+  it("maps habilidad_original, not the translated habilidad", () => {
+    const result = plan(one({ habilidad: "Percepción", habilidad_original: "ATAQUE" }));
+
+    expect(result.issues).toEqual([]);
+    expect(result.rows[0]).toMatchObject({ skillKey: "ATTACK", originalText: "ATAQUE" });
+  });
+
+  it("still reads habilidad when there is no habilidad_original (the old format)", () => {
+    const result = plan(one({ habilidad: "ataque" }));
+
+    expect(result.rows[0]).toMatchObject({ skillKey: "ATTACK", originalText: "ataque", note: null });
+  });
+
+  it("keeps the preparer's remark, trimmed and capped, and ignores especialidad and categoria", () => {
+    const result = plan(
+      one({ habilidad_original: "ATAQUE", nota: `  ${"x".repeat(300)}  `, especialidad: "Hacha", categoria: "otra_tirada" }),
+    );
+
+    expect(result.issues).toEqual([]);
+    expect(result.rows[0].note).toHaveLength(255);
+  });
+
+  it("sends attributes to their own entries", () => {
+    const result = plan(
+      {
+        Paola: {
+          "La Orden de San Jorge": {
+            critico: [
+              { habilidad_original: "FUERZA", fecha: "2026-01-01", celda: "A1" },
+              { habilidad_original: "DESTREZA", fecha: "2026-01-01", celda: "A2" },
+              { habilidad_original: "SABIDURÍA", fecha: "2026-01-01", celda: "A3" },
+            ],
+          },
+        },
+      },
+      importMappingSchema.parse({
+        ...mapping,
+        skills: { ...mapping.skills, FUERZA: "STRENGTH", DESTREZA: "DEXTERITY", SABIDURIA: "WISDOM", SABIDURÍA: "WISDOM" },
+      }),
+    );
+
+    expect(result.rows.map((r) => r.skillKey)).toEqual(["STRENGTH", "DEXTERITY", "WISDOM"]);
+  });
+
+  it("keeps a specialty on Performance through an explicit detail", () => {
+    const result = plan(
+      one({ habilidad_original: "MUSICA" }),
+      importMappingSchema.parse({ ...mapping, skills: { ...mapping.skills, MUSICA: "PERFORMANCE: música" } }),
+    );
+
+    expect(result.issues).toEqual([]);
+    expect(result.rows[0]).toMatchObject({ skillKey: "PERFORMANCE", detail: "MÚSICA", originalText: "MUSICA" });
   });
 });
 

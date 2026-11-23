@@ -10,7 +10,7 @@ const catalogSkillSchema = z.object({
   key: z.string().regex(new RegExp(`^[A-Z0-9_]{1,${KEY_MAX_LENGTH}}$`), {
     error: "skill key must be 1-40 characters of A-Z, 0-9 and _",
   }),
-  category: z.enum(["SKILL", "CONDITION"]),
+  category: z.enum(["SKILL", "ATTRIBUTE", "CONDITION"]),
   /** Name in Spanish. */
   es: z.string().trim().min(1).max(NAME_MAX_LENGTH),
   /** Name in English. */
@@ -63,7 +63,7 @@ export type CatalogCurrent = {
   skills: {
     systemKey: string;
     key: string;
-    category: "SKILL" | "CONDITION";
+    category: "SKILL" | "ATTRIBUTE" | "CONDITION";
     nameEs: string;
     nameEn: string;
     allowsDetail: boolean;
@@ -80,7 +80,7 @@ export type CatalogSyncPlan = {
   skillsToUpsert: {
     systemKey: string;
     key: string;
-    category: "SKILL" | "CONDITION";
+    category: "SKILL" | "ATTRIBUTE" | "CONDITION";
     nameEs: string;
     nameEn: string;
     allowsDetail: boolean;

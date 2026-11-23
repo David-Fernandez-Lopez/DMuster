@@ -51,6 +51,10 @@ export type DiceEventRow = {
   skill: DiceEventSkill;
   /** Short free text for entries that allow it (a Lore's "GUILD"), or `null`. */
   detail: string | null;
+  /** The text the Excel wrote, for imported entries; `null` for the ones logged in the app. */
+  originalText: string | null;
+  /** The importer's remark about how the entry was read, or `null`. */
+  note: string | null;
   /** "YYYY-MM-DD". */
   date: string;
   /** "HH:MM" or `null`. */
@@ -95,6 +99,8 @@ const ROW_SELECT = {
   kind: true,
   skill: { select: SKILL_SELECT },
   detail: true,
+  originalText: true,
+  note: true,
   date: true,
   time: true,
   sessionId: true,
@@ -140,6 +146,8 @@ function toRow(row: Prisma.DiceEventGetPayload<{ select: typeof ROW_SELECT }>): 
     kind: row.kind,
     skill: row.skill,
     detail: row.detail,
+    originalText: row.originalText,
+    note: row.note,
     date: toIsoDate(row.date),
     time: row.time,
     arc: row.arc,

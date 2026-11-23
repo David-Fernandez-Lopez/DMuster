@@ -303,6 +303,7 @@ model RoleSystem {
 
 enum SkillCategory {
   SKILL
+  ATTRIBUTE
   CONDITION
 }
 
@@ -349,6 +350,12 @@ model DiceEvent {
   skillId    String
   // Short free text for entries that allow it (e.g. "Guild" for a Lore).
   detail     String?       @db.VarChar(60)
+  // Provenance of imported entries (null for the ones logged in the app): the text
+  // as the Excel wrote it, and the importer's remark about how it was read
+  // ("supuesto error por SOCIEDAD"). Kept so an entry can be reclassified later
+  // without the Excel. Editing an entry in the app never touches them.
+  originalText String?     @db.VarChar(60)
+  note       String?       @db.VarChar(255)
   date       DateTime      @db.Date
   // "HH:MM", local wall time of the roll. Past midnight it stays on the roll's
   // own date, it is not moved to the session's day.

@@ -217,6 +217,8 @@ async function main(): Promise<void> {
           kind: row.kind,
           skillId: row.skillId,
           detail: row.detail,
+          originalText: row.originalText,
+          note: row.note,
           date: toUtcDate(row.date),
           time: row.time,
           arcId: arcId(row.campaignId, row.arcNumber),

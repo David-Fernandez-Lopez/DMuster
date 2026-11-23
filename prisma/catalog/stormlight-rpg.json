@@ -180,6 +180,42 @@
       "requiresDetail": true
     },
     {
+      "key": "STRENGTH",
+      "category": "ATTRIBUTE",
+      "es": "Fuerza",
+      "en": "Strength"
+    },
+    {
+      "key": "SPEED",
+      "category": "ATTRIBUTE",
+      "es": "Velocidad",
+      "en": "Speed"
+    },
+    {
+      "key": "INTELLECT",
+      "category": "ATTRIBUTE",
+      "es": "Intelecto",
+      "en": "Intellect"
+    },
+    {
+      "key": "WILLPOWER",
+      "category": "ATTRIBUTE",
+      "es": "Voluntad",
+      "en": "Willpower"
+    },
+    {
+      "key": "AWARENESS",
+      "category": "ATTRIBUTE",
+      "es": "Consciencia",
+      "en": "Awareness"
+    },
+    {
+      "key": "PRESENCE",
+      "category": "ATTRIBUTE",
+      "es": "Presencia",
+      "en": "Presence"
+    },
+    {
       "key": "AFFLICTED",
       "category": "CONDITION",
       "es": "Afligido",

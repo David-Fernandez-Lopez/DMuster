@@ -204,6 +204,9 @@ describe("updateDiceEvent", () => {
     const data = db.diceEvent.update.mock.calls[0][0].data;
     expect(data).not.toHaveProperty("createdById");
     expect(data).not.toHaveProperty("campaignId");
+    // provenance of an imported entry survives an edit in the app
+    expect(data).not.toHaveProperty("originalText");
+    expect(data).not.toHaveProperty("note");
     expect(data).toMatchObject({ skillId: "sk-perception", detail: null, date: new Date("2026-11-01T00:00:00.000Z") });
   });
 
@@ -284,6 +287,8 @@ describe("listDiceEvents", () => {
         kind: "FUMBLE",
         skill: { id: "sk-lore", key: "LORE", category: "SKILL", nameEs: "Saber", nameEn: "Lore", allowsDetail: true },
         detail: "GUILD",
+        originalText: "LORE: GUILD",
+        note: "supuesto",
         date: new Date("2026-01-17T00:00:00.000Z"),
         time: "20:48",
         sessionId: null,
@@ -299,6 +304,8 @@ describe("listDiceEvents", () => {
     expect(page.items[0]).toMatchObject({
       skill: { key: "LORE", nameEs: "Saber" },
       detail: "GUILD",
+      originalText: "LORE: GUILD",
+      note: "supuesto",
       date: "2026-01-17",
     });
   });

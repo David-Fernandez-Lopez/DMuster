@@ -7,13 +7,26 @@ import { DICE_SKILL_MAX_LENGTH, normalizeSkill } from "@/lib/diceSkill";
 const IMPORT_KEY_MAX_LENGTH = 120;
 
 /** One critical/fumble as the Excel export holds it. */
-const excelEntrySchema = z.object({
-  habilidad: z.string(),
-  fecha: z.string(),
-  hora: z.string().nullish(),
-  celda: z.string().min(1),
-  arco: z.number().int().positive().nullish(),
-});
+const excelEntrySchema = z
+  .object({
+    /** A readable name for the skill. Optional when `habilidad_original` is there. */
+    habilidad: z.string().nullish(),
+    /**
+     * The text exactly as the Excel wrote it. When present it is what gets mapped (it is
+     * what the mapping is keyed on); `habilidad` is then only a convenience reading.
+     */
+    habilidad_original: z.string().nullish(),
+    /** The preparer's remark about how the entry was read; kept on the event. */
+    nota: z.string().nullish(),
+    fecha: z.string(),
+    hora: z.string().nullish(),
+    celda: z.string().min(1),
+    arco: z.number().int().positive().nullish(),
+  })
+  .refine((entry) => ((entry.habilidad_original ?? entry.habilidad) ?? "").trim() !== "", {
+    message: "an entry needs `habilidad_original` or `habilidad`",
+    path: ["habilidad"],
+  });
 
 /** The Excel export: player → campaign → critico/pifia → entries. */
 export const excelHistorySchema = z.record(
@@ -83,6 +96,10 @@ export type PlannedRow = {
   campaignId: string;
   userId: string;
   kind: "CRITICAL" | "FUMBLE";
+  /** The Excel text that was mapped (what `habilidad_original` held, or `habilidad`). */
+  originalText: string;
+  /** The preparer's remark, or `null`. */
+  note: string | null;
   /** The catalogue entry's id. */
   skillId: string;
   /** Its key, for the report. */
@@ -330,7 +347,8 @@ export function planDiceEventImport(
         const where = `${player} / ${campaign} / ${entry.celda}`;
         const importKey = `excel:${player}:${campaign}:${entry.celda}`;
 
-        const rawSkill = normalizeSkill(entry.habilidad);
+        const sourceText = ((entry.habilidad_original ?? entry.habilidad) ?? "").trim();
+        const rawSkill = normalizeSkill(sourceText);
         const resolved = resolveSkill(rawSkill, skillMap, catalog);
         if (resolved === "unmapped") {
           plan.unmappedSkills.set(rawSkill, (plan.unmappedSkills.get(rawSkill) ?? 0) + 1);
@@ -392,6 +410,8 @@ export function planDiceEventImport(
           campaignId,
           userId: user.id,
           kind,
+          originalText: sourceText.slice(0, 60),
+          note: entry.nota?.trim() ? entry.nota.trim().slice(0, 255) : null,
           skillId: resolved.id,
           skillKey: resolved.key,
           detail: resolved.detail,

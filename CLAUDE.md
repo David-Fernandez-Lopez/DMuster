@@ -28,7 +28,7 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 | `CampaignArc` | id, campaignId, number, name? — unique per (campaignId, number) |
 | `DiceEvent` | id, campaignId, userId (who rolled), kind (CRITICAL/FUMBLE), skillId, detail?, date, time?, arcId?, sessionId?, createdById, importKey? |
 | `RoleSystem` | id, key, name, active — a tabletop system (Pathfinder 2e, Vampire…) |
-| `SystemSkill` | id, systemId, key, category (SKILL/CONDITION), nameEs, nameEn, allowsDetail, sortOrder, active — one closed-list entry of a system |
+| `SystemSkill` | id, systemId, key, category (SKILL/ATTRIBUTE/CONDITION), nameEs, nameEn, allowsDetail, requiresDetail, sortOrder, active — one closed-list entry of a system |
 
 Role is **per campaign**, stored on `CampaignPlayer.role`: the same user can be DM in one
 campaign and player in another. `User` has no global role. `Campaign.createdById` records
@@ -45,10 +45,11 @@ value or note.
 
 - **What was rolled is a closed list, per role system.** Each campaign has an optional `systemId`
   (`RoleSystem`, picked in "Editar campaña"/"Nueva campaña"); an event points at a `SystemSkill` of
-  that system by `skillId`, never at free text. A `SystemSkill` is either a **skill** ("Percepción") or a
-  **condition** ("A punto de morir", `DYING`), told apart by `category`, so the statistics can ask "which
-  skill gives me most criticals" (`category = SKILL`) and "how many times have I been dying"
-  (`category = CONDITION AND key = 'DYING'`) without one polluting the other. In the table both look the
+  that system by `skillId`, never at free text. A `SystemSkill` is a **skill** ("Percepción"), an
+  **attribute** ("Fuerza": a straight attribute check) or a **condition** ("Moribundo", `DYING`), told apart by
+  `category`, so the statistics can ask "which skill gives me most criticals" (`category = SKILL`), "how many
+  attribute checks" (`ATTRIBUTE`) and "how many times have I been dying" (`category = CONDITION AND key =
+  'DYING'`) without one polluting the other. The form lists them in three groups. In the table both look the
   same: just the name, in the user's language (`nameEs`/`nameEn`).
 - **Catalogues are data, loaded from files.** `prisma/catalog/<system>.json` (see `_template.json`) lists a
   system's entries; `prisma/syncCatalog.ts` (`npm run catalog:sync`, and on every deploy through
@@ -75,6 +76,11 @@ value or note.
   fine), and the arc and session, if given, must belong to the same campaign. Editing keeps the
   original `createdById` and never changes the campaign.
 - **Visibility:** a member sees every entry of the campaigns they belong to, nothing else.
+- **Provenance of imported entries.** `DiceEvent.originalText` (the text the Excel wrote) and
+  `DiceEvent.note` (the preparer's remark, e.g. "supuesto error por SOCIEDAD") are filled only by the import
+  and shown in the entry's dialog, so an entry can be reclassified later without the Excel. Editing in the app
+  never touches them. Catalogue-level data not kept for now (an attribute per skill, groups, "has a value") can be
+  added to the catalogue files later without touching any entry.
 - **Import:** rows imported from the Excel carry `importKey` (`excel:<player>:<campaign>:<cell>`,
   unique), which makes re-running the import harmless. The mapping's `skills` section points Excel texts
   at catalogue **keys** (`"PERCEPCION": "PERCEPTION"`); `"LORE: GUILD"` splits into the Lore entry plus its

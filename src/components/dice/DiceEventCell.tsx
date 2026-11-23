@@ -68,7 +68,7 @@ export default function DiceEventCell({
               <dt className="text-ink-muted">{t("diceEvents.form.player")}</dt>
               <dd className="font-semibold text-ink">{entry.userName}</dd>
               <dt className="text-ink-muted">{t("diceEvents.cell.type")}</dt>
-              <dd className="text-ink">{t(`diceEvents.category.${entry.skill.category}`)}</dd>
+              <dd className="text-ink">{t(`diceEvents.categoryOne.${entry.skill.category}`)}</dd>
               <dt className="text-ink-muted">{t("diceEvents.cell.when")}</dt>
               <dd className="text-ink">{whenLabel}</dd>
               {arcLabel ? (
@@ -79,6 +79,18 @@ export default function DiceEventCell({
               ) : null}
               <dt className="text-ink-muted">{t("diceEvents.cell.loggedBy")}</dt>
               <dd className="text-ink">{entry.createdByName}</dd>
+              {entry.originalText ? (
+                <>
+                  <dt className="text-ink-muted">{t("diceEvents.cell.originalText")}</dt>
+                  <dd className="text-ink">{entry.originalText}</dd>
+                </>
+              ) : null}
+              {entry.note ? (
+                <>
+                  <dt className="text-ink-muted">{t("diceEvents.cell.note")}</dt>
+                  <dd className="text-ink">{entry.note}</dd>
+                </>
+              ) : null}
             </dl>
             <DiceEventItemActions
               event={{

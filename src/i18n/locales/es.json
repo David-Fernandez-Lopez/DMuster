@@ -544,13 +544,21 @@
     "cell": {
       "when": "Fecha",
       "loggedBy": "Anotado por",
-      "type": "Tipo"
+      "type": "Tipo",
+      "note": "Nota",
+      "originalText": "Texto original"
     },
     "noSystem": "Esta campaña aún no tiene sistema de rol, así que no hay habilidades entre las que elegir. Un máster puede asignarlo en «Editar campaña».",
     "noSystemAction": "Editar campaña",
     "category": {
       "SKILL": "Habilidades",
-      "CONDITION": "Condiciones"
+      "CONDITION": "Condiciones",
+      "ATTRIBUTE": "Atributos"
+    },
+    "categoryOne": {
+      "SKILL": "Habilidad",
+      "ATTRIBUTE": "Atributo",
+      "CONDITION": "Condición"
     }
   },
   "arcs": {
