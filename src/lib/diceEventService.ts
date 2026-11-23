@@ -39,6 +39,16 @@ export type DiceEventPage = {
   pageSize: number;
 };
 
+/** A campaign the viewer belongs to, with what the log form and filters need. */
+export type DiceEventCampaignContext = {
+  id: string;
+  name: string;
+  tag: string;
+  colorSlot: number;
+  members: { userId: string; name: string }[];
+  arcs: { id: string; number: number; name: string | null }[];
+};
+
 /** Result of a mutation. `error` holds an i18n key on failure. */
 export type DiceEventMutationResult =
   | { ok: true; eventId: string }
@@ -111,6 +121,49 @@ export async function listDiceEvents(
     page: filters.page,
     pageSize: filters.pageSize,
   };
+}
+
+/**
+ * Lists the campaigns the viewer belongs to with their members and arcs: the
+ * options of the log form and filters. Campaigns by name, members by name, arcs
+ * in order.
+ *
+ * @param {string} viewerId - Id of the signed-in user.
+ * @returns {Promise<DiceEventCampaignContext[]>} The viewer's campaigns.
+ */
+export async function listDiceEventContext(
+  viewerId: string,
+): Promise<DiceEventCampaignContext[]> {
+  const campaigns = await prisma.campaign.findMany({
+    where: { players: { some: { userId: viewerId } } },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      tag: true,
+      colorSlot: true,
+      players: {
+        select: { user: { select: { id: true, name: true } } },
+        orderBy: { user: { name: "asc" } },
+      },
+      arcs: {
+        select: { id: true, number: true, name: true },
+        orderBy: { number: "asc" },
+      },
+    },
+  });
+
+  return campaigns.map((campaign) => ({
+    id: campaign.id,
+    name: campaign.name,
+    tag: campaign.tag,
+    colorSlot: campaign.colorSlot,
+    members: campaign.players.map((player) => ({
+      userId: player.user.id,
+      name: player.user.name,
+    })),
+    arcs: campaign.arcs,
+  }));
 }
 
 /**

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import ArcManager from "@/components/campaigns/ArcManager";
 import CampaignForm from "@/components/campaigns/CampaignForm";
 import CampaignRequirementsForm from "@/components/campaigns/CampaignRequirementsForm";
 import { CampaignRole } from "@/generated/prisma/enums";
 import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
+import { listCampaignArcs } from "@/lib/campaignArcService";
 import { getCampaignRequirements } from "@/lib/campaignRequirementsService";
 import { getCampaignForUser, listUsedColorSlots } from "@/lib/campaignService";
 
@@ -38,10 +40,11 @@ export default async function EditCampaignPage({
     redirect("/campaigns");
   }
 
-  const [{ t }, requirements, usedColorSlots] = await Promise.all([
+  const [{ t }, requirements, usedColorSlots, arcs] = await Promise.all([
     getServerTranslation(),
     getCampaignRequirements(campaign.id),
     listUsedColorSlots(campaign.id),
+    listCampaignArcs(campaign.id),
   ]);
 
   return (
@@ -76,6 +79,8 @@ export default async function EditCampaignPage({
           requirementsWindow={requirements.window}
         />
       ) : null}
+
+      <ArcManager key={arcs.map((arc) => `${arc.id}:${arc.name}`).join("|")} campaignId={campaign.id} arcs={arcs} />
     </main>
   );
 }

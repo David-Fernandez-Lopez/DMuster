@@ -1,4 +1,10 @@
-import { createDiceEvent, deleteDiceEvent, listDiceEvents, updateDiceEvent } from "@/lib/diceEventService";
+import {
+  createDiceEvent,
+  deleteDiceEvent,
+  listDiceEventContext,
+  listDiceEvents,
+  updateDiceEvent,
+} from "@/lib/diceEventService";
 import { prisma } from "@/lib/prisma";
 
 jest.mock("@/lib/today", () => ({ todayIso: () => "2026-11-22" }));
@@ -18,6 +24,7 @@ jest.mock("@/generated/prisma/client", () => {
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     diceEvent: { count: jest.fn(), findMany: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn() },
+    campaign: { findMany: jest.fn() },
     campaignPlayer: { findUnique: jest.fn() },
     campaignArc: { findFirst: jest.fn() },
     confirmedSession: { findFirst: jest.fn() },
@@ -26,6 +33,7 @@ jest.mock("@/lib/prisma", () => ({
 
 const db = prisma as unknown as {
   diceEvent: Record<"count" | "findMany" | "create" | "update" | "delete", jest.Mock>;
+  campaign: { findMany: jest.Mock };
   campaignPlayer: { findUnique: jest.Mock };
   campaignArc: { findFirst: jest.Mock };
   confirmedSession: { findFirst: jest.Mock };
@@ -157,6 +165,35 @@ describe("listDiceEvents", () => {
         skip: 10,
         take: 10,
       }),
+    );
+  });
+});
+
+describe("listDiceEventContext", () => {
+  it("flattens the viewer's campaigns with their members and arcs", async () => {
+    db.campaign.findMany.mockResolvedValue([
+      {
+        id: "orden",
+        name: "La Orden",
+        tag: "OR",
+        colorSlot: 1,
+        players: [{ user: { id: "paola", name: "Paola" } }],
+        arcs: [{ id: "a1", number: 1, name: null }],
+      },
+    ]);
+
+    await expect(listDiceEventContext("david")).resolves.toEqual([
+      {
+        id: "orden",
+        name: "La Orden",
+        tag: "OR",
+        colorSlot: 1,
+        members: [{ userId: "paola", name: "Paola" }],
+        arcs: [{ id: "a1", number: 1, name: null }],
+      },
+    ]);
+    expect(db.campaign.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { players: { some: { userId: "david" } } } }),
     );
   });
 });

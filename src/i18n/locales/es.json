@@ -16,7 +16,8 @@
     "profile": "Perfil",
     "logout": "Cerrar sesión",
     "openMenu": "Abrir menú",
-    "closeMenu": "Cerrar menú"
+    "closeMenu": "Cerrar menú",
+    "rolls": "Críticos y pifias"
   },
   "calendar": {
     "title": "Calendario de sesiones",
@@ -136,7 +137,8 @@
       "confirmYes": "Sí, eliminar",
       "leave": "Salir de la campaña",
       "confirmLeave": "¿Salir de esta campaña? Solo un máster podrá volver a añadirte.",
-      "confirmLeaveYes": "Sí, salir"
+      "confirmLeaveYes": "Sí, salir",
+      "rolls": "Críticos y pifias"
     },
     "players": {
       "title": "Jugadores",
@@ -455,6 +457,91 @@
       "button": "Restablecer contraseña",
       "expiry": "El enlace caduca en {{minutes}} minutos y solo se puede usar una vez.",
       "ignore": "Si no lo has solicitado tú, ignora este mensaje: tu contraseña no cambiará."
+    }
+  },
+  "diceEvents": {
+    "title": "Críticos y pifias",
+    "scope": "Registro de los críticos y pifias del grupo. Cualquier miembro de una campaña puede anotar, corregir o borrar sus entradas.",
+    "add": "Anotar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Eliminar esta entrada?",
+    "confirmYes": "Sí, eliminar",
+    "empty": "Aún no hay críticos ni pifias anotados.",
+    "emptyFiltered": "Ninguna entrada coincide con los filtros.",
+    "noCampaigns": "Todavía no perteneces a ninguna campaña.",
+    "total": "Entradas: {{count}}",
+    "createdBy": "Anotado por {{name}}",
+    "kind": {
+      "CRITICAL": "Crítico",
+      "FUMBLE": "Pifia"
+    },
+    "arcLabel": "Arco {{number}}",
+    "arcLabelNamed": "Arco {{number}}: {{name}}",
+    "form": {
+      "createTitle": "Anotar crítico o pifia",
+      "editTitle": "Editar entrada",
+      "campaign": "Campaña",
+      "player": "Jugador",
+      "kind": "Tipo",
+      "skill": "Habilidad",
+      "skillHint": "Escribe una nueva o elige una ya usada en la campaña.",
+      "date": "Fecha",
+      "time": "Hora (opcional)",
+      "arc": "Arco",
+      "noArc": "Sin arco",
+      "submit": "Guardar"
+    },
+    "filters": {
+      "title": "Filtros",
+      "campaign": "Campaña",
+      "player": "Jugador",
+      "kind": "Tipo",
+      "arc": "Arco",
+      "all": "Todos",
+      "clear": "Quitar filtros"
+    },
+    "pagination": {
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "page": "Página {{page}} de {{pages}}"
+    },
+    "errors": {
+      "unauthorized": "Debes iniciar sesión.",
+      "notFound": "Entrada o campaña no encontrada.",
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo.",
+      "validation": "Revisa los campos del formulario.",
+      "playerRequired": "Elige un jugador.",
+      "kindInvalid": "Elige si es un crítico o una pifia.",
+      "skillRequired": "La habilidad es obligatoria.",
+      "skillTooLong": "La habilidad es demasiado larga.",
+      "dateInvalid": "Introduce una fecha válida.",
+      "timeInvalid": "Introduce una hora válida (HH:MM).",
+      "futureDate": "La fecha no puede ser futura.",
+      "playerNotMember": "Ese jugador no pertenece a la campaña.",
+      "arcNotFound": "El arco no existe en esta campaña.",
+      "sessionNotFound": "La sesión no existe en esta campaña."
+    }
+  },
+  "arcs": {
+    "title": "Arcos",
+    "description": "Agrupa los críticos y pifias de la campaña por arcos. Al borrar un arco, sus entradas se conservan sin arco.",
+    "empty": "Esta campaña aún no tiene arcos.",
+    "add": "Añadir arco",
+    "namePlaceholder": "Nombre (opcional)",
+    "nameLabel": "Nombre del arco",
+    "save": "Guardar nombre",
+    "entries": "Entradas: {{count}}",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Eliminar este arco? Sus entradas se conservan sin arco.",
+    "confirmYes": "Sí, eliminar",
+    "errors": {
+      "unauthorized": "Debes iniciar sesión.",
+      "forbidden": "Solo un máster de esta campaña puede gestionar los arcos.",
+      "notFound": "Arco o campaña no encontrados.",
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo.",
+      "validation": "Revisa los campos del formulario.",
+      "nameTooLong": "El nombre es demasiado largo."
     }
   }
 }
