@@ -1,0 +1,259 @@
+{
+  "key": "stormlight-rpg",
+  "name": "Cosmere RPG – El Archivo de las Tormentas",
+  "skills": [
+    {
+      "key": "AGILITY",
+      "category": "SKILL",
+      "es": "Agilidad",
+      "en": "Agility"
+    },
+    {
+      "key": "ATHLETICS",
+      "category": "SKILL",
+      "es": "Atletismo",
+      "en": "Athletics"
+    },
+    {
+      "key": "HEAVY_WEAPONRY",
+      "category": "SKILL",
+      "es": "Armas pesadas",
+      "en": "Heavy Weaponry"
+    },
+    {
+      "key": "LIGHT_WEAPONRY",
+      "category": "SKILL",
+      "es": "Armas ligeras",
+      "en": "Light Weaponry"
+    },
+    {
+      "key": "STEALTH",
+      "category": "SKILL",
+      "es": "Sigilo",
+      "en": "Stealth"
+    },
+    {
+      "key": "THIEVERY",
+      "category": "SKILL",
+      "es": "Latrocinio",
+      "en": "Thievery"
+    },
+    {
+      "key": "CRAFTING",
+      "category": "SKILL",
+      "es": "Artesanía",
+      "en": "Crafting"
+    },
+    {
+      "key": "DEDUCTION",
+      "category": "SKILL",
+      "es": "Deducción",
+      "en": "Deduction"
+    },
+    {
+      "key": "DISCIPLINE",
+      "category": "SKILL",
+      "es": "Disciplina",
+      "en": "Discipline"
+    },
+    {
+      "key": "INTIMIDATION",
+      "category": "SKILL",
+      "es": "Intimidación",
+      "en": "Intimidation"
+    },
+    {
+      "key": "LORE",
+      "category": "SKILL",
+      "es": "Saber",
+      "en": "Lore",
+      "allowsDetail": true
+    },
+    {
+      "key": "MEDICINE",
+      "category": "SKILL",
+      "es": "Medicina",
+      "en": "Medicine"
+    },
+    {
+      "key": "DECEPTION",
+      "category": "SKILL",
+      "es": "Engaño",
+      "en": "Deception"
+    },
+    {
+      "key": "INSIGHT",
+      "category": "SKILL",
+      "es": "Perspicacia",
+      "en": "Insight"
+    },
+    {
+      "key": "LEADERSHIP",
+      "category": "SKILL",
+      "es": "Liderazgo",
+      "en": "Leadership"
+    },
+    {
+      "key": "PERCEPTION",
+      "category": "SKILL",
+      "es": "Percepción",
+      "en": "Perception"
+    },
+    {
+      "key": "PERSUASION",
+      "category": "SKILL",
+      "es": "Persuasión",
+      "en": "Persuasion"
+    },
+    {
+      "key": "SURVIVAL",
+      "category": "SKILL",
+      "es": "Supervivencia",
+      "en": "Survival"
+    },
+    {
+      "key": "ABRASION",
+      "category": "SKILL",
+      "es": "Abrasión",
+      "en": "Abrasion"
+    },
+    {
+      "key": "ADHESION",
+      "category": "SKILL",
+      "es": "Adhesión",
+      "en": "Adhesion"
+    },
+    {
+      "key": "COHESION",
+      "category": "SKILL",
+      "es": "Cohesión",
+      "en": "Cohesion"
+    },
+    {
+      "key": "DIVISION",
+      "category": "SKILL",
+      "es": "División",
+      "en": "Division"
+    },
+    {
+      "key": "GRAVITATION",
+      "category": "SKILL",
+      "es": "Gravitación",
+      "en": "Gravitation"
+    },
+    {
+      "key": "ILLUMINATION",
+      "category": "SKILL",
+      "es": "Iluminación",
+      "en": "Illumination"
+    },
+    {
+      "key": "PROGRESSION",
+      "category": "SKILL",
+      "es": "Progresión",
+      "en": "Progression"
+    },
+    {
+      "key": "TENSION",
+      "category": "SKILL",
+      "es": "Tensión",
+      "en": "Tension"
+    },
+    {
+      "key": "TRANSFORMATION",
+      "category": "SKILL",
+      "es": "Transformación",
+      "en": "Transformation"
+    },
+    {
+      "key": "TRANSPORTATION",
+      "category": "SKILL",
+      "es": "Transporte",
+      "en": "Transportation"
+    },
+    {
+      "key": "AFFLICTED",
+      "category": "CONDITION",
+      "es": "Afligido",
+      "en": "Afflicted"
+    },
+    {
+      "key": "DETERMINED",
+      "category": "CONDITION",
+      "es": "Determinado",
+      "en": "Determined"
+    },
+    {
+      "key": "DISORIENTED",
+      "category": "CONDITION",
+      "es": "Desorientado",
+      "en": "Disoriented"
+    },
+    {
+      "key": "EMPOWERED",
+      "category": "CONDITION",
+      "es": "Potenciado",
+      "en": "Empowered"
+    },
+    {
+      "key": "ENHANCED",
+      "category": "CONDITION",
+      "es": "Mejorado",
+      "en": "Enhanced"
+    },
+    {
+      "key": "EXHAUSTED",
+      "category": "CONDITION",
+      "es": "Agotado",
+      "en": "Exhausted"
+    },
+    {
+      "key": "FOCUSED",
+      "category": "CONDITION",
+      "es": "Concentrado",
+      "en": "Focused"
+    },
+    {
+      "key": "IMMOBILIZED",
+      "category": "CONDITION",
+      "es": "Inmovilizado",
+      "en": "Immobilized"
+    },
+    {
+      "key": "PRONE",
+      "category": "CONDITION",
+      "es": "Tumbado",
+      "en": "Prone"
+    },
+    {
+      "key": "RESTRAINED",
+      "category": "CONDITION",
+      "es": "Apresado",
+      "en": "Restrained"
+    },
+    {
+      "key": "SLOWED",
+      "category": "CONDITION",
+      "es": "Ralentizado",
+      "en": "Slowed"
+    },
+    {
+      "key": "STUNNED",
+      "category": "CONDITION",
+      "es": "Aturdido",
+      "en": "Stunned"
+    },
+    {
+      "key": "SURPRISED",
+      "category": "CONDITION",
+      "es": "Sorprendido",
+      "en": "Surprised"
+    },
+    {
+      "key": "UNCONSCIOUS",
+      "category": "CONDITION",
+      "es": "Inconsciente",
+      "en": "Unconscious"
+    }
+  ]
+}
