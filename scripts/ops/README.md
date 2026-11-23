@@ -21,6 +21,7 @@ writes anything until explicitly told to.
 | `rotate-secrets.sh` | Generates a fresh `AUTH_SECRET` value to paste into `.env` |
 | `rotatePasswords.ts` | Gives every account a fresh random password with its own bcrypt salt |
 | `disableAccount.ts` | Revokes (or restores) one account's access and ends its sessions |
+| `importDiceEvents.ts` | One-off import of the critical/fumble history from the Excel export, through an explicit name mapping (see below) |
 
 ## Order, and what depends on what
 
@@ -147,3 +148,27 @@ already equivalent to root on the host: anyone who can run these could equally
 `docker-compose.yml` already documents the same access path in a comment.
 
 What must never be published is their **output**.
+
+## Importing the critical/fumble history
+
+`importDiceEvents.ts` loads the Excel export (player → campaign → critico/pifia)
+into the log. It guesses nothing: copy `diceEvents.mapping.example.json` to a
+`*.mapping.json` file (git-ignored, it holds real names) and list every campaign
+and player of the export — `null` skips one on purpose. Anything unmapped, a
+player who is not a member of the campaign, a bad date or time, or a repeated
+cell is reported as **blocking** and nothing is written.
+
+```bash
+docker compose cp history.json app:/tmp/history.json
+docker compose cp dice-events.mapping.json app:/tmp/dice-events.mapping.json
+docker compose exec app npx tsx scripts/ops/importDiceEvents.ts \
+  --file=/tmp/history.json --mapping=/tmp/dice-events.mapping.json            # report
+docker compose exec app npx tsx scripts/ops/importDiceEvents.ts \
+  --file=/tmp/history.json --mapping=/tmp/dice-events.mapping.json --apply    # write
+```
+
+The report lists the problems, what would be written per campaign, the arcs it
+would create, what is skipped, and every distinct skill with its count — use that
+list to fill the `skills` section (`DECEPTION` → `ENGAÑO`). Back up first
+(`backup-db.sh`). Re-running is safe: each row is keyed by its Excel cell and
+rows already stored are left alone.

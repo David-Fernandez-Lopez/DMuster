@@ -1,0 +1,16 @@
+{
+  "importedBy": "dm@example.com",
+  "campaigns": {
+    "Name of a campaign in the Excel": "Exact name of that campaign in the app",
+    "A campaign that is not in the app": null
+  },
+  "players": {
+    "Name of a player in the Excel": "their-email@example.com",
+    "A player that is not in the app": null
+  },
+  "skills": {
+    "DECEPTION": "ENGAÑO",
+    "WILL": "VOLUNTAD"
+  },
+  "skipPairs": ["Player in the Excel|Campaign in the Excel"]
+}

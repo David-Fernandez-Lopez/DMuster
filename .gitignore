@@ -65,3 +65,7 @@ mysql_data/
 
 # Test coverage
 /coverage
+
+# Dice event import mapping (holds real names)
+*.mapping.json
+!*.mapping.example.json
