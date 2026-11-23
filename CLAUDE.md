@@ -3,7 +3,7 @@
 ## 1. What is DMuster
 
 Web application for managing player availability across multiple tabletop RPG campaigns.
-Replaces a manual Google Sheets workflow. Players respond to proposed session dates with one of four statuses — S (yes), Sí (Online) (yes, remotely), N (no), T (maybe) — and the app computes a viability result per campaign for each date: S, O, N, T, or B ("Ocupado") when a member already plays another campaign's confirmed session that day.
+Replaces a manual Google Sheets workflow. Players respond to proposed session dates with one of four statuses — S (yes), Sí (Online) (yes, remotely), N (no), T (maybe) — and the app computes a viability result per campaign for each date: S, O, N, T, or B ("Ocupado") when a member already plays another campaign's confirmed session that day. It also keeps the group's log of **critical successes and fumbles** ("críticos y pifias") per campaign and player, which used to live in an Excel.
 
 ## 2. Stack
 
@@ -25,11 +25,39 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 | `CampaignPlayer` | campaignId, userId, role (DM/PLAYER), optional, alwaysOptional *(M:N join table)* |
 | `Holiday` | id, date (unique), createdById, createdAt |
 | `Availability` | id, date, userId, status (YES/NO/MAYBE/ONLINE), timestamps — unique per (date, user) |
+| `CampaignArc` | id, campaignId, number, name? — unique per (campaignId, number) |
+| `DiceEvent` | id, campaignId, userId (who rolled), kind (CRITICAL/FUMBLE), skill, date, time?, arcId?, sessionId?, createdById, importKey? |
 
 Role is **per campaign**, stored on `CampaignPlayer.role`: the same user can be DM in one
 campaign and player in another. `User` has no global role. `Campaign.createdById` records
 the creator for audit purposes only; management rights come from holding the DM role in
 that campaign (see §4). A campaign may have **several DMs**.
+
+### Critical and fumble log
+
+A `DiceEvent` is one critical success or fumble a player rolled in a campaign. It is its **own event
+with a date**, not a child of a session: it only optionally links to a `ConfirmedSession`
+(`sessionId`, `SetNull`), because the imported history predates the app and cannot be matched to
+sessions. The model records the bare facts (who, kind, skill, date, optional time) — there is no roll
+value or note.
+
+- **Skill** is free text, normalised on write (trimmed, single spaces, upper case; accents kept) by
+  `normalizeSkill`. The form suggests the skills already used in that campaign
+  (`GET /api/campaigns/[id]/skills`); there is no fixed catalogue, so the same skill spelled in two
+  languages stays two values unless it is cleaned up in the import mapping.
+- **Time** is the wall time of the roll and stays on the roll's own date: a roll at 00:21 is dated
+  that day, not moved to the previous session's day.
+- **Arcs** (`CampaignArc`) group a campaign's entries ("Arco 1"). Numbered automatically (highest + 1,
+  under the campaign row lock), optionally named, managed by DMs in "Editar campaña". Deleting an arc
+  keeps its entries without an arc (`SetNull`); the other arcs are not renumbered.
+- **Validation:** the player must belong to the campaign, the date cannot be in the future (today is
+  fine), and the arc and session, if given, must belong to the same campaign. Editing keeps the
+  original `createdById` and never changes the campaign.
+- **Visibility:** a member sees every entry of the campaigns they belong to, nothing else.
+- **Import:** rows imported from the Excel carry `importKey` (`excel:<player>:<campaign>:<cell>`,
+  unique), which makes re-running the import harmless.
+- **Statistics are out of scope here:** rankings, top skills and charts live in the separate
+  statistics branch. This feature only provides the log, its CRUD and the import.
 
 ### Campaign colour
 
@@ -126,6 +154,7 @@ Rules:
 - A campaign can have **multiple DMs** (several `CampaignPlayer` rows with role `DM`); each of them has full management rights over that campaign
 - Campaign mutation permissions are checked against `CampaignPlayer.role = DM` **in that campaign**, never against `createdById` (audit only)
 - **Player** (of a given campaign): can only set their own availability
+- **Critical/fumble log**: **any member** of a campaign may add, edit and delete any entry of that campaign, for any member (a player's own or someone else's). Non-members get 404. Only the **arcs** are DM-only (create, rename, delete); any member can read them
 - **Holidays**: any user who is DM of **at least one** campaign may add/remove holidays (extra weekday-eligible dates). There is no global admin role; this reuses the existing DM signal
 - A user may be DM of some campaigns and player in others
 - Data model is designed to support multi-group in the future
@@ -164,6 +193,7 @@ and `/forgot-password` / `/reset-password/*` return 404).
 - **Colour never travels alone**: every state carries an icon (`StatusIcon`: S tick, O screen, T question mark, N cross, B hourglass, unanswered dashed ring) next to its text or tag — calendar indicators, legend, pills, answer buttons, filters, warnings. The viability filter marks the active chips with a tick and the inactive ones with a dashed border
 - **Colour-blind mode**: `/profile` has a "Modo daltónico" select (`User.colorVision`: off, `protan`, `deutan`, `tritan` or `all` = "I don't know"; per person, no cookie). The root layout stamps the value as `data-color-vision` and `globals.css` swaps in a full palette: the S/O/T/N/B tokens of that type (so each can use the part of the colour space that person tells apart) plus, common to every mode, muted ink, borders and the brand tint, a thicker ring for today and an outline on confirmed days. Values come from an optimiser over the Machado simulations; `colorVisionPalette.test.ts` parses the stylesheet and re-checks distances (under normal vision and the tuned one; `all` under the three) and WCAG contrast
 - The calendar shows **every** active confirmed session of the group: the user's own campaigns' in bold with the cell tinted, other campaigns' as muted chips (no tint) plus a read-only "Otras partidas este día" section in the day modal, with name, time and players. A "Filtros" toggle hides the muted chips. Viability is still computed only for the user's own campaigns, and "Próximas partidas" (`/sessions`) lists only their own campaigns' sessions
+- **Críticos y pifias**: `/rolls` lists every entry of every campaign the user belongs to, with filters by campaign, player, type and arc (kept in the URL) and pagination; `/campaigns/[id]/rolls` is the same list scoped to one campaign, reached from a "Críticos y pifias" button on each campaign card (there is no campaign detail page). A modal form logs or edits an entry (player defaults to the user, date to today, arc to the campaign's last). Each entry shows its kind with an icon (star for a critical, bolt for a fumble) next to its name — **colour never travels alone**. The kind colours reuse the S/N tokens, so they follow the colour-blind palettes. Arcs are managed from "Editar campaña" (DMs)
 - **Design reference**: the authoritative visual spec lives in `design/README.md` and `design/screenshots/` (local, gitignored — a Claude design handoff). Follow it for layout, tokens, and flows
 
 ## 6. Conventions
