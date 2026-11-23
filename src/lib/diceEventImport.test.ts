@@ -30,15 +30,19 @@ const world: ImportWorld = {
     { id: "c-orden", name: "La Orden", systemId: "pf2e" },
     { id: "c-academia", name: "Academia", systemId: "pf2e" },
     { id: "c-bare", name: "Sin Sistema", systemId: null },
+    { id: "c-puente", name: "Puente X", systemId: "stormlight" },
   ],
-  catalog: new Map([["pf2e", catalog]]),
+  catalog: new Map([
+    ["pf2e", catalog],
+    ["stormlight", [entry("sl-perception", "PERCEPTION"), entry("sl-light", "LIGHT_WEAPONRY"), entry("sl-heavy", "HEAVY_WEAPONRY")]],
+  ]),
   users: [
     { id: "u-paola", name: "Paola", email: "paola@example.com" },
     { id: "u-david", name: "David", email: "david@example.com" },
     { id: "u-twin1", name: "Twin", email: "t1@example.com" },
     { id: "u-twin2", name: "Twin", email: "t2@example.com" },
   ],
-  memberships: new Set(["c-orden:u-paola", "c-academia:u-paola", "c-orden:u-david", "c-bare:u-paola"]),
+  memberships: new Set(["c-orden:u-paola", "c-academia:u-paola", "c-orden:u-david", "c-bare:u-paola", "c-puente:u-paola"]),
   arcNumbers: new Map([["c-academia", new Set([1])]]),
   existingKeys: new Set(),
   today: "2026-11-22",
@@ -292,6 +296,47 @@ describe("planDiceEventImport", () => {
 
     expect(result.issues).toHaveLength(1);
     expect(result.issues[0].blocking).toBe(true);
+  });
+});
+
+describe("campaignSkills", () => {
+  const puente = {
+    Paola: {
+      "Puente X": { pifia: [{ habilidad: "ataque", fecha: "2026-11-14", celda: "E5" }] },
+      "La Orden de San Jorge": { pifia: [{ habilidad: "ataque", fecha: "2026-11-14", celda: "K9" }] },
+    },
+  };
+  const withPuente = importMappingSchema.parse({
+    ...mapping,
+    campaigns: { ...mapping.campaigns, "Puente X": "Puente X" },
+    campaignSkills: { "Puente X": { ATAQUE: "LIGHT_WEAPONRY" } },
+  });
+
+  it("resolves the same text to the key of each campaign's own system", () => {
+    const result = plan(puente, withPuente);
+
+    expect(result.issues).toEqual([]);
+    expect(result.rows.map((r) => [r.campaignId, r.skillKey])).toEqual([
+      ["c-puente", "LIGHT_WEAPONRY"],
+      ["c-orden", "ATTACK"],
+    ]);
+  });
+
+  it("does not leak into another campaign, and blocks when a system lacks the global target", () => {
+    const withoutOverride = plan(puente, importMappingSchema.parse({ ...withPuente, campaignSkills: {} }));
+
+    expect(withoutOverride.issues).toHaveLength(1);
+    expect(withoutOverride.issues[0].message).toContain('"ATTACK" for "ATAQUE" in "Puente X"');
+    expect(withoutOverride.rows.map((r) => r.campaignId)).toEqual(["c-orden"]);
+  });
+
+  it("still blocks an adjustment that names a key the campaign's system does not have", () => {
+    const wrong = plan(
+      puente,
+      importMappingSchema.parse({ ...withPuente, campaignSkills: { "Puente X": { ATAQUE: "NOPE" } } }),
+    );
+
+    expect(wrong.issues[0].message).toContain('"NOPE" for "ATAQUE" in "Puente X"');
   });
 });
 

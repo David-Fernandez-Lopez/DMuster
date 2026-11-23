@@ -48,6 +48,13 @@ export const importMappingSchema = z.object({
    * from a `"LORE"` mapping: the prefix picks the entry, the rest becomes the detail.
    */
   skills: z.record(z.string(), z.string().min(1)).default({}),
+  /**
+   * Per-campaign adjustments to `skills`, by Excel campaign name: the same format, and
+   * they win over `skills` for that campaign only. For when one text means something
+   * different in another system (`"ATAQUE"` is `ATTACK` in Pathfinder, but Stormlight has
+   * no such entry: `"Puente X": { "ATAQUE": "LIGHT_WEAPONRY" }`).
+   */
+  campaignSkills: z.record(z.string(), z.record(z.string(), z.string().min(1))).default({}),
   /** "Player|Campaign" pairs (Excel names) to skip, e.g. a player who is not in that campaign. */
   skipPairs: z.array(z.string()).default([]),
 });
@@ -214,7 +221,20 @@ export function planDiceEventImport(
   const block = (message: string) => plan.issues.push({ blocking: true, message });
   const warn = (message: string) => plan.issues.push({ blocking: false, message });
 
-  const skillMap = new Map(Object.entries(mapping.skills).map(([k, v]) => [normalizeSkill(k), v.trim()]));
+  const baseSkills = Object.entries(mapping.skills).map(([k, v]): [string, string] => [normalizeSkill(k), v.trim()]);
+  const skillMaps = new Map<string, Map<string, string>>();
+  /** The skills mapping in force for an Excel campaign: the global one, then that campaign's own on top. */
+  const skillMapFor = (campaign: string): Map<string, string> => {
+    let map = skillMaps.get(campaign);
+    if (!map) {
+      const own = Object.entries(mapping.campaignSkills[campaign] ?? {}).map(
+        ([k, v]): [string, string] => [normalizeSkill(k), v.trim()],
+      );
+      map = new Map([...baseSkills, ...own]);
+      skillMaps.set(campaign, map);
+    }
+    return map;
+  };
   const noSystem = new Set<string>();
   const missingKeys = new Map<string, number>();
   const badDetails = new Map<string, number>();
@@ -270,6 +290,7 @@ export function planDiceEventImport(
         continue;
       }
       const catalog = world.catalog.get(systemId) ?? [];
+      const skillMap = skillMapFor(campaign);
 
       // Resolve the player.
       if (!(player in mapping.players)) {

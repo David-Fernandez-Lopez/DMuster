@@ -79,7 +79,8 @@ value or note.
   unique), which makes re-running the import harmless. The mapping's `skills` section points Excel texts
   at catalogue **keys** (`"PERCEPCION": "PERCEPTION"`); `"LORE: GUILD"` splits into the Lore entry plus its
   detail, and a mapped value may carry an explicit detail (`"FUERZA": "CUSTOM_SKILL: FUERZA"`). Anything
-  unmapped or missing from the system's catalogue blocks the import: odd texts become Personalizado only by
+  unmapped or missing from the system's catalogue blocks the import (a per-campaign `campaignSkills` section
+  overrides `skills` where a text means something else in that campaign's system): odd texts become Personalizado only by
   an explicit mapping, never automatically, so a typo cannot hide there.
 - **Statistics are out of scope here:** rankings, top skills and charts live in the separate
   statistics branch. This feature only provides the log, its CRUD and the import.
