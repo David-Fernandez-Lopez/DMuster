@@ -20,6 +20,10 @@
 // Flags:
 //   --file=<path>      the Excel export (required)
 //   --mapping=<path>   the mapping, see scripts/ops/diceEvents.mapping.example.json (required)
+//
+// Every campaign it imports into needs a role system, and the system's catalogue
+// must already be loaded (npm run catalog:sync): the mapping's `skills` point at
+// catalogue keys, and anything it cannot resolve blocks `--apply`.
 //   --apply            actually write (without it the script only reports)
 //
 // Re-running is safe: every row carries a key built from the Excel cell
@@ -100,15 +104,17 @@ function readJson(path: string): unknown {
 }
 
 /**
- * Loads what the plan needs to know about the app: campaigns, users,
- * memberships, existing arcs and keys already imported.
+ * Loads what the plan needs to know about the app: campaigns (with their role
+ * system), each system's catalogue, users, memberships, existing arcs and keys
+ * already imported.
  *
  * @param {PrismaClient} prisma - Connected Prisma client.
  * @returns {Promise<ImportWorld>} The app's current state.
  */
 async function loadWorld(prisma: PrismaClient): Promise<ImportWorld> {
-  const [campaigns, users, memberships, arcs, keys] = await Promise.all([
-    prisma.campaign.findMany({ select: { id: true, name: true } }),
+  const [campaigns, skills, users, memberships, arcs, keys] = await Promise.all([
+    prisma.campaign.findMany({ select: { id: true, name: true, systemId: true } }),
+    prisma.systemSkill.findMany({ select: { id: true, key: true, systemId: true, allowsDetail: true, active: true } }),
     prisma.user.findMany({ select: { id: true, name: true, email: true } }),
     prisma.campaignPlayer.findMany({ select: { campaignId: true, userId: true } }),
     prisma.campaignArc.findMany({ select: { campaignId: true, number: true } }),
@@ -122,8 +128,14 @@ async function loadWorld(prisma: PrismaClient): Promise<ImportWorld> {
     arcNumbers.set(arc.campaignId, set);
   }
 
+  const catalog = new Map<string, { id: string; key: string; allowsDetail: boolean; active: boolean }[]>();
+  for (const { systemId, ...skill } of skills) {
+    catalog.set(systemId, [...(catalog.get(systemId) ?? []), skill]);
+  }
+
   return {
     campaigns,
+    catalog,
     users,
     memberships: new Set(memberships.map((m) => `${m.campaignId}:${m.userId}`)),
     arcNumbers,
@@ -201,7 +213,8 @@ async function main(): Promise<void> {
           campaignId: row.campaignId,
           userId: row.userId,
           kind: row.kind,
-          skill: row.skill,
+          skillId: row.skillId,
+          detail: row.detail,
           date: toUtcDate(row.date),
           time: row.time,
           arcId: arcId(row.campaignId, row.arcNumber),

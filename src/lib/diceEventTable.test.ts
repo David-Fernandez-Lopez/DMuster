@@ -11,6 +11,8 @@ const campaign: DiceEventCampaignContext = {
   name: "Academia",
   tag: "AC",
   colorSlot: 0,
+  system: { id: "s", key: "pf2e", name: "Pathfinder 2e" },
+  skills: [],
   members: [
     { userId: "u-zoe", name: "Zoe", role: "PLAYER" },
     { userId: "u-ana", name: "Ana", role: "PLAYER" },
@@ -35,7 +37,8 @@ function row(userId: string, kind: "CRITICAL" | "FUMBLE", skill: string, arcId: 
     userId,
     userName: campaign.members.find((m) => m.userId === userId)?.name ?? "Ex Member",
     kind,
-    skill,
+    skill: { id: `sk-${skill}`, key: skill, category: "SKILL", nameEs: skill, nameEn: skill, allowsDetail: false },
+    detail: null,
     date: "2025-12-06",
     time: null,
     arc,
@@ -79,7 +82,7 @@ describe("buildDiceEventTable", () => {
 
     expect(table.sections).toHaveLength(1);
     expect(table.sections[0].height).toBe(3);
-    expect(table.sections[0].cells.get("u-ana")?.critical.map((r) => r.skill)).toEqual(["A", "B", "C"]);
+    expect(table.sections[0].cells.get("u-ana")?.critical.map((r) => r.skill.key)).toEqual(["A", "B", "C"]);
   });
 
   it("adds a column for someone with entries who is no longer a member", () => {

@@ -9,8 +9,12 @@
     "A player that is not in the app": null
   },
   "skills": {
-    "DECEPTION": "ENGAÑO",
-    "WILL": "VOLUNTAD"
+    "Excel text, as written (case and spaces do not matter)": "KEY_IN_THE_SYSTEM_CATALOGUE",
+    "PERCEPCION": "PERCEPTION",
+    "LORE": "LORE",
+    "DYING": "DYING"
   },
-  "skipPairs": ["Player in the Excel|Campaign in the Excel"]
+  "skipPairs": [
+    "Player in the Excel|Campaign in the Excel"
+  ]
 }

@@ -6,7 +6,7 @@ import {
   diceEventSchema,
 } from "@/lib/validation/diceEvent";
 
-const valid = { userId: "u1", kind: "CRITICAL", skill: "percepcion", date: "2026-11-01" };
+const valid = { userId: "u1", kind: "CRITICAL", skillId: "sk1", date: "2026-11-01" };
 
 describe("diceEventCreateSchema", () => {
   it("takes no date or time: whatever is sent is dropped", () => {
@@ -16,18 +16,29 @@ describe("diceEventCreateSchema", () => {
     expect(parsed).not.toHaveProperty("time");
   });
 
-  it("still normalises the skill and validates the rest", () => {
-    expect(diceEventCreateSchema.parse({ ...valid, skill: " lore:  hogar " }).skill).toBe("LORE: HOGAR");
-    expect(diceEventCreateSchema.safeParse({ ...valid, skill: " " }).success).toBe(false);
+  it("needs a catalogue entry and a known kind", () => {
+    expect(diceEventCreateSchema.parse(valid).skillId).toBe("sk1");
+    expect(diceEventCreateSchema.safeParse({ ...valid, skillId: " " }).success).toBe(false);
+    expect(diceEventCreateSchema.safeParse({ userId: "u1", kind: "CRITICAL" }).success).toBe(false);
     expect(diceEventCreateSchema.safeParse({ ...valid, kind: "WIN" }).success).toBe(false);
+  });
+
+  it("normalises the optional detail and turns a blank one into none", () => {
+    expect(diceEventCreateSchema.parse({ ...valid, detail: " guild  hall " }).detail).toBe("GUILD HALL");
+    expect(diceEventCreateSchema.parse({ ...valid, detail: "  " }).detail).toBeNull();
+    expect(diceEventCreateSchema.parse({ ...valid, detail: null }).detail).toBeNull();
+    expect(diceEventCreateSchema.parse(valid).detail).toBeUndefined();
+  });
+
+  it("rejects a detail longer than 60 characters", () => {
+    expect(diceEventCreateSchema.safeParse({ ...valid, detail: "a".repeat(61) }).success).toBe(false);
   });
 });
 
 describe("diceEventSchema (edit)", () => {
-  it("normalises the skill and treats a blank time and ids as none", () => {
-    const parsed = diceEventSchema.parse({ ...valid, skill: "  lore:  hogar", time: "", arcId: "", sessionId: null });
+  it("treats a blank time and ids as none", () => {
+    const parsed = diceEventSchema.parse({ ...valid, time: "", arcId: "", sessionId: null });
 
-    expect(parsed.skill).toBe("LORE: HOGAR");
     expect(parsed.time).toBeNull();
     expect(parsed.arcId).toBeNull();
     expect(parsed.sessionId).toBeNull();
@@ -47,13 +58,9 @@ describe("diceEventSchema (edit)", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects a blank skill and an unknown kind", () => {
-    expect(diceEventSchema.safeParse({ ...valid, skill: "   " }).success).toBe(false);
+  it("rejects a missing entry and an unknown kind", () => {
+    expect(diceEventSchema.safeParse({ ...valid, skillId: "" }).success).toBe(false);
     expect(diceEventSchema.safeParse({ ...valid, kind: "WIN" }).success).toBe(false);
-  });
-
-  it("rejects a skill longer than 60 characters once normalised", () => {
-    expect(diceEventSchema.safeParse({ ...valid, skill: "a".repeat(61) }).success).toBe(false);
   });
 });
 

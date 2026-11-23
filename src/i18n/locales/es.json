@@ -127,7 +127,10 @@
       "color": "Color",
       "colorHelp": "Identifica la campaña en gráficas y etiquetas. No puede repetirse.",
       "colorTaken": "En uso por {{tag}}",
-      "colorOption": "Color {{number}}"
+      "colorOption": "Color {{number}}",
+      "system": "Sistema de rol",
+      "noSystem": "Sin sistema",
+      "systemHint": "Define qué habilidades y condiciones ofrece el registro de críticos y pifias. No se puede cambiar cuando la campaña ya tiene entradas."
     },
     "actions": {
       "players": "Jugadores",
@@ -191,7 +194,9 @@
       "notFound": "Campaña no encontrada.",
       "unknown": "Algo ha ido mal. Inténtalo de nuevo.",
       "colorTaken": "Ese color ya lo usa otra campaña.",
-      "colorInvalid": "Elige un color válido."
+      "colorInvalid": "Elige un color válido.",
+      "systemLocked": "No se puede cambiar el sistema de rol: la campaña ya tiene críticos o pifias anotados.",
+      "systemInvalid": "El sistema de rol elegido no existe."
     }
   },
   "holidays": {
@@ -482,13 +487,15 @@
       "campaign": "Campaña",
       "player": "Jugador",
       "kind": "Tipo",
-      "skill": "Habilidad",
-      "skillHint": "Escribe una nueva o elige una ya usada en la campaña.",
+      "skill": "Habilidad o condición",
+      "skillHint": "Del sistema {{system}}.",
       "date": "Fecha",
       "time": "Hora (opcional)",
       "arc": "Arco",
       "noArc": "Sin arco",
-      "submit": "Guardar"
+      "submit": "Guardar",
+      "skillPlaceholder": "Elige una…",
+      "detail": "Detalle (opcional)"
     },
     "filters": {
       "title": "Filtros",
@@ -512,13 +519,16 @@
       "playerRequired": "Elige un jugador.",
       "kindInvalid": "Elige si es un crítico o una pifia.",
       "skillRequired": "La habilidad es obligatoria.",
-      "skillTooLong": "La habilidad es demasiado larga.",
       "dateInvalid": "Introduce una fecha válida.",
       "timeInvalid": "Introduce una hora válida (HH:MM).",
       "futureDate": "La fecha no puede ser futura.",
       "playerNotMember": "Ese jugador no pertenece a la campaña.",
       "arcNotFound": "El arco no existe en esta campaña.",
-      "sessionNotFound": "La sesión no existe en esta campaña."
+      "sessionNotFound": "La sesión no existe en esta campaña.",
+      "noSystem": "La campaña no tiene sistema de rol asignado.",
+      "skillNotFound": "Esa habilidad o condición no existe en el sistema de la campaña.",
+      "detailNotAllowed": "Esa entrada no admite detalle.",
+      "detailTooLong": "El detalle es demasiado largo."
     },
     "emptyTitle": "Aún no hay críticos ni pifias",
     "emptyText": "Anota la primera tirada y aparecerá aquí.",
@@ -531,7 +541,14 @@
     },
     "cell": {
       "when": "Fecha",
-      "loggedBy": "Anotado por"
+      "loggedBy": "Anotado por",
+      "type": "Tipo"
+    },
+    "noSystem": "Esta campaña aún no tiene sistema de rol, así que no hay habilidades entre las que elegir. Un máster puede asignarlo en «Editar campaña».",
+    "noSystemAction": "Editar campaña",
+    "category": {
+      "SKILL": "Habilidades",
+      "CONDITION": "Condiciones"
     }
   },
   "arcs": {

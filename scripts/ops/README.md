@@ -167,8 +167,14 @@ docker compose exec app npx tsx scripts/ops/importDiceEvents.ts \
   --file=/tmp/history.json --mapping=/tmp/dice-events.mapping.json --apply    # write
 ```
 
-The report lists the problems, what would be written per campaign, the arcs it
-would create, what is skipped, and every distinct skill with its count — use that
-list to fill the `skills` section (`DECEPTION` → `ENGAÑO`). Back up first
+The campaigns it imports into must already have a **role system**, and that
+system's catalogue must be loaded (`npm run catalog:sync`): the `skills` section
+maps each Excel text to a catalogue **key** (`"WILL": "WILL"`, `"PERCEPCIÓN":
+"PERCEPTION"`, `"DYING": "DYING"`), and a `"LORE: GUILD"` splits on its own into the
+Lore entry plus the detail. The report lists the problems, what would be written
+per campaign, the arcs it would create, what is skipped, the **Excel texts still
+to map** with their counts (use that list to complete `skills`) and the catalogue
+entries used. Order: migrate → catalogue sync → assign a system to each campaign →
+import. Back up first
 (`backup-db.sh`). Re-running is safe: each row is keyed by its Excel cell and
 rows already stored are left alone.

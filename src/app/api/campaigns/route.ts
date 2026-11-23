@@ -65,7 +65,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const result = await createCampaign(session.user.id, parsed.data);
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
+    const status = result.error === "campaigns.errors.systemInvalid" ? 400 : 500;
+    return NextResponse.json({ error: result.error }, { status });
   }
 
   return NextResponse.json({ data: { id: result.campaignId } }, { status: 201 });

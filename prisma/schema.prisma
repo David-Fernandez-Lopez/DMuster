@@ -124,6 +124,11 @@ model Campaign {
   // with future multi-group support it would only be unique within a group.
   colorSlot Int @default(0)
 
+  // The tabletop system the campaign plays (its skills and conditions are what
+  // the critical/fumble log offers). Nullable: campaigns created before systems
+  // existed have none until a DM picks one, and cannot log anything meanwhile.
+  systemId String?
+
   createdBy User             @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   players   CampaignPlayer[]
 
@@ -131,6 +136,7 @@ model Campaign {
   invitations       Invitation[]
   arcs              CampaignArc[]
   diceEvents        DiceEvent[]
+  system            RoleSystem?   @relation(fields: [systemId], references: [id], onDelete: Restrict)
 
   @@map("campaigns")
 }
@@ -278,6 +284,54 @@ enum DiceEventKind {
   FUMBLE
 }
 
+// A tabletop system (Pathfinder 2e, Vampire...). Loaded from prisma/catalog/*.json
+// by `prisma/syncCatalog.ts`; never edited from the app.
+model RoleSystem {
+  id     String  @id @default(cuid())
+  // Stable slug, the JSON file's key (e.g. "pathfinder-2e").
+  key    String  @unique @db.VarChar(40)
+  name   String  @db.VarChar(80)
+  // False once the system's file is gone: it stops being offered, but the
+  // campaigns and entries that use it keep working.
+  active Boolean @default(true)
+
+  campaigns Campaign[]
+  skills    SystemSkill[]
+
+  @@map("role_systems")
+}
+
+enum SkillCategory {
+  SKILL
+  CONDITION
+}
+
+// One closed-list entry of a system: a skill ("Percepción") or a condition
+// ("A punto de morir"). Dice events point at it by id, so the statistics can
+// group on it ("most criticals by skill", "times dying") without text clean-up.
+model SystemSkill {
+  id           String        @id @default(cuid())
+  systemId     String
+  // Stable, language-neutral key (e.g. "PERCEPTION", "DYING"); unique per system.
+  key          String        @db.VarChar(40)
+  category     SkillCategory
+  nameEs       String        @db.VarChar(80)
+  nameEn       String        @db.VarChar(80)
+  // True for open-ended entries such as "Lore": an event may carry a short
+  // `detail` ("Guild").
+  allowsDetail Boolean       @default(false)
+  // Position within the system's file; the form lists entries in this order.
+  sortOrder    Int           @default(0)
+  // False once removed from the file: no longer offered, still valid for history.
+  active       Boolean       @default(true)
+
+  system     RoleSystem  @relation(fields: [systemId], references: [id], onDelete: Restrict)
+  diceEvents DiceEvent[]
+
+  @@unique([systemId, key])
+  @@map("system_skills")
+}
+
 // One critical success or fumble a player rolled in a campaign. Its own event
 // with a date: it only optionally links to a confirmed session, because the
 // imported history predates the app and cannot be matched to one reliably.
@@ -287,9 +341,11 @@ model DiceEvent {
   // The player who rolled it. Must be a member of the campaign when created.
   userId     String
   kind       DiceEventKind
-  // Normalised free text (trimmed, single spaces, upper case); suggestions per
-  // campaign come from the distinct values already used.
-  skill      String        @db.VarChar(60)
+  // What was rolled: an entry of the campaign's system catalogue (checked by the
+  // service: the FK cannot say "of the campaign's system").
+  skillId    String
+  // Short free text for entries that allow it (e.g. "Guild" for a Lore).
+  detail     String?       @db.VarChar(60)
   date       DateTime      @db.Date
   // "HH:MM", local wall time of the roll. Past midnight it stays on the roll's
   // own date, it is not moved to the session's day.
@@ -309,8 +365,10 @@ model DiceEvent {
   createdBy User              @relation("DiceEventCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   arc       CampaignArc?      @relation(fields: [arcId], references: [id], onDelete: SetNull)
   session   ConfirmedSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  skill     SystemSkill       @relation(fields: [skillId], references: [id], onDelete: Restrict)
 
   @@index([campaignId, date])
+  @@index([skillId])
   @@index([userId, campaignId])
   @@index([arcId])
   @@map("dice_events")

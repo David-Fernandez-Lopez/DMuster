@@ -9,6 +9,7 @@ import DiceViewToggle from "@/components/dice/DiceViewToggle";
 import NewDiceEventButton from "@/components/dice/NewDiceEventButton";
 import { getServerTranslation } from "@/i18n/server";
 import { toUtcDate } from "@/lib/date";
+import { skillLabel } from "@/lib/diceSkillLabel";
 import { listAllDiceEvents, listDiceEventContext, listDiceEvents } from "@/lib/diceEventService";
 import { todayIso } from "@/lib/today";
 import { diceEventFilterSchema } from "@/lib/validation/diceEvent";
@@ -191,7 +192,7 @@ export default async function DiceEventsView({
                 </time>
               </div>
 
-              <p className="mt-2 font-bold text-ink">{item.skill}</p>
+              <p className="mt-2 font-bold text-ink">{skillLabel(item.skill, item.detail, locale)}</p>
               <p className="text-sm text-ink">{item.userName}</p>
 
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-muted">
@@ -222,6 +223,7 @@ export default async function DiceEventsView({
                     userId: item.userId,
                     kind: item.kind,
                     skill: item.skill,
+                    detail: item.detail,
                     date: item.date,
                     time: item.time,
                     arcId: item.arc?.id ?? null,

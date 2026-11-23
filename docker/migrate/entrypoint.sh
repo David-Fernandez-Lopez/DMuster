@@ -6,6 +6,13 @@ set -eu
 echo "[migrate] Applying pending migrations..."
 npx prisma migrate deploy
 
+# Load the role-system catalogues (prisma/catalog/*.json): the closed lists of
+# skills and conditions the critical/fumble log offers. Unlike the seed it is
+# idempotent and meant to run on every deploy; a broken file fails the deploy
+# (set -e) rather than leaving the catalogue half loaded.
+echo "[migrate] Syncing the role-system catalogues..."
+npx tsx prisma/syncCatalog.ts
+
 # The seed only bootstraps an empty database and refuses to touch one that
 # already has data (exit 1). That refusal is the normal state on every deploy
 # after the first, so it must not block the app from starting: it is logged

@@ -1,5 +1,5 @@
 import { Prisma } from "@/generated/prisma/client";
-import type { CampaignRole, DiceEventKind } from "@/generated/prisma/enums";
+import type { CampaignRole, DiceEventKind, SkillCategory } from "@/generated/prisma/enums";
 import { toIsoDate, toUtcDate } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 import { nowStamp, todayIso } from "@/lib/today";
@@ -15,8 +15,25 @@ const RECORD_NOT_FOUND = "P2025";
 /** Upper bound on the entries the table view loads in one go (far above any real log). */
 const TABLE_ENTRY_LIMIT = 5000;
 
-/** Upper bound on skill suggestions returned for a campaign. */
-const SKILL_SUGGESTION_LIMIT = 50;
+/** An entry of a system's catalogue, as the UI needs it (both names; the UI picks the locale). */
+export type DiceEventSkill = {
+  id: string;
+  key: string;
+  category: SkillCategory;
+  nameEs: string;
+  nameEn: string;
+  allowsDetail: boolean;
+};
+
+/** Columns read for a catalogue entry. */
+const SKILL_SELECT = {
+  id: true,
+  key: true,
+  category: true,
+  nameEs: true,
+  nameEn: true,
+  allowsDetail: true,
+} satisfies Prisma.SystemSkillSelect;
 
 /** One row of the critical/fumble log, ready for the UI. */
 export type DiceEventRow = {
@@ -28,7 +45,9 @@ export type DiceEventRow = {
   userId: string;
   userName: string;
   kind: DiceEventKind;
-  skill: string;
+  skill: DiceEventSkill;
+  /** Short free text for entries that allow it (a Lore's "GUILD"), or `null`. */
+  detail: string | null;
   /** "YYYY-MM-DD". */
   date: string;
   /** "HH:MM" or `null`. */
@@ -54,6 +73,10 @@ export type DiceEventCampaignContext = {
   colorSlot: number;
   members: { userId: string; name: string; role: CampaignRole }[];
   arcs: { id: string; number: number; name: string | null }[];
+  /** The campaign's system, or `null` while a DM has not picked one (nothing can be logged then). */
+  system: { id: string; key: string; name: string } | null;
+  /** The system's active catalogue, in its own order. Empty without a system. */
+  skills: DiceEventSkill[];
 };
 
 /** Result of a mutation. `error` holds an i18n key on failure. */
@@ -67,7 +90,8 @@ const ROW_SELECT = {
   campaignId: true,
   userId: true,
   kind: true,
-  skill: true,
+  skill: { select: SKILL_SELECT },
+  detail: true,
   date: true,
   time: true,
   sessionId: true,
@@ -112,6 +136,7 @@ function toRow(row: Prisma.DiceEventGetPayload<{ select: typeof ROW_SELECT }>): 
     userName: row.user.name,
     kind: row.kind,
     skill: row.skill,
+    detail: row.detail,
     date: toIsoDate(row.date),
     time: row.time,
     arc: row.arc,
@@ -179,9 +204,9 @@ export async function listAllDiceEvents(
 }
 
 /**
- * Lists the campaigns the viewer belongs to with their members and arcs: the
- * options of the log form and filters. Campaigns by name, members by name, arcs
- * in order.
+ * Lists the campaigns the viewer belongs to with their members, arcs, system
+ * and the system's active catalogue: the options of the log form and filters.
+ * Campaigns by name, members by name, arcs and catalogue in order.
  *
  * @param {string} viewerId - Id of the signed-in user.
  * @returns {Promise<DiceEventCampaignContext[]>} The viewer's campaigns.
@@ -205,6 +230,14 @@ export async function listDiceEventContext(
         select: { id: true, number: true, name: true },
         orderBy: { number: "asc" },
       },
+      system: {
+        select: {
+          id: true,
+          key: true,
+          name: true,
+          skills: { where: { active: true }, orderBy: { sortOrder: "asc" }, select: SKILL_SELECT },
+        },
+      },
     },
   });
 
@@ -219,6 +252,10 @@ export async function listDiceEventContext(
       role: player.role,
     })),
     arcs: campaign.arcs,
+    system: campaign.system
+      ? { id: campaign.system.id, key: campaign.system.key, name: campaign.system.name }
+      : null,
+    skills: campaign.system?.skills ?? [],
   }));
 }
 
@@ -238,40 +275,44 @@ export async function getDiceEventCampaignId(eventId: string): Promise<string | 
 }
 
 /**
- * Lists the skills already used in a campaign, most used first, to suggest as
- * the user types. Grouping uses the column collation, so accent variants fall
- * together.
- *
- * @param {string} campaignId - Id of the campaign.
- * @returns {Promise<string[]>} Up to 50 skill names.
- */
-export async function listCampaignSkills(campaignId: string): Promise<string[]> {
-  const groups = await prisma.diceEvent.groupBy({
-    by: ["skill"],
-    where: { campaignId },
-    _count: { skill: true },
-    orderBy: [{ _count: { skill: "desc" } }, { skill: "asc" }],
-    take: SKILL_SUGGESTION_LIMIT,
-  });
-  return groups.map((group) => group.skill);
-}
-
-/**
- * Checks everything an input references: the player belongs to the campaign,
- * the date (when one is being set) is not in the future, and the optional arc
- * and session belong to the same campaign. Returns the i18n error key of the
- * first failure.
+ * Checks everything an input references: the campaign has a system and the
+ * chosen catalogue entry belongs to it (and is still offered, unless the event
+ * already uses it), `detail` only comes with an entry that allows it, the player
+ * belongs to the campaign, the date (when one is being set) is not in the
+ * future, and the optional arc and session belong to the same campaign. Returns
+ * the i18n error key of the first failure.
  *
  * @param {string} campaignId - Campaign the event belongs to.
  * @param {DiceEventCreateInput & { date?: string }} input - Validated payload.
+ * @param {string | null} [currentSkillId] - The entry the event being edited already
+ *   uses; keeping it is allowed even once it has been deactivated.
  * @returns {Promise<string | null>} An error key, or `null` when all is fine.
  */
 async function checkReferences(
   campaignId: string,
   input: DiceEventCreateInput & { date?: string },
+  currentSkillId: string | null = null,
 ): Promise<string | null> {
   if (input.date !== undefined && input.date > todayIso()) {
     return "diceEvents.errors.futureDate";
+  }
+
+  const campaign = await prisma.campaign.findUnique({
+    where: { id: campaignId },
+    select: { systemId: true },
+  });
+  if (!campaign?.systemId) {
+    return "diceEvents.errors.noSystem";
+  }
+  const skill = await prisma.systemSkill.findFirst({
+    where: { id: input.skillId, systemId: campaign.systemId },
+    select: { active: true, allowsDetail: true },
+  });
+  if (!skill || (!skill.active && input.skillId !== currentSkillId)) {
+    return "diceEvents.errors.skillNotFound";
+  }
+  if (input.detail && !skill.allowsDetail) {
+    return "diceEvents.errors.detailNotAllowed";
   }
 
   const member = await prisma.campaignPlayer.findUnique({
@@ -332,7 +373,8 @@ export async function createDiceEvent(
         campaignId,
         userId: input.userId,
         kind: input.kind,
-        skill: input.skill,
+        skillId: input.skillId,
+        detail: input.detail ?? null,
         date: toUtcDate(stamp.date),
         time: stamp.time,
         arcId: input.arcId ?? null,
@@ -363,7 +405,15 @@ export async function updateDiceEvent(
   input: DiceEventInput,
 ): Promise<DiceEventMutationResult> {
   try {
-    const invalid = await checkReferences(campaignId, input);
+    const current = await prisma.diceEvent.findUnique({
+      where: { id: eventId },
+      select: { skillId: true },
+    });
+    if (!current) {
+      return { ok: false, error: "diceEvents.errors.notFound" };
+    }
+
+    const invalid = await checkReferences(campaignId, input, current.skillId);
     if (invalid) {
       return { ok: false, error: invalid };
     }
@@ -373,7 +423,8 @@ export async function updateDiceEvent(
       data: {
         userId: input.userId,
         kind: input.kind,
-        skill: input.skill,
+        skillId: input.skillId,
+        detail: input.detail ?? null,
         date: toUtcDate(input.date),
         time: input.time ?? null,
         arcId: input.arcId ?? null,

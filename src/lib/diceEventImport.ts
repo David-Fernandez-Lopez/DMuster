@@ -41,7 +41,12 @@ export const importMappingSchema = z.object({
   campaigns: z.record(z.string(), z.string().min(1).nullable()),
   /** Excel player name → the user's email or exact name, or `null` to skip them. */
   players: z.record(z.string(), z.string().min(1).nullable()),
-  /** Skill clean-up: normalised Excel skill → the skill to store. */
+  /**
+   * Excel skill text (normalised: trimmed, upper case) → key of the entry in the
+   * campaign's system catalogue (`"PERCEPCION": "PERCEPTION"`, `"DYING": "DYING"`).
+   * For catalogue entries that take a detail, `"LORE: GUILD"` resolves on its own
+   * from a `"LORE"` mapping: the prefix picks the entry, the rest becomes the detail.
+   */
   skills: z.record(z.string(), z.string().min(1)).default({}),
   /** "Player|Campaign" pairs (Excel names) to skip, e.g. a player who is not in that campaign. */
   skipPairs: z.array(z.string()).default([]),
@@ -51,7 +56,9 @@ export type ImportMapping = z.infer<typeof importMappingSchema>;
 
 /** What the plan needs to know about the app's current state. */
 export type ImportWorld = {
-  campaigns: { id: string; name: string }[];
+  campaigns: { id: string; name: string; systemId: string | null }[];
+  /** Each system's catalogue, by system id. */
+  catalog: Map<string, { id: string; key: string; allowsDetail: boolean; active: boolean }[]>;
   users: { id: string; name: string; email: string }[];
   /** "campaignId:userId" for every membership. */
   memberships: Set<string>;
@@ -69,7 +76,11 @@ export type PlannedRow = {
   campaignId: string;
   userId: string;
   kind: "CRITICAL" | "FUMBLE";
-  skill: string;
+  /** The catalogue entry's id. */
+  skillId: string;
+  /** Its key, for the report. */
+  skillKey: string;
+  detail: string | null;
   date: string;
   time: string | null;
   arcNumber: number | null;
@@ -89,8 +100,10 @@ export type ImportPlan = {
   skipped: { player: string; campaign: string; entries: number; reason: string }[];
   alreadyImported: number;
   issues: ImportIssue[];
-  /** Normalised skill → how many rows use it, to build the `skills` mapping. */
+  /** Catalogue key → how many rows use it. */
   skills: Map<string, number>;
+  /** Excel skill texts nobody mapped → how many entries use them: what to add to `skills`. */
+  unmappedSkills: Map<string, number>;
 };
 
 /**
@@ -115,6 +128,47 @@ function resolveUser(
     return byName[0];
   }
   return byName.length > 1 ? "ambiguous" : null;
+}
+
+/**
+ * Finds the catalogue entry an Excel skill text stands for. The text is looked
+ * up in the mapping as it is; failing that, a "PREFIX: detail" text whose prefix
+ * is mapped to an entry that takes a detail splits into that entry and the
+ * detail ("LORE: GUILD" → Lore + "GUILD").
+ *
+ * @param {string} text - The Excel text, already normalised.
+ * @param {Map<string, string>} skillMap - Normalised Excel text → catalogue key.
+ * @param {{ id: string; key: string; allowsDetail: boolean; active: boolean }[]} catalog - The campaign's system catalogue.
+ * @returns {{ id: string; key: string; detail: string | null } | "unmapped" | "missing"} The
+ *   entry, `"unmapped"` when the mapping says nothing about the text, or `"missing"` when it
+ *   names a key the system does not offer.
+ */
+function resolveSkill(
+  text: string,
+  skillMap: Map<string, string>,
+  catalog: { id: string; key: string; allowsDetail: boolean; active: boolean }[],
+): { id: string; key: string; detail: string | null } | "unmapped" | "missing" {
+  const direct = skillMap.get(text);
+  if (direct !== undefined) {
+    const entry = catalog.find((candidate) => candidate.key === direct && candidate.active);
+    return entry ? { id: entry.id, key: entry.key, detail: null } : "missing";
+  }
+
+  const colon = text.indexOf(":");
+  if (colon > 0) {
+    const prefixKey = skillMap.get(text.slice(0, colon).trim());
+    const detail = text.slice(colon + 1).trim();
+    if (prefixKey !== undefined && detail !== "") {
+      const entry = catalog.find((candidate) => candidate.key === prefixKey && candidate.active);
+      if (!entry) {
+        return "missing";
+      }
+      if (entry.allowsDetail) {
+        return { id: entry.id, key: entry.key, detail };
+      }
+    }
+  }
+  return "unmapped";
 }
 
 /**
@@ -143,11 +197,14 @@ export function planDiceEventImport(
     alreadyImported: 0,
     issues: [],
     skills: new Map(),
+    unmappedSkills: new Map(),
   };
   const block = (message: string) => plan.issues.push({ blocking: true, message });
   const warn = (message: string) => plan.issues.push({ blocking: false, message });
 
-  const skillMap = new Map(Object.entries(mapping.skills).map(([k, v]) => [normalizeSkill(k), normalizeSkill(v)]));
+  const skillMap = new Map(Object.entries(mapping.skills).map(([k, v]) => [normalizeSkill(k), v.trim()]));
+  const noSystem = new Set<string>();
+  const missingKeys = new Map<string, number>();
   const skipPairs = new Set(mapping.skipPairs.map((pair) => pair.trim().toLowerCase()));
   const seenKeys = new Set<string>();
   const arcsWanted = new Map<string, Set<number>>();
@@ -191,6 +248,15 @@ export function planDiceEventImport(
         continue;
       }
       const campaignId = matches[0].id;
+      const systemId = matches[0].systemId;
+      if (systemId === null) {
+        if (!noSystem.has(campaignId)) {
+          noSystem.add(campaignId);
+          block(`Campaign "${campaignTarget}" has no role system in the app: pick one in "Editar campaña" first.`);
+        }
+        continue;
+      }
+      const catalog = world.catalog.get(systemId) ?? [];
 
       // Resolve the player.
       if (!(player in mapping.players)) {
@@ -231,9 +297,18 @@ export function planDiceEventImport(
         const importKey = `excel:${player}:${campaign}:${entry.celda}`;
 
         const rawSkill = normalizeSkill(entry.habilidad);
-        const skill = skillMap.get(rawSkill) ?? rawSkill;
-        if (skill === "" || skill.length > DICE_SKILL_MAX_LENGTH) {
-          block(`${where}: skill "${entry.habilidad}" is empty or longer than ${DICE_SKILL_MAX_LENGTH} characters.`);
+        const resolved = resolveSkill(rawSkill, skillMap, catalog);
+        if (resolved === "unmapped") {
+          plan.unmappedSkills.set(rawSkill, (plan.unmappedSkills.get(rawSkill) ?? 0) + 1);
+          continue;
+        }
+        if (resolved === "missing") {
+          const key = `"${skillMap.get(rawSkill) ?? skillMap.get(rawSkill.split(":")[0].trim())}" for "${rawSkill}" in "${campaignTarget}"`;
+          missingKeys.set(key, (missingKeys.get(key) ?? 0) + 1);
+          continue;
+        }
+        if (resolved.detail !== null && resolved.detail.length > DICE_SKILL_MAX_LENGTH) {
+          block(`${where}: detail "${resolved.detail}" is longer than ${DICE_SKILL_MAX_LENGTH} characters.`);
           continue;
         }
         if (!/^\d{4}-\d{2}-\d{2}$/.test(entry.fecha) || !isValidIsoDate(entry.fecha)) {
@@ -273,13 +348,15 @@ export function planDiceEventImport(
           }
         }
 
-        plan.skills.set(skill, (plan.skills.get(skill) ?? 0) + 1);
+        plan.skills.set(resolved.key, (plan.skills.get(resolved.key) ?? 0) + 1);
         plan.rows.push({
           importKey,
           campaignId,
           userId: user.id,
           kind,
-          skill,
+          skillId: resolved.id,
+          skillKey: resolved.key,
+          detail: resolved.detail,
           date: entry.fecha,
           time,
           arcNumber,
@@ -287,6 +364,13 @@ export function planDiceEventImport(
         });
       }
     }
+  }
+
+  for (const [text, count] of [...plan.unmappedSkills].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))) {
+    block(`Skill text "${text}" is not in the mapping (${count} entries).`);
+  }
+  for (const [key, count] of missingKeys) {
+    block(`Catalogue key ${key} does not exist (or is no longer offered) in the campaign's system (${count} entries).`);
   }
 
   for (const [campaignId, numbers] of arcsWanted) {
@@ -339,7 +423,12 @@ export function formatImportReport(plan: ImportPlan, world: ImportWorld): string
     lines.push(`  ${item.player} / ${item.campaign}: ${item.entries} (${item.reason})`);
   }
 
-  lines.push("", `Skills (${plan.skills.size} distinct):`);
+  lines.push("", `Skill texts still to map: ${plan.unmappedSkills.size}`);
+  for (const [text, count] of [...plan.unmappedSkills].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))) {
+    lines.push(`  ${String(count).padStart(4)}  ${text}`);
+  }
+
+  lines.push("", `Catalogue entries used (${plan.skills.size} distinct):`);
   for (const [skill, count] of [...plan.skills].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))) {
     lines.push(`  ${String(count).padStart(4)}  ${skill}`);
   }

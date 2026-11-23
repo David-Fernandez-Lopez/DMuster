@@ -6,6 +6,7 @@ import DiceKindIcon from "@/components/dice/DiceKindIcon";
 import type { DiceEventCampaignContext, DiceEventRow } from "@/lib/diceEventService";
 import { toUtcDate } from "@/lib/date";
 import { buildDiceEventTable } from "@/lib/diceEventTable";
+import { skillLabel } from "@/lib/diceSkillLabel";
 import type { DiceEventKind } from "@/generated/prisma/enums";
 
 /**
@@ -142,6 +143,7 @@ export default function DiceEventTable({ campaign, rows, filters, viewerId, toda
                           {entry ? (
                             <DiceEventCell
                               entry={entry}
+                              label={skillLabel(entry.skill, entry.detail, locale)}
                               campaign={campaign}
                               viewerId={viewerId}
                               today={today}

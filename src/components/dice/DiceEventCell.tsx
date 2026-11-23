@@ -12,6 +12,8 @@ import type { DiceEventRow, DiceEventCampaignContext } from "@/lib/diceEventServ
 interface DiceEventCellProps {
   /** The entry this cell shows. */
   entry: DiceEventRow;
+  /** Its skill or condition name in the user's language, with the detail if any. */
+  label: string;
   /** The entry's campaign (the edit form only needs that one). */
   campaign: DiceEventCampaignContext;
   /** Id of the signed-in user. */
@@ -33,7 +35,15 @@ interface DiceEventCellProps {
  * @param {DiceEventCellProps} props
  * @returns {JSX.Element}
  */
-export default function DiceEventCell({ entry, campaign, viewerId, today, whenLabel, arcLabel }: DiceEventCellProps) {
+export default function DiceEventCell({
+  entry,
+  label,
+  campaign,
+  viewerId,
+  today,
+  whenLabel,
+  arcLabel,
+}: DiceEventCellProps) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<"closed" | "detail" | "edit">("closed");
 
@@ -45,11 +55,11 @@ export default function DiceEventCell({ entry, campaign, viewerId, today, whenLa
         title={whenLabel}
         className="w-full rounded-[var(--radius-control)] px-2 py-1.5 text-left text-[13px] font-semibold text-ink hover:bg-brand-soft"
       >
-        {entry.skill}
+        {label}
       </button>
 
       {mode === "detail" ? (
-        <FiltersModal title={entry.skill} onClose={() => setMode("closed")}>
+        <FiltersModal title={label} onClose={() => setMode("closed")}>
           <div className="flex flex-col gap-2">
             <div>
               <DiceKindBadge kind={entry.kind} label={t(`diceEvents.kind.${entry.kind}`)} />
@@ -57,6 +67,8 @@ export default function DiceEventCell({ entry, campaign, viewerId, today, whenLa
             <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
               <dt className="text-ink-muted">{t("diceEvents.form.player")}</dt>
               <dd className="font-semibold text-ink">{entry.userName}</dd>
+              <dt className="text-ink-muted">{t("diceEvents.cell.type")}</dt>
+              <dd className="text-ink">{t(`diceEvents.category.${entry.skill.category}`)}</dd>
               <dt className="text-ink-muted">{t("diceEvents.cell.when")}</dt>
               <dd className="text-ink">{whenLabel}</dd>
               {arcLabel ? (
@@ -75,6 +87,7 @@ export default function DiceEventCell({ entry, campaign, viewerId, today, whenLa
                 userId: entry.userId,
                 kind: entry.kind,
                 skill: entry.skill,
+                detail: entry.detail,
                 date: entry.date,
                 time: entry.time,
                 arcId: entry.arc?.id ?? null,
@@ -100,6 +113,7 @@ export default function DiceEventCell({ entry, campaign, viewerId, today, whenLa
             userId: entry.userId,
             kind: entry.kind,
             skill: entry.skill,
+            detail: entry.detail,
             date: entry.date,
             time: entry.time,
             arcId: entry.arc?.id ?? null,

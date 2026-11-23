@@ -127,7 +127,10 @@
       "color": "Colour",
       "colorHelp": "Identifies the campaign in charts and labels. It cannot repeat.",
       "colorTaken": "Used by {{tag}}",
-      "colorOption": "Colour {{number}}"
+      "colorOption": "Colour {{number}}",
+      "system": "Role system",
+      "noSystem": "No system",
+      "systemHint": "Sets which skills and conditions the crit & fumble log offers. It cannot be changed once the campaign has entries."
     },
     "actions": {
       "players": "Players",
@@ -191,7 +194,9 @@
       "notFound": "Campaign not found.",
       "unknown": "Something went wrong. Please try again.",
       "colorTaken": "Another campaign already uses that colour.",
-      "colorInvalid": "Pick a valid colour."
+      "colorInvalid": "Pick a valid colour.",
+      "systemLocked": "The role system cannot be changed: the campaign already has crits or fumbles logged.",
+      "systemInvalid": "The chosen role system does not exist."
     }
   },
   "holidays": {
@@ -482,13 +487,15 @@
       "campaign": "Campaign",
       "player": "Player",
       "kind": "Type",
-      "skill": "Skill",
-      "skillHint": "Type a new one or pick one already used in the campaign.",
+      "skill": "Skill or condition",
+      "skillHint": "From the {{system}} system.",
       "date": "Date",
       "time": "Time (optional)",
       "arc": "Arc",
       "noArc": "No arc",
-      "submit": "Save"
+      "submit": "Save",
+      "skillPlaceholder": "Pick one…",
+      "detail": "Detail (optional)"
     },
     "filters": {
       "title": "Filters",
@@ -512,13 +519,16 @@
       "playerRequired": "Pick a player.",
       "kindInvalid": "Pick critical or fumble.",
       "skillRequired": "The skill is required.",
-      "skillTooLong": "The skill is too long.",
       "dateInvalid": "Enter a valid date.",
       "timeInvalid": "Enter a valid time (HH:MM).",
       "futureDate": "The date cannot be in the future.",
       "playerNotMember": "That player is not in the campaign.",
       "arcNotFound": "The arc does not exist in this campaign.",
-      "sessionNotFound": "The session does not exist in this campaign."
+      "sessionNotFound": "The session does not exist in this campaign.",
+      "noSystem": "The campaign has no role system assigned.",
+      "skillNotFound": "That skill or condition does not exist in the campaign's system.",
+      "detailNotAllowed": "That entry does not take a detail.",
+      "detailTooLong": "The detail is too long."
     },
     "emptyTitle": "No crits or fumbles yet",
     "emptyText": "Log the first roll and it will show up here.",
@@ -531,7 +541,14 @@
     },
     "cell": {
       "when": "Date",
-      "loggedBy": "Logged by"
+      "loggedBy": "Logged by",
+      "type": "Type"
+    },
+    "noSystem": "This campaign has no role system yet, so there are no skills to choose from. A DM can set it in \"Edit campaign\".",
+    "noSystemAction": "Edit campaign",
+    "category": {
+      "SKILL": "Skills",
+      "CONDITION": "Conditions"
     }
   },
   "arcs": {

@@ -23,22 +23,31 @@ const optionalId = z
 /**
  * Payload to log a critical or fumble. The date and time are not part of it:
  * the server stamps them with the moment of saving (any `date`/`time` sent is
- * ignored). The skill is normalised here, so what the service stores is already
- * canonical.
+ * ignored). The `detail` is normalised here, so what the service stores is
+ * already canonical.
  */
 export const diceEventCreateSchema = z.object({
   userId: z.string().trim().min(1, { error: "diceEvents.errors.playerRequired" }),
   kind: z.enum(["CRITICAL", "FUMBLE"], { error: "diceEvents.errors.kindInvalid" }),
-  skill: z
+  // What was rolled: an entry of the campaign's system catalogue. That it belongs
+  // to the campaign's system is checked by the service.
+  skillId: z
     .string({ error: "diceEvents.errors.skillRequired" })
-    .max(DICE_SKILL_MAX_LENGTH * 2, { error: "diceEvents.errors.skillTooLong" })
+    .trim()
+    .min(1, { error: "diceEvents.errors.skillRequired" }),
+  // Short free text, only for catalogue entries that allow it (a Lore's "Guild").
+  // Normalised like skills used to be; blank means none.
+  detail: z
+    .string()
+    .max(DICE_SKILL_MAX_LENGTH * 2, { error: "diceEvents.errors.detailTooLong" })
     .transform(normalizeSkill)
     .pipe(
       z
         .string()
-        .min(1, { error: "diceEvents.errors.skillRequired" })
-        .max(DICE_SKILL_MAX_LENGTH, { error: "diceEvents.errors.skillTooLong" }),
-    ),
+        .max(DICE_SKILL_MAX_LENGTH, { error: "diceEvents.errors.detailTooLong" })
+        .transform((value) => (value === "" ? null : value)),
+    )
+    .nullish(),
   arcId: optionalId,
   sessionId: optionalId,
 });

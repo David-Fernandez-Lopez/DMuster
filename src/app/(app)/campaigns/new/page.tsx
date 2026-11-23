@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import CampaignForm from "@/components/campaigns/CampaignForm";
 import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
+import { listSystemOptions } from "@/lib/campaignService";
 
 /**
  * New campaign page. Any authenticated user may create a campaign (becoming its
@@ -17,7 +18,7 @@ export default async function NewCampaignPage() {
     redirect("/login");
   }
 
-  const { t } = await getServerTranslation();
+  const [{ t }, systems] = await Promise.all([getServerTranslation(), listSystemOptions()]);
 
   return (
     <main className="mx-auto w-full max-w-[480px] flex-1 px-6 py-8">
@@ -32,7 +33,7 @@ export default async function NewCampaignPage() {
         {t("campaigns.new")}
       </h1>
 
-      <CampaignForm />
+      <CampaignForm systems={systems} />
     </main>
   );
 }

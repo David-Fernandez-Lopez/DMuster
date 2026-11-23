@@ -9,7 +9,7 @@ import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
 import { listCampaignArcs } from "@/lib/campaignArcService";
 import { getCampaignRequirements } from "@/lib/campaignRequirementsService";
-import { getCampaignForUser, listUsedColorSlots } from "@/lib/campaignService";
+import { getCampaignForUser, listSystemOptions, listUsedColorSlots } from "@/lib/campaignService";
 
 type EditCampaignPageProps = { params: Promise<{ id: string }> };
 
@@ -40,11 +40,12 @@ export default async function EditCampaignPage({
     redirect("/campaigns");
   }
 
-  const [{ t }, requirements, usedColorSlots, arcs] = await Promise.all([
+  const [{ t }, requirements, usedColorSlots, arcs, systems] = await Promise.all([
     getServerTranslation(),
     getCampaignRequirements(campaign.id),
     listUsedColorSlots(campaign.id),
     listCampaignArcs(campaign.id),
+    listSystemOptions(campaign.systemId),
   ]);
 
   return (
@@ -67,8 +68,10 @@ export default async function EditCampaignPage({
           tag: campaign.tag,
           description: campaign.description,
           colorSlot: campaign.colorSlot,
+          systemId: campaign.systemId,
         }}
         usedColorSlots={usedColorSlots}
+        systems={systems}
       />
 
       {requirements ? (

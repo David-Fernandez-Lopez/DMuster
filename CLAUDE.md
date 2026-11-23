@@ -21,12 +21,14 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 | Entity | Key fields |
 |---|---|
 | `User` | id, name, email, password (hashed), locale, availabilityHorizonMonths, timestamps |
-| `Campaign` | id, name, tag (2-letter chip label), description, createdById, minPlayers, requirementsSetAt, colorSlot, timestamps |
+| `Campaign` | id, name, tag (2-letter chip label), description, createdById, minPlayers, requirementsSetAt, colorSlot, systemId?, timestamps |
 | `CampaignPlayer` | campaignId, userId, role (DM/PLAYER), optional, alwaysOptional *(M:N join table)* |
 | `Holiday` | id, date (unique), createdById, createdAt |
 | `Availability` | id, date, userId, status (YES/NO/MAYBE/ONLINE), timestamps — unique per (date, user) |
 | `CampaignArc` | id, campaignId, number, name? — unique per (campaignId, number) |
-| `DiceEvent` | id, campaignId, userId (who rolled), kind (CRITICAL/FUMBLE), skill, date, time?, arcId?, sessionId?, createdById, importKey? |
+| `DiceEvent` | id, campaignId, userId (who rolled), kind (CRITICAL/FUMBLE), skillId, detail?, date, time?, arcId?, sessionId?, createdById, importKey? |
+| `RoleSystem` | id, key, name, active — a tabletop system (Pathfinder 2e, Vampire…) |
+| `SystemSkill` | id, systemId, key, category (SKILL/CONDITION), nameEs, nameEn, allowsDetail, sortOrder, active — one closed-list entry of a system |
 
 Role is **per campaign**, stored on `CampaignPlayer.role`: the same user can be DM in one
 campaign and player in another. `User` has no global role. `Campaign.createdById` records
@@ -41,10 +43,24 @@ with a date**, not a child of a session: it only optionally links to a `Confirme
 sessions. The model records the bare facts (who, kind, skill, date, optional time) — there is no roll
 value or note.
 
-- **Skill** is free text, normalised on write (trimmed, single spaces, upper case; accents kept) by
-  `normalizeSkill`. The form suggests the skills already used in that campaign
-  (`GET /api/campaigns/[id]/skills`); there is no fixed catalogue, so the same skill spelled in two
-  languages stays two values unless it is cleaned up in the import mapping.
+- **What was rolled is a closed list, per role system.** Each campaign has an optional `systemId`
+  (`RoleSystem`, picked in "Editar campaña"/"Nueva campaña"); an event points at a `SystemSkill` of
+  that system by `skillId`, never at free text. A `SystemSkill` is either a **skill** ("Percepción") or a
+  **condition** ("A punto de morir", `DYING`), told apart by `category`, so the statistics can ask "which
+  skill gives me most criticals" (`category = SKILL`) and "how many times have I been dying"
+  (`category = CONDITION AND key = 'DYING'`) without one polluting the other. In the table both look the
+  same: just the name, in the user's language (`nameEs`/`nameEn`).
+- **Catalogues are data, loaded from files.** `prisma/catalog/<system>.json` (see `_template.json`) lists a
+  system's entries; `prisma/syncCatalog.ts` (`npm run catalog:sync`, and on every deploy through
+  `docker/migrate/entrypoint.sh`) upserts them idempotently. An entry that disappears from the file is
+  only **deactivated** (it stops being offered but old events keep pointing at it). There is no screen to
+  edit catalogues. Add a skill = edit the JSON and redeploy.
+- **Detail.** An entry with `allowsDetail` (a Lore) takes a short free-text `detail` on the event
+  ("Lore: GUILD"); nothing else does.
+- **A campaign without a system cannot log anything** (the form says to pick one first). The system
+  **cannot be changed once the campaign has entries** (`campaigns.errors.systemLocked`), because they
+  point at the old system's catalogue. The service, not the FK, checks that an event's entry belongs to
+  the campaign's system and is active (an event may keep one that was deactivated later).
 - **Date and time are stamped by the server** when an entry is logged (`nowStamp`, in `APP_TIMEZONE`):
   nobody types them, and any `date`/`time` sent on create is ignored. Editing an entry can correct
   both (the date still cannot be in the future). The time is the wall time of the roll and stays on
@@ -57,7 +73,9 @@ value or note.
   original `createdById` and never changes the campaign.
 - **Visibility:** a member sees every entry of the campaigns they belong to, nothing else.
 - **Import:** rows imported from the Excel carry `importKey` (`excel:<player>:<campaign>:<cell>`,
-  unique), which makes re-running the import harmless.
+  unique), which makes re-running the import harmless. The mapping's `skills` section points Excel texts
+  at catalogue **keys** (`"PERCEPCION": "PERCEPTION"`); `"LORE: GUILD"` splits into the Lore entry plus its
+  detail. Anything unmapped or missing from the system's catalogue blocks the import.
 - **Statistics are out of scope here:** rankings, top skills and charts live in the separate
   statistics branch. This feature only provides the log, its CRUD and the import.
 
