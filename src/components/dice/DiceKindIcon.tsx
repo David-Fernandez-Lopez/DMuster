@@ -10,12 +10,6 @@ const GLYPHS: Record<DiceEventKind, React.ReactNode> = {
   FUMBLE: <path d="M13 3L5 14h6l-1 7 8-11h-6z" />,
 };
 
-/** Text colour class per kind (the icon takes `currentColor`). */
-export const DICE_KIND_TEXT_CLASS: Record<DiceEventKind, string> = {
-  CRITICAL: "text-s",
-  FUMBLE: "text-n",
-};
-
 interface DiceKindIconProps {
   /** Which kind to draw. */
   kind: DiceEventKind;

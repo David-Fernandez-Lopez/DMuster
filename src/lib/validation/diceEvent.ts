@@ -21,12 +21,12 @@ const optionalId = z
   .nullish();
 
 /**
- * Create/update payload for a critical or fumble. `PUT` is a full replace, so
- * the same schema validates both. The skill is normalised here, so what the
- * service stores is already canonical; an empty time normalises to `null`.
- * Rejecting future dates needs "today", so the service does it.
+ * Payload to log a critical or fumble. The date and time are not part of it:
+ * the server stamps them with the moment of saving (any `date`/`time` sent is
+ * ignored). The skill is normalised here, so what the service stores is already
+ * canonical.
  */
-export const diceEventSchema = z.object({
+export const diceEventCreateSchema = z.object({
   userId: z.string().trim().min(1, { error: "diceEvents.errors.playerRequired" }),
   kind: z.enum(["CRITICAL", "FUMBLE"], { error: "diceEvents.errors.kindInvalid" }),
   skill: z
@@ -39,6 +39,18 @@ export const diceEventSchema = z.object({
         .min(1, { error: "diceEvents.errors.skillRequired" })
         .max(DICE_SKILL_MAX_LENGTH, { error: "diceEvents.errors.skillTooLong" }),
     ),
+  arcId: optionalId,
+  sessionId: optionalId,
+});
+
+export type DiceEventCreateInput = z.infer<typeof diceEventCreateSchema>;
+
+/**
+ * Payload to edit an entry (`PUT` is a full replace): the create fields plus
+ * the date and time, which an editor may correct. An empty time normalises to
+ * `null`. Rejecting future dates needs "today", so the service does it.
+ */
+export const diceEventSchema = diceEventCreateSchema.extend({
   date: z
     .string({ error: "diceEvents.errors.dateInvalid" })
     .regex(/^\d{4}-\d{2}-\d{2}$/, { error: "diceEvents.errors.dateInvalid" })
@@ -54,8 +66,6 @@ export const diceEventSchema = z.object({
         .nullable(),
     )
     .nullish(),
-  arcId: optionalId,
-  sessionId: optionalId,
 });
 
 export type DiceEventInput = z.infer<typeof diceEventSchema>;

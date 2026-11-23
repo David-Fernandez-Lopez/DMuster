@@ -467,8 +467,6 @@
     "delete": "Eliminar",
     "confirmDelete": "¿Eliminar esta entrada?",
     "confirmYes": "Sí, eliminar",
-    "empty": "Aún no hay críticos ni pifias anotados.",
-    "emptyFiltered": "Ninguna entrada coincide con los filtros.",
     "noCampaigns": "Todavía no perteneces a ninguna campaña.",
     "total": "Entradas: {{count}}",
     "createdBy": "Anotado por {{name}}",
@@ -521,6 +519,19 @@
       "playerNotMember": "Ese jugador no pertenece a la campaña.",
       "arcNotFound": "El arco no existe en esta campaña.",
       "sessionNotFound": "La sesión no existe en esta campaña."
+    },
+    "emptyTitle": "Aún no hay críticos ni pifias",
+    "emptyText": "Anota la primera tirada y aparecerá aquí.",
+    "emptyFilteredTitle": "Nada con estos filtros",
+    "emptyFilteredText": "Ninguna entrada coincide. Prueba a quitar algún filtro.",
+    "view": {
+      "label": "Vista",
+      "table": "Tabla",
+      "list": "Lista"
+    },
+    "cell": {
+      "when": "Fecha",
+      "loggedBy": "Anotado por"
     }
   },
   "arcs": {

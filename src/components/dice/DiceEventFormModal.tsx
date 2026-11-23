@@ -42,9 +42,11 @@ const KINDS: DiceEventKind[] = ["CRITICAL", "FUMBLE"];
  * Modal form to log a critical or fumble, or to edit one. Any member may log
  * for any member of the campaign. The skill is free text with the campaign's
  * already-used skills as suggestions (fetched when the campaign changes). The
- * campaign of an existing entry is fixed. On success the server-rendered list
- * refreshes and the modal closes; a failure shows the translated error and
- * keeps the typed values.
+ * date and time are not asked when logging (the server stamps the moment of
+ * saving); only editing shows them, to correct an entry. The campaign of an
+ * existing entry is fixed. On success the server-rendered list refreshes and
+ * the modal closes; a failure shows the translated error and keeps the typed
+ * values.
  *
  * @param {DiceEventFormModalProps} props
  * @returns {JSX.Element}
@@ -69,7 +71,7 @@ export default function DiceEventFormModal({
   );
   const [kind, setKind] = useState<DiceEventKind>(event?.kind ?? "CRITICAL");
   const [skill, setSkill] = useState(event?.skill ?? "");
-  const [date, setDate] = useState(event?.date ?? today);
+  const [date, setDate] = useState(event?.date ?? "");
   const [time, setTime] = useState(event?.time ?? "");
   const [arcId, setArcId] = useState(event?.arcId ?? campaign?.arcs.at(-1)?.id ?? "");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -137,8 +139,7 @@ export default function DiceEventFormModal({
             userId,
             kind,
             skill,
-            date,
-            time,
+            ...(isEdit ? { date, time } : {}),
             arcId: arcId || null,
             sessionId: event?.sessionId ?? null,
           }),
@@ -227,7 +228,7 @@ export default function DiceEventFormModal({
                 type="button"
                 aria-pressed={kind === k}
                 onClick={() => setKind(k)}
-                className={`btn ${k === "CRITICAL" ? "btn-yes" : "btn-no"} min-h-[44px] flex-1 gap-2 px-3 text-sm font-semibold`}
+                className={`btn ${kind === k ? "btn-primary btn-filled" : "btn-secondary"} min-h-[44px] flex-1 gap-2 px-3 text-sm font-semibold`}
               >
                 <DiceKindIcon kind={k} />
                 {t(`diceEvents.kind.${k}`)}
@@ -261,6 +262,7 @@ export default function DiceEventFormModal({
           {fieldError("skill")}
         </div>
 
+        {isEdit ? (
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor={`${ids}-date`} className="text-sm font-medium text-ink">
@@ -291,6 +293,7 @@ export default function DiceEventFormModal({
             {fieldError("time")}
           </div>
         </div>
+        ) : null}
 
         {campaign && campaign.arcs.length > 0 ? (
           <div className="flex flex-col gap-1.5">
@@ -324,7 +327,7 @@ export default function DiceEventFormModal({
         <div className="flex gap-2">
           <button
             type="submit"
-            disabled={isPending || !userId || skill.trim() === ""}
+            disabled={isPending || !userId || skill.trim() === "" || (isEdit && date === "")}
             className="btn btn-primary min-h-[44px] flex-1 px-4 text-sm font-semibold disabled:opacity-60"
           >
             {isPending ? t("common.loading") : t("diceEvents.form.submit")}

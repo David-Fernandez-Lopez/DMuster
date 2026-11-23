@@ -111,6 +111,29 @@ export function toIsoDateIn(instant: Date, timeZone: string): string {
 }
 
 /**
+ * Returns the wall-clock time of an instant in a given timezone as "HH:MM"
+ * (24-hour, so midnight is "00:00", never "24:00").
+ *
+ * @param {Date} instant - The point in time to read the clock at.
+ * @param {string} timeZone - IANA timezone name, e.g. "Europe/Madrid".
+ * @returns {string} The time in that zone, "HH:MM".
+ * @throws {RangeError} If `timeZone` is not a recognised IANA name.
+ */
+export function toTimeIn(instant: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(instant);
+
+  const part = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((candidate) => candidate.type === type)?.value ?? "";
+
+  return `${part("hour")}:${part("minute")}`;
+}
+
+/**
  * Returns today's calendar day as "YYYY-MM-DD" in a given timezone.
  *
  * The timezone is a required argument rather than a default so no call site can

@@ -1,9 +1,29 @@
 import { statusForDiceError } from "@/lib/diceEventHttp";
-import { campaignArcSchema, diceEventFilterSchema, diceEventSchema } from "@/lib/validation/diceEvent";
+import {
+  campaignArcSchema,
+  diceEventCreateSchema,
+  diceEventFilterSchema,
+  diceEventSchema,
+} from "@/lib/validation/diceEvent";
 
 const valid = { userId: "u1", kind: "CRITICAL", skill: "percepcion", date: "2026-11-01" };
 
-describe("diceEventSchema", () => {
+describe("diceEventCreateSchema", () => {
+  it("takes no date or time: whatever is sent is dropped", () => {
+    const parsed = diceEventCreateSchema.parse({ ...valid, date: "2020-01-01", time: "03:00" });
+
+    expect(parsed).not.toHaveProperty("date");
+    expect(parsed).not.toHaveProperty("time");
+  });
+
+  it("still normalises the skill and validates the rest", () => {
+    expect(diceEventCreateSchema.parse({ ...valid, skill: " lore:  hogar " }).skill).toBe("LORE: HOGAR");
+    expect(diceEventCreateSchema.safeParse({ ...valid, skill: " " }).success).toBe(false);
+    expect(diceEventCreateSchema.safeParse({ ...valid, kind: "WIN" }).success).toBe(false);
+  });
+});
+
+describe("diceEventSchema (edit)", () => {
   it("normalises the skill and treats a blank time and ids as none", () => {
     const parsed = diceEventSchema.parse({ ...valid, skill: "  lore:  hogar", time: "", arcId: "", sessionId: null });
 

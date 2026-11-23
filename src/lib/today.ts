@@ -1,4 +1,4 @@
-import { todayIsoIn } from "@/lib/date";
+import { toIsoDateIn, toTimeIn, todayIsoIn } from "@/lib/date";
 import { env } from "@/lib/env";
 
 /**
@@ -18,4 +18,20 @@ import { env } from "@/lib/env";
  */
 export function todayIso(): string {
   return todayIsoIn(env.APP_TIMEZONE);
+}
+
+/**
+ * Returns the current moment as the calendar day and the clock time in the
+ * application's configured timezone, for records the app stamps itself (the
+ * critical/fumble log). Both come from the same instant, so a roll at 00:21
+ * gets that day's date and never the previous one.
+ *
+ * @returns {{ date: string; time: string }} "YYYY-MM-DD" and "HH:MM".
+ */
+export function nowStamp(): { date: string; time: string } {
+  const now = new Date();
+  return {
+    date: toIsoDateIn(now, env.APP_TIMEZONE),
+    time: toTimeIn(now, env.APP_TIMEZONE),
+  };
 }

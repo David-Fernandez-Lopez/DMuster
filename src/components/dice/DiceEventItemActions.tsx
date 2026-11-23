@@ -18,6 +18,11 @@ interface DiceEventItemActionsProps {
   viewerId: string;
   /** "YYYY-MM-DD" of today. */
   today: string;
+  /**
+   * When given, "Edit" calls it instead of opening the form here, so a parent
+   * that already shows a modal can swap it for the form.
+   */
+  onEdit?: () => void;
 }
 
 /**
@@ -28,7 +33,13 @@ interface DiceEventItemActionsProps {
  * @param {DiceEventItemActionsProps} props
  * @returns {JSX.Element}
  */
-export default function DiceEventItemActions({ event, campaign, viewerId, today }: DiceEventItemActionsProps) {
+export default function DiceEventItemActions({
+  event,
+  campaign,
+  viewerId,
+  today,
+  onEdit,
+}: DiceEventItemActionsProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -83,7 +94,7 @@ export default function DiceEventItemActions({ event, campaign, viewerId, today 
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setEditing(true)}
+            onClick={() => (onEdit ? onEdit() : setEditing(true))}
             className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold"
           >
             {t("diceEvents.edit")}

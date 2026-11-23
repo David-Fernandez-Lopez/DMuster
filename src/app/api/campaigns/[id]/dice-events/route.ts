@@ -6,7 +6,7 @@ import { getCampaignRole } from "@/lib/authz";
 import { createDiceEvent, listDiceEvents } from "@/lib/diceEventService";
 import { statusForDiceError } from "@/lib/diceEventHttp";
 import { firstFieldErrors } from "@/lib/validation/auth";
-import { diceEventFilterSchema, diceEventSchema } from "@/lib/validation/diceEvent";
+import { diceEventCreateSchema, diceEventFilterSchema } from "@/lib/validation/diceEvent";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -42,8 +42,10 @@ export async function GET(request: Request, { params }: RouteContext): Promise<N
 }
 
 /**
- * POST /api/campaigns/[id]/dice-events — records a critical or fumble. Any
- * member of the campaign may record one for any member. Non-member → 404.
+ * POST /api/campaigns/[id]/dice-events — records a critical or fumble, stamped
+ * with the current date and time by the server (a `date`/`time` in the body is
+ * ignored). Any member of the campaign may record one for any member.
+ * Non-member → 404.
  *
  * @param {Request} request - The incoming request with the JSON body.
  * @param {RouteContext} context - Route context with the async `params`.
@@ -61,7 +63,7 @@ export async function POST(request: Request, { params }: RouteContext): Promise<
   }
 
   const body = await request.json().catch(() => null);
-  const parsed = diceEventSchema.safeParse(body);
+  const parsed = diceEventCreateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       {

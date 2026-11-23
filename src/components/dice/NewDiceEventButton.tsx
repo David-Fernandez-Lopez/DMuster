@@ -13,6 +13,8 @@ interface NewDiceEventButtonProps {
   viewerId: string;
   /** "YYYY-MM-DD" of today. */
   today: string;
+  /** "outline" is the quieter button the empty state uses. */
+  variant?: "primary" | "outline";
 }
 
 /**
@@ -21,7 +23,12 @@ interface NewDiceEventButtonProps {
  * @param {NewDiceEventButtonProps} props
  * @returns {JSX.Element}
  */
-export default function NewDiceEventButton({ campaigns, viewerId, today }: NewDiceEventButtonProps) {
+export default function NewDiceEventButton({
+  campaigns,
+  viewerId,
+  today,
+  variant = "primary",
+}: NewDiceEventButtonProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
@@ -30,7 +37,11 @@ export default function NewDiceEventButton({ campaigns, viewerId, today }: NewDi
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="btn btn-primary min-h-[44px] px-4 text-sm font-semibold"
+        className={
+          variant === "outline"
+            ? "min-h-[44px] rounded-[var(--radius-control)] border border-brand px-3.5 py-2 text-[13px] font-bold text-brand hover:bg-brand-soft"
+            : "btn btn-primary min-h-[44px] px-4 text-sm font-semibold"
+        }
       >
         {t("diceEvents.add")}
       </button>

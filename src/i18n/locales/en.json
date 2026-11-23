@@ -467,8 +467,6 @@
     "delete": "Delete",
     "confirmDelete": "Delete this entry?",
     "confirmYes": "Yes, delete",
-    "empty": "No crits or fumbles logged yet.",
-    "emptyFiltered": "No entry matches the filters.",
     "noCampaigns": "You don't belong to any campaign yet.",
     "total": "Entries: {{count}}",
     "createdBy": "Logged by {{name}}",
@@ -521,6 +519,19 @@
       "playerNotMember": "That player is not in the campaign.",
       "arcNotFound": "The arc does not exist in this campaign.",
       "sessionNotFound": "The session does not exist in this campaign."
+    },
+    "emptyTitle": "No crits or fumbles yet",
+    "emptyText": "Log the first roll and it will show up here.",
+    "emptyFilteredTitle": "Nothing with these filters",
+    "emptyFilteredText": "No entry matches. Try removing a filter.",
+    "view": {
+      "label": "View",
+      "table": "Table",
+      "list": "List"
+    },
+    "cell": {
+      "when": "Date",
+      "loggedBy": "Logged by"
     }
   },
   "arcs": {
