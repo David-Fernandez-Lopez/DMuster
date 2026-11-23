@@ -114,7 +114,9 @@ function readJson(path: string): unknown {
 async function loadWorld(prisma: PrismaClient): Promise<ImportWorld> {
   const [campaigns, skills, users, memberships, arcs, keys] = await Promise.all([
     prisma.campaign.findMany({ select: { id: true, name: true, systemId: true } }),
-    prisma.systemSkill.findMany({ select: { id: true, key: true, systemId: true, allowsDetail: true, active: true } }),
+    prisma.systemSkill.findMany({
+      select: { id: true, key: true, systemId: true, allowsDetail: true, requiresDetail: true, active: true },
+    }),
     prisma.user.findMany({ select: { id: true, name: true, email: true } }),
     prisma.campaignPlayer.findMany({ select: { campaignId: true, userId: true } }),
     prisma.campaignArc.findMany({ select: { campaignId: true, number: true } }),
@@ -128,7 +130,7 @@ async function loadWorld(prisma: PrismaClient): Promise<ImportWorld> {
     arcNumbers.set(arc.campaignId, set);
   }
 
-  const catalog = new Map<string, { id: string; key: string; allowsDetail: boolean; active: boolean }[]>();
+  const catalog: ImportWorld["catalog"] = new Map();
   for (const { systemId, ...skill } of skills) {
     catalog.set(systemId, [...(catalog.get(systemId) ?? []), skill]);
   }

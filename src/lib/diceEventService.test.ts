@@ -123,7 +123,7 @@ describe("createDiceEvent", () => {
     });
     expect(db.systemSkill.findFirst).toHaveBeenCalledWith({
       where: { id: "sk-perception", systemId: "pf2e" },
-      select: { active: true, allowsDetail: true },
+      select: { active: true, allowsDetail: true, requiresDetail: true },
     });
   });
 
@@ -147,6 +147,18 @@ describe("createDiceEvent", () => {
       ok: true,
     });
     expect(db.diceEvent.create.mock.calls[0][0].data.detail).toBe("GUILD");
+  });
+
+  it("requires a detail from the entries that demand one", async () => {
+    db.systemSkill.findFirst.mockResolvedValue({ active: true, allowsDetail: true, requiresDetail: true });
+
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.detailRequired",
+    });
+    expect(db.diceEvent.create).not.toHaveBeenCalled();
+
+    await expect(createDiceEvent("orden", "david", { ...createInput, detail: "FUERZA" })).resolves.toMatchObject({ ok: true });
   });
 
   it("refuses a player who is not in the campaign", async () => {

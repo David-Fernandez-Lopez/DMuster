@@ -142,6 +142,14 @@
       "en": "Initiative"
     },
     {
+      "key": "CUSTOM_SKILL",
+      "category": "SKILL",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
+    },
+    {
       "key": "BLINDED",
       "category": "CONDITION",
       "es": "Cegado",
@@ -392,6 +400,14 @@
       "category": "CONDITION",
       "es": "Herido",
       "en": "Wounded"
+    },
+    {
+      "key": "CUSTOM_CONDITION",
+      "category": "CONDITION",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
     }
   ]
 }

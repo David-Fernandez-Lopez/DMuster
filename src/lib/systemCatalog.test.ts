@@ -29,6 +29,7 @@ function inSync(): CatalogCurrent {
       nameEs: skill.es,
       nameEn: skill.en,
       allowsDetail: skill.allowsDetail,
+      requiresDetail: skill.requiresDetail,
       sortOrder,
       active: true,
     })),
@@ -39,6 +40,19 @@ describe("catalogFileSchema", () => {
   it("defaults allowsDetail to false", () => {
     expect(file.skills[0].allowsDetail).toBe(false);
     expect(file.skills[1].allowsDetail).toBe(true);
+  });
+
+  it("defaults requiresDetail to false and needs allowsDetail when it is true", () => {
+    expect(file.skills[1].requiresDetail).toBe(false);
+
+    const bad = { key: "x", name: "X", skills: [{ key: "A", category: "SKILL", es: "a", en: "a", requiresDetail: true }] };
+    expect(catalogFileSchema.safeParse(bad).success).toBe(false);
+    expect(
+      catalogFileSchema.safeParse({
+        ...bad,
+        skills: [{ ...bad.skills[0], allowsDetail: true }],
+      }).success,
+    ).toBe(true);
   });
 
   it("rejects duplicate keys inside a file", () => {
@@ -96,6 +110,13 @@ describe("planCatalogSync", () => {
     expect(plan.systemsToUpsert).toEqual([]);
   });
 
+  it("notices a change in whether the detail is required", () => {
+    const current = inSync();
+    current.skills[1].requiresDetail = true;
+
+    expect(planCatalogSync([file], current).skillsToUpsert.map((s) => s.key)).toEqual(["LORE"]);
+  });
+
   it("reactivates an entry that is back in the file", () => {
     const current = inSync();
     current.skills[2].active = false;
@@ -112,6 +133,7 @@ describe("planCatalogSync", () => {
       nameEs: "x",
       nameEn: "x",
       allowsDetail: false,
+      requiresDetail: false,
       sortOrder: 9,
       active: true,
     });
@@ -136,6 +158,18 @@ describe("the catalogue files in prisma/catalog", () => {
     const keys = names.map((name) => catalogFileSchema.parse(JSON.parse(readFileSync(join(dir, name), "utf8"))).key);
 
     expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it("gives every system a mandatory-detail Personalizado for skills and for conditions", () => {
+    for (const name of names) {
+      const parsed = catalogFileSchema.parse(JSON.parse(readFileSync(join(dir, name), "utf8")));
+      const customs = parsed.skills.filter((skill) => skill.key.startsWith("CUSTOM_"));
+
+      expect(customs.map((skill) => [skill.key, skill.category, skill.allowsDetail, skill.requiresDetail])).toEqual([
+        ["CUSTOM_SKILL", "SKILL", true, true],
+        ["CUSTOM_CONDITION", "CONDITION", true, true],
+      ]);
+    }
   });
 
   it("keeps the template valid, so it stays a working example", () => {

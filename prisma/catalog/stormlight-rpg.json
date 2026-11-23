@@ -172,6 +172,14 @@
       "en": "Transportation"
     },
     {
+      "key": "CUSTOM_SKILL",
+      "category": "SKILL",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
+    },
+    {
       "key": "AFFLICTED",
       "category": "CONDITION",
       "es": "Afligido",
@@ -254,6 +262,14 @@
       "category": "CONDITION",
       "es": "Inconsciente",
       "en": "Unconscious"
+    },
+    {
+      "key": "CUSTOM_CONDITION",
+      "category": "CONDITION",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
     }
   ]
 }

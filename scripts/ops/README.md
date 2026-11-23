@@ -171,7 +171,9 @@ The campaigns it imports into must already have a **role system**, and that
 system's catalogue must be loaded (`npm run catalog:sync`): the `skills` section
 maps each Excel text to a catalogue **key** (`"WILL": "WILL"`, `"PERCEPCIÓN":
 "PERCEPTION"`, `"DYING": "DYING"`), and a `"LORE: GUILD"` splits on its own into the
-Lore entry plus the detail. The report lists the problems, what would be written
+Lore entry plus the detail. A rare text goes to "Personalizado" with an explicit
+detail: `"FUERZA": "CUSTOM_SKILL: FUERZA"` (an entry that requires a detail, or
+takes none, is checked). The report lists the problems, what would be written
 per campaign, the arcs it would create, what is skipped, the **Excel texts still
 to map** with their counts (use that list to complete `skills`) and the catalogue
 entries used. Order: migrate → catalogue sync → assign a system to each campaign →

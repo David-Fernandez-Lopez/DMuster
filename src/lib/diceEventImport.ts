@@ -58,7 +58,7 @@ export type ImportMapping = z.infer<typeof importMappingSchema>;
 export type ImportWorld = {
   campaigns: { id: string; name: string; systemId: string | null }[];
   /** Each system's catalogue, by system id. */
-  catalog: Map<string, { id: string; key: string; allowsDetail: boolean; active: boolean }[]>;
+  catalog: Map<string, { id: string; key: string; allowsDetail: boolean; requiresDetail: boolean; active: boolean }[]>;
   users: { id: string; name: string; email: string }[];
   /** "campaignId:userId" for every membership. */
   memberships: Set<string>;
@@ -132,26 +132,38 @@ function resolveUser(
 
 /**
  * Finds the catalogue entry an Excel skill text stands for. The text is looked
- * up in the mapping as it is; failing that, a "PREFIX: detail" text whose prefix
- * is mapped to an entry that takes a detail splits into that entry and the
- * detail ("LORE: GUILD" → Lore + "GUILD").
+ * up in the mapping as it is. A mapped value is a catalogue key, optionally
+ * followed by an explicit detail (`"CUSTOM_SKILL: FUERZA"`). Failing a direct
+ * hit, a "PREFIX: detail" text whose prefix is mapped to an entry that takes a
+ * detail splits into that entry and the detail ("LORE: GUILD" → Lore + "GUILD").
  *
  * @param {string} text - The Excel text, already normalised.
- * @param {Map<string, string>} skillMap - Normalised Excel text → catalogue key.
- * @param {{ id: string; key: string; allowsDetail: boolean; active: boolean }[]} catalog - The campaign's system catalogue.
- * @returns {{ id: string; key: string; detail: string | null } | "unmapped" | "missing"} The
- *   entry, `"unmapped"` when the mapping says nothing about the text, or `"missing"` when it
- *   names a key the system does not offer.
+ * @param {Map<string, string>} skillMap - Normalised Excel text → catalogue key (or "KEY: detail").
+ * @param {{ id: string; key: string; allowsDetail: boolean; requiresDetail: boolean; active: boolean }[]} catalog -
+ *   The campaign's system catalogue.
+ * @returns {{ id: string; key: string; detail: string | null } | "unmapped" | "missing" | "badDetail"} The
+ *   entry; `"unmapped"` when the mapping says nothing about the text; `"missing"` when it names a key the
+ *   system does not offer; `"badDetail"` when it gives a detail to an entry that takes none, or none to
+ *   one that requires it.
  */
 function resolveSkill(
   text: string,
   skillMap: Map<string, string>,
-  catalog: { id: string; key: string; allowsDetail: boolean; active: boolean }[],
-): { id: string; key: string; detail: string | null } | "unmapped" | "missing" {
+  catalog: { id: string; key: string; allowsDetail: boolean; requiresDetail: boolean; active: boolean }[],
+): { id: string; key: string; detail: string | null } | "unmapped" | "missing" | "badDetail" {
   const direct = skillMap.get(text);
   if (direct !== undefined) {
-    const entry = catalog.find((candidate) => candidate.key === direct && candidate.active);
-    return entry ? { id: entry.id, key: entry.key, detail: null } : "missing";
+    const colon = direct.indexOf(":");
+    const key = (colon === -1 ? direct : direct.slice(0, colon)).trim();
+    const detail = colon === -1 ? null : normalizeSkill(direct.slice(colon + 1)) || null;
+    const entry = catalog.find((candidate) => candidate.key === key && candidate.active);
+    if (!entry) {
+      return "missing";
+    }
+    if ((detail !== null && !entry.allowsDetail) || (detail === null && entry.requiresDetail)) {
+      return "badDetail";
+    }
+    return { id: entry.id, key: entry.key, detail };
   }
 
   const colon = text.indexOf(":");
@@ -205,6 +217,7 @@ export function planDiceEventImport(
   const skillMap = new Map(Object.entries(mapping.skills).map(([k, v]) => [normalizeSkill(k), v.trim()]));
   const noSystem = new Set<string>();
   const missingKeys = new Map<string, number>();
+  const badDetails = new Map<string, number>();
   const skipPairs = new Set(mapping.skipPairs.map((pair) => pair.trim().toLowerCase()));
   const seenKeys = new Set<string>();
   const arcsWanted = new Map<string, Set<number>>();
@@ -302,6 +315,10 @@ export function planDiceEventImport(
           plan.unmappedSkills.set(rawSkill, (plan.unmappedSkills.get(rawSkill) ?? 0) + 1);
           continue;
         }
+        if (resolved === "badDetail") {
+          badDetails.set(rawSkill, (badDetails.get(rawSkill) ?? 0) + 1);
+          continue;
+        }
         if (resolved === "missing") {
           const key = `"${skillMap.get(rawSkill) ?? skillMap.get(rawSkill.split(":")[0].trim())}" for "${rawSkill}" in "${campaignTarget}"`;
           missingKeys.set(key, (missingKeys.get(key) ?? 0) + 1);
@@ -368,6 +385,11 @@ export function planDiceEventImport(
 
   for (const [text, count] of [...plan.unmappedSkills].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))) {
     block(`Skill text "${text}" is not in the mapping (${count} entries).`);
+  }
+  for (const [text, count] of badDetails) {
+    block(
+      `Mapping for "${text}" is invalid: the entry either takes no detail or requires one — write it as "KEY: text" (${count} entries).`,
+    );
   }
   for (const [key, count] of missingKeys) {
     block(`Catalogue key ${key} does not exist (or is no longer offered) in the campaign's system (${count} entries).`);

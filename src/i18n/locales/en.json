@@ -495,7 +495,8 @@
       "noArc": "No arc",
       "submit": "Save",
       "skillPlaceholder": "Pick one…",
-      "detail": "Detail (optional)"
+      "detail": "Detail (optional)",
+      "detailRequired": "Detail"
     },
     "filters": {
       "title": "Filters",
@@ -528,7 +529,8 @@
       "noSystem": "The campaign has no role system assigned.",
       "skillNotFound": "That skill or condition does not exist in the campaign's system.",
       "detailNotAllowed": "That entry does not take a detail.",
-      "detailTooLong": "The detail is too long."
+      "detailTooLong": "The detail is too long.",
+      "detailRequired": "This entry needs a detail."
     },
     "emptyTitle": "No crits or fumbles yet",
     "emptyText": "Log the first roll and it will show up here.",

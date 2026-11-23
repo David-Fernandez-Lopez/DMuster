@@ -320,6 +320,9 @@ model SystemSkill {
   // True for open-ended entries such as "Lore": an event may carry a short
   // `detail` ("Guild").
   allowsDetail Boolean       @default(false)
+  // True for the "Custom" entries: the detail is then the whole point (what was
+  // rolled), so it is mandatory. Implies `allowsDetail`.
+  requiresDetail Boolean     @default(false)
   // Position within the system's file; the form lists entries in this order.
   sortOrder    Int           @default(0)
   // False once removed from the file: no longer offered, still valid for history.

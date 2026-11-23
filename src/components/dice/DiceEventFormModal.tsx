@@ -46,7 +46,8 @@ const KINDS: DiceEventKind[] = ["CRITICAL", "FUMBLE"];
  * Modal form to log a critical or fumble, or to edit one. Any member may log
  * for any member of the campaign. What was rolled is picked from the closed
  * catalogue of the campaign's role system (skills and conditions in two
- * groups), with a free "detail" only for entries that allow it (a Lore). A
+ * groups), with a free "detail" only for entries that allow it (a Lore), and
+ * mandatory for the "Custom" ones. A
  * campaign without a system cannot log anything, so the form says so instead.
  * The date and time are not asked when logging (the server stamps the moment
  * of saving); only editing shows them, to correct an entry. The campaign of an
@@ -292,11 +293,12 @@ export default function DiceEventFormModal({
         {chosen?.allowsDetail ? (
           <div className="flex flex-col gap-1.5">
             <label htmlFor={`${ids}-detail`} className="text-sm font-medium text-ink">
-              {t("diceEvents.form.detail")}
+              {chosen.requiresDetail ? t("diceEvents.form.detailRequired") : t("diceEvents.form.detail")}
             </label>
             <input
               id={`${ids}-detail`}
               type="text"
+              required={chosen.requiresDetail}
               autoComplete="off"
               maxLength={DICE_SKILL_MAX_LENGTH}
               value={detail}
@@ -372,7 +374,13 @@ export default function DiceEventFormModal({
         <div className="flex gap-2">
           <button
             type="submit"
-            disabled={isPending || !userId || skillId === "" || (isEdit && date === "")}
+            disabled={
+              isPending ||
+              !userId ||
+              skillId === "" ||
+              (chosen?.requiresDetail === true && detail.trim() === "") ||
+              (isEdit && date === "")
+            }
             className="btn btn-primary min-h-[44px] flex-1 px-4 text-sm font-semibold disabled:opacity-60"
           >
             {isPending ? t("common.loading") : t("diceEvents.form.submit")}

@@ -23,6 +23,8 @@ export type DiceEventSkill = {
   nameEs: string;
   nameEn: string;
   allowsDetail: boolean;
+  /** True for the "Custom" entries: the detail is the point, so it is mandatory. */
+  requiresDetail: boolean;
 };
 
 /** Columns read for a catalogue entry. */
@@ -33,6 +35,7 @@ const SKILL_SELECT = {
   nameEs: true,
   nameEn: true,
   allowsDetail: true,
+  requiresDetail: true,
 } satisfies Prisma.SystemSkillSelect;
 
 /** One row of the critical/fumble log, ready for the UI. */
@@ -277,7 +280,8 @@ export async function getDiceEventCampaignId(eventId: string): Promise<string | 
 /**
  * Checks everything an input references: the campaign has a system and the
  * chosen catalogue entry belongs to it (and is still offered, unless the event
- * already uses it), `detail` only comes with an entry that allows it, the player
+ * already uses it), `detail` only comes with an entry that allows it and always
+ * with one that requires it, the player
  * belongs to the campaign, the date (when one is being set) is not in the
  * future, and the optional arc and session belong to the same campaign. Returns
  * the i18n error key of the first failure.
@@ -306,13 +310,16 @@ async function checkReferences(
   }
   const skill = await prisma.systemSkill.findFirst({
     where: { id: input.skillId, systemId: campaign.systemId },
-    select: { active: true, allowsDetail: true },
+    select: { active: true, allowsDetail: true, requiresDetail: true },
   });
   if (!skill || (!skill.active && input.skillId !== currentSkillId)) {
     return "diceEvents.errors.skillNotFound";
   }
   if (input.detail && !skill.allowsDetail) {
     return "diceEvents.errors.detailNotAllowed";
+  }
+  if (skill.requiresDetail && !input.detail) {
+    return "diceEvents.errors.detailRequired";
   }
 
   const member = await prisma.campaignPlayer.findUnique({

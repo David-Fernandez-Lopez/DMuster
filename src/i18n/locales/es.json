@@ -495,7 +495,8 @@
       "noArc": "Sin arco",
       "submit": "Guardar",
       "skillPlaceholder": "Elige una…",
-      "detail": "Detalle (opcional)"
+      "detail": "Detalle (opcional)",
+      "detailRequired": "Detalle"
     },
     "filters": {
       "title": "Filtros",
@@ -528,7 +529,8 @@
       "noSystem": "La campaña no tiene sistema de rol asignado.",
       "skillNotFound": "Esa habilidad o condición no existe en el sistema de la campaña.",
       "detailNotAllowed": "Esa entrada no admite detalle.",
-      "detailTooLong": "El detalle es demasiado largo."
+      "detailTooLong": "El detalle es demasiado largo.",
+      "detailRequired": "El detalle es obligatorio para esta entrada."
     },
     "emptyTitle": "Aún no hay críticos ni pifias",
     "emptyText": "Anota la primera tirada y aparecerá aquí.",

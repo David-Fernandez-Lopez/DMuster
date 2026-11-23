@@ -17,6 +17,8 @@ const catalogSkillSchema = z.object({
   en: z.string().trim().min(1).max(NAME_MAX_LENGTH),
   /** True for open-ended entries (a Lore) that may carry a short detail. */
   allowsDetail: z.boolean().default(false),
+  /** True for the "Custom" entries, whose detail is mandatory. Needs `allowsDetail`. */
+  requiresDetail: z.boolean().default(false),
 });
 
 /**
@@ -35,6 +37,13 @@ export const catalogFileSchema = z
   .superRefine((file, ctx) => {
     const seen = new Set<string>();
     file.skills.forEach((skill, index) => {
+      if (skill.requiresDetail && !skill.allowsDetail) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["skills", index, "requiresDetail"],
+          message: `"${skill.key}" requires a detail but does not allow one`,
+        });
+      }
       if (seen.has(skill.key)) {
         ctx.addIssue({
           code: "custom",
@@ -58,6 +67,7 @@ export type CatalogCurrent = {
     nameEs: string;
     nameEn: string;
     allowsDetail: boolean;
+    requiresDetail: boolean;
     sortOrder: number;
     active: boolean;
   }[];
@@ -74,6 +84,7 @@ export type CatalogSyncPlan = {
     nameEs: string;
     nameEn: string;
     allowsDetail: boolean;
+    requiresDetail: boolean;
     sortOrder: number;
   }[];
   skillsToDeactivate: { systemKey: string; key: string }[];
@@ -114,6 +125,7 @@ export function planCatalogSync(files: CatalogFile[], current: CatalogCurrent): 
         existing.nameEs === skill.es &&
         existing.nameEn === skill.en &&
         existing.allowsDetail === skill.allowsDetail &&
+        existing.requiresDetail === skill.requiresDetail &&
         existing.sortOrder === sortOrder;
       if (!unchanged) {
         plan.skillsToUpsert.push({
@@ -123,6 +135,7 @@ export function planCatalogSync(files: CatalogFile[], current: CatalogCurrent): 
           nameEs: skill.es,
           nameEn: skill.en,
           allowsDetail: skill.allowsDetail,
+          requiresDetail: skill.requiresDetail,
           sortOrder,
         });
       }

@@ -37,7 +37,7 @@ function row(userId: string, kind: "CRITICAL" | "FUMBLE", skill: string, arcId: 
     userId,
     userName: campaign.members.find((m) => m.userId === userId)?.name ?? "Ex Member",
     kind,
-    skill: { id: `sk-${skill}`, key: skill, category: "SKILL", nameEs: skill, nameEn: skill, allowsDetail: false },
+    skill: { id: `sk-${skill}`, key: skill, category: "SKILL", nameEs: skill, nameEn: skill, allowsDetail: false, requiresDetail: false },
     detail: null,
     date: "2025-12-06",
     time: null,

@@ -6,13 +6,23 @@ import {
   type ImportWorld,
 } from "@/lib/diceEventImport";
 
+const entry = (id: string, key: string, extra: { allowsDetail?: boolean; requiresDetail?: boolean; active?: boolean } = {}) => ({
+  id,
+  key,
+  allowsDetail: false,
+  requiresDetail: false,
+  active: true,
+  ...extra,
+});
+
 const catalog = [
-  { id: "sk-perception", key: "PERCEPTION", allowsDetail: false, active: true },
-  { id: "sk-attack", key: "ATTACK", allowsDetail: false, active: true },
-  { id: "sk-deception", key: "DECEPTION", allowsDetail: false, active: true },
-  { id: "sk-lore", key: "LORE", allowsDetail: true, active: true },
-  { id: "sk-dying", key: "DYING", allowsDetail: false, active: true },
-  { id: "sk-old", key: "OLD", allowsDetail: false, active: false },
+  entry("sk-perception", "PERCEPTION"),
+  entry("sk-attack", "ATTACK"),
+  entry("sk-deception", "DECEPTION"),
+  entry("sk-lore", "LORE", { allowsDetail: true }),
+  entry("sk-custom", "CUSTOM_SKILL", { allowsDetail: true, requiresDetail: true }),
+  entry("sk-dying", "DYING"),
+  entry("sk-old", "OLD", { active: false }),
 ];
 
 const world: ImportWorld = {
@@ -94,6 +104,27 @@ describe("planDiceEventImport", () => {
 
     expect(result.issues).toEqual([]);
     expect(result.rows[0]).toMatchObject({ skillKey: "LORE", skillId: "sk-lore", detail: "GUILD" });
+  });
+
+  it("sends a rare text to Personalizado with an explicit detail", () => {
+    const result = plan(
+      { Paola: { "La Orden de San Jorge": { critico: [{ habilidad: "fuerza", fecha: "2026-01-01", celda: "A1" }] } } },
+      importMappingSchema.parse({ ...mapping, skills: { ...mapping.skills, FUERZA: "CUSTOM_SKILL: fuerza" } }),
+    );
+
+    expect(result.issues).toEqual([]);
+    expect(result.rows[0]).toMatchObject({ skillKey: "CUSTOM_SKILL", skillId: "sk-custom", detail: "FUERZA" });
+  });
+
+  it("blocks a Personalizado with no detail, and a detail on an entry that takes none", () => {
+    const rare = { Paola: { "La Orden de San Jorge": { critico: [{ habilidad: "FUERZA", fecha: "2026-01-01", celda: "A1" }] } } };
+
+    const missing = plan(rare, importMappingSchema.parse({ ...mapping, skills: { FUERZA: "CUSTOM_SKILL" } }));
+    expect(missing.issues).toEqual([{ blocking: true, message: expect.stringContaining('Mapping for "FUERZA" is invalid') }]);
+
+    const extra = plan(rare, importMappingSchema.parse({ ...mapping, skills: { FUERZA: "ATTACK: fuerza" } }));
+    expect(extra.issues).toEqual([{ blocking: true, message: expect.stringContaining('Mapping for "FUERZA" is invalid') }]);
+    expect(extra.rows).toHaveLength(0);
   });
 
   it("maps a condition like any other entry", () => {

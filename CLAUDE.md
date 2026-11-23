@@ -56,7 +56,10 @@ value or note.
   only **deactivated** (it stops being offered but old events keep pointing at it). There is no screen to
   edit catalogues. Add a skill = edit the JSON and redeploy.
 - **Detail.** An entry with `allowsDetail` (a Lore) takes a short free-text `detail` on the event
-  ("Lore: GUILD"); nothing else does.
+  ("Lore: GUILD"); nothing else does. Every system also has two **"Personalizado"** entries,
+  `CUSTOM_SKILL` and `CUSTOM_CONDITION`, for rare or homebrew rolls: they have `requiresDetail`, so the
+  text ("Fuerza") is mandatory (service error `detailRequired`). Two entries rather than one so that a
+  homebrew condition is never counted as a skill.
 - **A campaign without a system cannot log anything** (the form says to pick one first). The system
   **cannot be changed once the campaign has entries** (`campaigns.errors.systemLocked`), because they
   point at the old system's catalogue. The service, not the FK, checks that an event's entry belongs to
@@ -75,7 +78,9 @@ value or note.
 - **Import:** rows imported from the Excel carry `importKey` (`excel:<player>:<campaign>:<cell>`,
   unique), which makes re-running the import harmless. The mapping's `skills` section points Excel texts
   at catalogue **keys** (`"PERCEPCION": "PERCEPTION"`); `"LORE: GUILD"` splits into the Lore entry plus its
-  detail. Anything unmapped or missing from the system's catalogue blocks the import.
+  detail, and a mapped value may carry an explicit detail (`"FUERZA": "CUSTOM_SKILL: FUERZA"`). Anything
+  unmapped or missing from the system's catalogue blocks the import: odd texts become Personalizado only by
+  an explicit mapping, never automatically, so a typo cannot hide there.
 - **Statistics are out of scope here:** rankings, top skills and charts live in the separate
   statistics branch. This feature only provides the log, its CRUD and the import.
 

@@ -165,6 +165,14 @@
       "en": "Technology"
     },
     {
+      "key": "CUSTOM_SKILL",
+      "category": "SKILL",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
+    },
+    {
       "key": "HUNGER",
       "category": "CONDITION",
       "es": "Ansia",
@@ -211,6 +219,14 @@
       "category": "CONDITION",
       "es": "Vínculo de sangre",
       "en": "Blood Bond"
+    },
+    {
+      "key": "CUSTOM_CONDITION",
+      "category": "CONDITION",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
     }
   ]
 }

@@ -96,6 +96,7 @@ async function main(): Promise<void> {
           nameEs: true,
           nameEn: true,
           allowsDetail: true,
+          requiresDetail: true,
           sortOrder: true,
           active: true,
           system: { select: { key: true } },
@@ -143,6 +144,7 @@ async function main(): Promise<void> {
           nameEs: skill.nameEs,
           nameEn: skill.nameEn,
           allowsDetail: skill.allowsDetail,
+          requiresDetail: skill.requiresDetail,
           sortOrder: skill.sortOrder,
         };
         await tx.systemSkill.upsert({

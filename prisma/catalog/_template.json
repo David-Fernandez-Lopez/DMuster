@@ -2,9 +2,46 @@
   "key": "example-system",
   "name": "Example System",
   "skills": [
-    { "key": "PERCEPTION", "category": "SKILL", "es": "Percepción", "en": "Perception" },
-    { "key": "ATHLETICS", "category": "SKILL", "es": "Atletismo", "en": "Athletics" },
-    { "key": "LORE", "category": "SKILL", "es": "Saber (Lore)", "en": "Lore", "allowsDetail": true },
-    { "key": "DYING", "category": "CONDITION", "es": "A punto de morir", "en": "Dying" }
+    {
+      "key": "PERCEPTION",
+      "category": "SKILL",
+      "es": "Percepción",
+      "en": "Perception"
+    },
+    {
+      "key": "ATHLETICS",
+      "category": "SKILL",
+      "es": "Atletismo",
+      "en": "Athletics"
+    },
+    {
+      "key": "LORE",
+      "category": "SKILL",
+      "es": "Saber (Lore)",
+      "en": "Lore",
+      "allowsDetail": true
+    },
+    {
+      "key": "CUSTOM_SKILL",
+      "category": "SKILL",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
+    },
+    {
+      "key": "DYING",
+      "category": "CONDITION",
+      "es": "A punto de morir",
+      "en": "Dying"
+    },
+    {
+      "key": "CUSTOM_CONDITION",
+      "category": "CONDITION",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
+    }
   ]
 }
