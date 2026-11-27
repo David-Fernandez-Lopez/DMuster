@@ -7,9 +7,9 @@ import { useTranslation } from "react-i18next";
 
 import FiltersModal from "@/components/calendar/FiltersModal";
 import DiceKindIcon from "@/components/dice/DiceKindIcon";
+import SkillCombobox from "@/components/dice/SkillCombobox";
 import type { DiceEventKind } from "@/generated/prisma/enums";
 import { DICE_SKILL_MAX_LENGTH } from "@/lib/diceSkill";
-import { skillName } from "@/lib/diceSkillLabel";
 import type { DiceEventCampaignContext, DiceEventSkill } from "@/lib/diceEventService";
 
 /** The editable fields of an entry, as the form holds them. */
@@ -36,6 +36,10 @@ interface DiceEventFormModalProps {
   today: string;
   /** The entry being edited; omit to create a new one. */
   event?: DiceEventFormValues;
+  /** Create mode: player to preselect (ignored if they are not a selectable member). */
+  initialUserId?: string;
+  /** Create mode: kind to preselect. */
+  initialKind?: DiceEventKind;
   /** Called on any close path. */
   onClose: () => void;
 }
@@ -62,6 +66,8 @@ export default function DiceEventFormModal({
   viewerId,
   today,
   event,
+  initialUserId,
+  initialKind,
   onClose,
 }: DiceEventFormModalProps) {
   const { t, i18n } = useTranslation();
@@ -73,9 +79,10 @@ export default function DiceEventFormModal({
   const campaign = campaigns.find((c) => c.id === campaignId);
   const [userId, setUserId] = useState(
     event?.userId ??
+      (initialUserId && campaign?.members.some((m) => m.userId === initialUserId) ? initialUserId : undefined) ??
       (campaign?.members.some((m) => m.userId === viewerId) ? viewerId : (campaign?.members[0]?.userId ?? "")),
   );
-  const [kind, setKind] = useState<DiceEventKind>(event?.kind ?? "CRITICAL");
+  const [kind, setKind] = useState<DiceEventKind>(event?.kind ?? initialKind ?? "CRITICAL");
   const [skillId, setSkillId] = useState(event?.skill.id ?? "");
   const [detail, setDetail] = useState(event?.detail ?? "");
   const [date, setDate] = useState(event?.date ?? "");
@@ -92,9 +99,6 @@ export default function DiceEventFormModal({
     ...(event && campaign && !campaign.skills.some((s) => s.id === event.skill.id) ? [event.skill] : []),
   ];
   const chosen = options.find((s) => s.id === skillId);
-  const groups = (["SKILL", "ATTRIBUTE", "CONDITION"] as const)
-    .map((category) => ({ category, entries: options.filter((s) => s.category === category) }))
-    .filter((group) => group.entries.length > 0);
 
   /**
    * Switches campaign (create mode only): the player, arc and catalogue entry
@@ -258,7 +262,7 @@ export default function DiceEventFormModal({
         </div>
 
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="text-sm font-medium text-ink">{t("diceEvents.form.kind")}</legend>
+          <legend className="mb-1.5 text-sm font-medium text-ink">{t("diceEvents.form.kind")}</legend>
           <div className="flex gap-2">
             {KINDS.map((k) => (
               <button
@@ -280,26 +284,14 @@ export default function DiceEventFormModal({
           <label htmlFor={`${ids}-skill`} className="text-sm font-medium text-ink">
             {t("diceEvents.form.skill")}
           </label>
-          <select
+          <SkillCombobox
+            key={campaignId}
             id={`${ids}-skill`}
-            required
+            options={options}
             value={skillId}
-            onChange={(e) => setSkillId(e.target.value)}
-            className={fieldClass}
-          >
-            <option value="" disabled>
-              {t("diceEvents.form.skillPlaceholder")}
-            </option>
-            {groups.map((group) => (
-              <optgroup key={group.category} label={t(`diceEvents.category.${group.category}`)}>
-                {group.entries.map((entry) => (
-                  <option key={entry.id} value={entry.id}>
-                    {skillName(entry, i18n.language)}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+            onChange={setSkillId}
+            locale={i18n.language}
+          />
           {campaign?.system ? (
             <p className="text-xs text-ink-muted">
               {t("diceEvents.form.skillHint", { system: campaign.system.name })}

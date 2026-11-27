@@ -3,6 +3,7 @@ import type { TFunction } from "i18next";
 import CampaignBadge from "@/components/campaigns/CampaignBadge";
 import DiceEventCell from "@/components/dice/DiceEventCell";
 import DiceKindIcon from "@/components/dice/DiceKindIcon";
+import DiceTableAddButton from "@/components/dice/DiceTableAddButton";
 import type { DiceEventCampaignContext, DiceEventRow } from "@/lib/diceEventService";
 import { toUtcDate } from "@/lib/date";
 import { buildDiceEventTable } from "@/lib/diceEventTable";
@@ -93,12 +94,8 @@ export default function DiceEventTable({ campaign, rows, filters, viewerId, toda
             </tr>
             <tr>
               {table.columns.flatMap((column) =>
-                table.kinds.map((kind, index) => (
-                  <th
-                    key={`${column.userId}-${kind}`}
-                    scope="col"
-                    className={`min-w-[104px] px-1 pb-2 ${index === 0 ? "border-l border-border first:border-l-0" : ""}`}
-                  >
+                table.kinds.map((kind, index) => {
+                  const pill = (
                     <span
                       className="flex items-center justify-center gap-1.5 rounded-[var(--radius-control)] px-1.5 py-1"
                       style={kind === "FUMBLE" ? { backgroundImage: HATCH } : { background: "var(--color-brand-soft)" }}
@@ -111,8 +108,31 @@ export default function DiceEventTable({ campaign, rows, filters, viewerId, toda
                         {kind === "CRITICAL" ? column.critical : column.fumble}
                       </b>
                     </span>
-                  </th>
-                )),
+                  );
+                  return (
+                    <th
+                      key={`${column.userId}-${kind}`}
+                      scope="col"
+                      className={`min-w-[104px] px-1 pb-2 ${index === 0 ? "border-l border-border first:border-l-0" : ""}`}
+                    >
+                      {/* Pressing it logs for that player and kind, but only for someone the form can offer. */}
+                      {campaign.members.some((member) => member.userId === column.userId) ? (
+                        <DiceTableAddButton
+                          campaign={campaign}
+                          viewerId={viewerId}
+                          today={today}
+                          userId={column.userId}
+                          playerName={column.name}
+                          kind={kind}
+                        >
+                          {pill}
+                        </DiceTableAddButton>
+                      ) : (
+                        pill
+                      )}
+                    </th>
+                  );
+                }),
               )}
             </tr>
           </thead>
