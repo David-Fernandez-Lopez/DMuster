@@ -17,6 +17,8 @@ export type CampaignWithRole = {
   colorSlot: number;
   /** The role system the campaign plays, or `null` while none is set. */
   systemId: string | null;
+  /** Whether the critical/fumble log shows the DMs' own entries (off by default). */
+  showDmRolls: boolean;
   role: CampaignRole;
 };
 
@@ -38,6 +40,7 @@ type MembershipWithCampaign = {
     description: string | null;
     colorSlot: number;
     systemId: string | null;
+    showDmRolls: boolean;
   };
 };
 
@@ -56,6 +59,7 @@ function toCampaignWithRole(membership: MembershipWithCampaign): CampaignWithRol
     description: membership.campaign.description,
     colorSlot: membership.campaign.colorSlot,
     systemId: membership.campaign.systemId,
+    showDmRolls: membership.campaign.showDmRolls,
     role: membership.role,
   };
 }
@@ -82,6 +86,7 @@ export async function listCampaignsForUser(
           description: true,
           colorSlot: true,
           systemId: true,
+          showDmRolls: true,
         },
       },
     },
@@ -116,6 +121,7 @@ export async function getCampaignForUser(
           description: true,
           colorSlot: true,
           systemId: true,
+          showDmRolls: true,
         },
       },
     },
@@ -188,6 +194,7 @@ export async function createCampaign(
           description: input.description ?? null,
           colorSlot: nextFreeSlot(taken.map((row) => row.colorSlot)),
           systemId: input.systemId ?? null,
+          showDmRolls: input.showDmRolls ?? false,
           createdById: userId,
           players: { create: { userId, role: CampaignRole.DM } },
         },
@@ -263,6 +270,7 @@ export async function updateCampaign(
         description: input.description ?? null,
         ...(input.colorSlot !== undefined ? { colorSlot: input.colorSlot } : {}),
         ...(input.systemId !== undefined ? { systemId: input.systemId } : {}),
+        ...(input.showDmRolls !== undefined ? { showDmRolls: input.showDmRolls } : {}),
       },
       select: { id: true },
     });

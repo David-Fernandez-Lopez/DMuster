@@ -183,3 +183,50 @@ entries used. Order: migrate → catalogue sync → assign a system to each camp
 import. Back up first
 (`backup-db.sh`). Re-running is safe: each row is keyed by its Excel cell and
 rows already stored are left alone.
+
+
+### Pointing the mapping at ids, and assigning systems with SQL
+
+The mapping's `campaigns`, `players` and `importedBy` take an **id**, an email or a name, and an exact id wins, so
+production can avoid names altogether (they can repeat or change; ids cannot). Read-only queries to get them:
+
+```sql
+-- Campaigns: id, name, tag and current system
+SELECT id, name, tag, systemId FROM campaigns ORDER BY name;
+
+-- Players
+SELECT id, name, email, disabledAt IS NOT NULL AS disabled FROM users ORDER BY name;
+
+-- Memberships: each Excel player must belong to their campaign
+SELECT c.name AS campaign, u.name AS player, cp.role
+FROM campaign_players cp
+JOIN campaigns c ON c.id = cp.campaignId
+JOIN users u ON u.id = cp.userId
+ORDER BY c.name, u.name;
+
+-- Systems (after `npm run catalog:sync`)
+SELECT id, `key`, name, active FROM role_systems;
+
+-- Mapping lines ready to paste (campaigns, then players)
+SELECT CONCAT('    "', name, '": "', id, '",') AS mapping_line FROM campaigns ORDER BY name;
+SELECT CONCAT('    "', name, '": "', id, '",') AS mapping_line FROM users ORDER BY name;
+```
+
+The mapping lines come out as `"name-in-the-app": "id"`: use the id as the **value** and put the Excel's own name
+on the left. Assign the systems by `key`, which is stable across environments, instead of pasting a system id:
+
+```sql
+UPDATE campaigns
+SET systemId = (SELECT id FROM role_systems WHERE `key` = 'pathfinder-2e')
+WHERE id IN ('<Orden id>', '<Academia id>', '<Verkko id>', '<Fishing id>');
+
+UPDATE campaigns
+SET systemId = (SELECT id FROM role_systems WHERE `key` = 'stormlight-rpg')
+WHERE id = '<Puente X id>';
+
+-- Check
+SELECT c.name, s.`key` FROM campaigns c LEFT JOIN role_systems s ON s.id = c.systemId ORDER BY c.name;
+```
+
+Only do this while the campaigns have no entries yet (the app refuses to change a system afterwards). Players
+missing from a campaign are added from the app (`/campaigns/<id>/players`), not by SQL.

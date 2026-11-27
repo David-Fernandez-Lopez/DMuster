@@ -48,11 +48,11 @@ export type ExcelHistory = z.infer<typeof excelHistorySchema>;
  * in the report as skipped, and does not block the import).
  */
 export const importMappingSchema = z.object({
-  /** Email or exact name of the user the imported rows are attributed to (`createdBy`). */
+  /** Id, email or exact name of the user the imported rows are attributed to (`createdBy`). */
   importedBy: z.string().min(1),
-  /** Excel campaign name → exact name of the app's campaign, or `null` to skip it. */
+  /** Excel campaign name → the app's campaign (its id, or its exact name), or `null` to skip it. */
   campaigns: z.record(z.string(), z.string().min(1).nullable()),
-  /** Excel player name → the user's email or exact name, or `null` to skip them. */
+  /** Excel player name → the user (their id, email or exact name), or `null` to skip them. */
   players: z.record(z.string(), z.string().min(1).nullable()),
   /**
    * Excel skill text (normalised: trimmed, upper case) → key of the entry in the
@@ -131,17 +131,24 @@ export type ImportPlan = {
 };
 
 /**
- * Resolves a user from an email or an exact name (case-insensitive). Email wins;
- * a name shared by several users is ambiguous and resolves to nothing.
+ * Resolves a user from an id, an email or an exact name. An exact id wins (it is
+ * the only reference that can never be shared), then the email, then the name
+ * (both case-insensitive); a name shared by several users is ambiguous and
+ * resolves to nothing, which an id settles.
  *
  * @param {ImportWorld["users"]} users - Every user of the app.
- * @param {string} ref - Email or exact name.
+ * @param {string} ref - Id, email or exact name.
  * @returns {{ id: string } | "ambiguous" | null} The user, or why not.
  */
 function resolveUser(
   users: ImportWorld["users"],
   ref: string,
 ): { id: string } | "ambiguous" | null {
+  // An id is unambiguous, so it goes first; names and emails are the friendly fallback.
+  const byId = users.filter((u) => u.id === ref.trim());
+  if (byId.length === 1) {
+    return byId[0];
+  }
   const needle = ref.trim().toLowerCase();
   const byEmail = users.filter((u) => u.email.toLowerCase() === needle);
   if (byEmail.length === 1) {
@@ -289,7 +296,12 @@ export function planDiceEventImport(
         plan.skipped.push({ player, campaign, entries: entries.length, reason: "campaign skipped in the mapping" });
         continue;
       }
-      const matches = world.campaigns.filter((c) => c.name.trim().toLowerCase() === campaignTarget.trim().toLowerCase());
+      // An exact id wins; otherwise the target is read as the campaign's name.
+      const byId = world.campaigns.filter((c) => c.id === campaignTarget.trim());
+      const matches =
+        byId.length === 1
+          ? byId
+          : world.campaigns.filter((c) => c.name.trim().toLowerCase() === campaignTarget.trim().toLowerCase());
       if (matches.length !== 1) {
         if (!unmappedCampaigns.has(campaign)) {
           unmappedCampaigns.add(campaign);

@@ -1,11 +1,11 @@
 {
-  "importedBy": "dm@example.com",
+  "importedBy": "id, email or name of the user the entries are attributed to",
   "campaigns": {
-    "Name of a campaign in the Excel": "Exact name of that campaign in the app",
+    "Name of a campaign in the Excel": "id (or exact name) of that campaign in the app",
     "A campaign that is not in the app": null
   },
   "players": {
-    "Name of a player in the Excel": "their-email@example.com",
+    "Name of a player in the Excel": "id (or email, or name) of their account",
     "A player that is not in the app": null
   },
   "skills": {

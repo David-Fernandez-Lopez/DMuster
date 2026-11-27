@@ -363,6 +363,54 @@ describe("the enriched history format", () => {
   });
 });
 
+describe("references by id", () => {
+  const rows = (h: unknown, m: unknown) => plan(h, importMappingSchema.parse(m));
+  const sheet = {
+    Paola: { "La Orden de San Jorge": { critico: [{ habilidad_original: "ATAQUE", fecha: "2026-01-01", celda: "A1" }] } },
+  };
+
+  it("resolves a campaign and a player by id, like by name", () => {
+    const byId = rows(sheet, {
+      ...mapping,
+      importedBy: "u-david",
+      campaigns: { "La Orden de San Jorge": "c-orden" },
+      players: { Paola: "u-paola" },
+    });
+    const byName = planDiceEventImport(excelHistorySchema.parse(sheet), mapping, world);
+
+    expect(byId.issues).toEqual([]);
+    expect(byId.rows[0]).toMatchObject({ campaignId: "c-orden", userId: "u-paola" });
+    expect(byId.rows).toEqual(byName.rows);
+  });
+
+  it("blocks an id that does not exist, and an unknown campaign id", () => {
+    const badUser = rows(sheet, { ...mapping, players: { Paola: "u-nobody" } });
+    const badCampaign = rows(sheet, { ...mapping, campaigns: { "La Orden de San Jorge": "c-nobody" } });
+
+    expect(badUser.issues[0]).toMatchObject({ blocking: true, message: expect.stringContaining("matches no user") });
+    expect(badCampaign.issues[0]).toMatchObject({
+      blocking: true,
+      message: expect.stringContaining("matches 0 campaigns"),
+    });
+  });
+
+  it("settles with an id a name that two users share", () => {
+    const twinsInOrden = { ...world, memberships: new Set([...world.memberships, "c-orden:u-twin2"]) };
+    const run = (players: Record<string, string>) =>
+      plan(sheet, importMappingSchema.parse({ ...mapping, players }), twinsInOrden);
+    const byName = run({ Paola: "Twin" });
+    const byId = run({ Paola: "u-twin2" });
+
+    expect(byName.issues[0].message).toContain("matches several users");
+    expect(byId.issues).toEqual([]);
+  });
+
+  it("takes importedBy by id", () => {
+    expect(rows({}, { ...mapping, importedBy: "u-david" }).issues).toEqual([]);
+    expect(rows({}, { ...mapping, importedBy: "u-nobody" }).issues).toHaveLength(1);
+  });
+});
+
 describe("campaignSkills", () => {
   const puente = {
     Paola: {

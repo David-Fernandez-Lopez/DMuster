@@ -130,7 +130,9 @@
       "colorOption": "Color {{number}}",
       "system": "Sistema de rol",
       "noSystem": "Sin sistema",
-      "systemHint": "Define qué habilidades y condiciones ofrece el registro de críticos y pifias. No se puede cambiar cuando la campaña ya tiene entradas."
+      "systemHint": "Define qué habilidades y condiciones ofrece el registro de críticos y pifias. No se puede cambiar cuando la campaña ya tiene entradas.",
+      "showDmRolls": "Mostrar los críticos y pifias del máster",
+      "showDmRollsHint": "Desactivado por defecto. Si no se marca, el máster no aparece en la tabla, la lista, los filtros ni el formulario del registro, y no se le pueden anotar entradas. Las que existan se conservan y reaparecen al activarlo."
     },
     "actions": {
       "players": "Jugadores",
@@ -530,7 +532,8 @@
       "skillNotFound": "Esa habilidad o condición no existe en el sistema de la campaña.",
       "detailNotAllowed": "Esa entrada no admite detalle.",
       "detailTooLong": "El detalle es demasiado largo.",
-      "detailRequired": "El detalle es obligatorio para esta entrada."
+      "detailRequired": "El detalle es obligatorio para esta entrada.",
+      "dmHidden": "Esta campaña no registra los críticos y pifias del máster."
     },
     "emptyTitle": "Aún no hay críticos ni pifias",
     "emptyText": "Anota la primera tirada y aparecerá aquí.",
@@ -559,7 +562,8 @@
       "SKILL": "Habilidad",
       "ATTRIBUTE": "Atributo",
       "CONDITION": "Condición"
-    }
+    },
+    "noPlayers": "No hay jugadores a quienes anotar: esta campaña no muestra los críticos y pifias del máster y no tiene más miembros. Un máster puede activarlo en «Editar campaña»."
   },
   "arcs": {
     "title": "Arcos",

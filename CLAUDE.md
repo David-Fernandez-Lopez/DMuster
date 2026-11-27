@@ -21,7 +21,7 @@ Replaces a manual Google Sheets workflow. Players respond to proposed session da
 | Entity | Key fields |
 |---|---|
 | `User` | id, name, email, password (hashed), locale, availabilityHorizonMonths, timestamps |
-| `Campaign` | id, name, tag (2-letter chip label), description, createdById, minPlayers, requirementsSetAt, colorSlot, systemId?, timestamps |
+| `Campaign` | id, name, tag (2-letter chip label), description, createdById, minPlayers, requirementsSetAt, colorSlot, systemId?, showDmRolls, timestamps |
 | `CampaignPlayer` | campaignId, userId, role (DM/PLAYER), optional, alwaysOptional *(M:N join table)* |
 | `Holiday` | id, date (unique), createdById, createdAt |
 | `Availability` | id, date, userId, status (YES/NO/MAYBE/ONLINE), timestamps — unique per (date, user) |
@@ -76,6 +76,12 @@ value or note.
   fine), and the arc and session, if given, must belong to the same campaign. Editing keeps the
   original `createdById` and never changes the campaign.
 - **Visibility:** a member sees every entry of the campaigns they belong to, nothing else.
+- **DMs' own rolls are opt-in, per campaign.** `Campaign.showDmRolls` (off by default; a checkbox in "Nueva campaña" and
+  "Editar campaña") says whether the log shows the DMs' own entries. "DM" is the role **in that campaign**
+  (`CampaignPlayer.role`), so the same person can be hidden as DM in one campaign and shown as a player in another. While it is off,
+  DMs are left out of the table, the list, the filters and the form's player select, and the service refuses to log or edit an entry for
+  one (`diceEvents.errors.dmHidden`). Entries that already exist are **kept** and come back if it is turned on. The statistics branch
+  must respect this flag when it aggregates.
 - **Provenance of imported entries.** `DiceEvent.originalText` (the text the Excel wrote) and
   `DiceEvent.note` (the preparer's remark, e.g. "supuesto error por SOCIEDAD") are filled only by the import
   and shown in the entry's dialog, so an entry can be reclassified later without the Excel. Editing in the app
@@ -84,7 +90,8 @@ value or note.
 - **Import:** rows imported from the Excel carry `importKey` (`excel:<player>:<campaign>:<cell>`,
   unique), which makes re-running the import harmless. The mapping's `skills` section points Excel texts
   at catalogue **keys** (`"PERCEPCION": "PERCEPTION"`); `"LORE: GUILD"` splits into the Lore entry plus its
-  detail, and a mapped value may carry an explicit detail (`"FUERZA": "CUSTOM_SKILL: FUERZA"`). Anything
+  detail (campaigns, players and `importedBy` may be given as ids, emails or names: an exact id wins), and a
+  mapped value may carry an explicit detail (`"FUERZA": "CUSTOM_SKILL: FUERZA"`). Anything
   unmapped or missing from the system's catalogue blocks the import (a per-campaign `campaignSkills` section
   overrides `skills` where a text means something else in that campaign's system): odd texts become Personalizado only by
   an explicit mapping, never automatically, so a typo cannot hide there.

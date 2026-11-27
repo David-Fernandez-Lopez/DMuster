@@ -78,6 +78,8 @@ export type DiceEventCampaignContext = {
   name: string;
   tag: string;
   colorSlot: number;
+  /** Whether the campaign shows the DMs' own entries. When `false`, `members` has no DMs. */
+  showDmRolls: boolean;
   members: { userId: string; name: string; role: CampaignRole }[];
   arcs: { id: string; number: number; name: string | null }[];
   /** The campaign's system, or `null` while a DM has not picked one (nothing can be logged then). */
@@ -112,15 +114,33 @@ const ROW_SELECT = {
 
 /**
  * Builds the `where` of a log query: only campaigns the viewer belongs to, plus
- * the optional filters.
+ * the optional filters, and leaving out the entries of a campaign's DMs when
+ * that campaign does not show them (`showDmRolls` off). Those exclusions are
+ * (campaign, DM) pairs read first, so counts and pages stay exact; the entries
+ * themselves are never deleted, only left out.
  *
  * @param {string} viewerId - Id of the signed-in user.
  * @param {DiceEventFilters} filters - Optional campaign/player/kind/arc filters.
- * @returns {Prisma.DiceEventWhereInput} The `where` clause.
+ * @returns {Promise<Prisma.DiceEventWhereInput>} The `where` clause.
  */
-function buildWhere(viewerId: string, filters: DiceEventFilters): Prisma.DiceEventWhereInput {
+async function buildWhere(viewerId: string, filters: DiceEventFilters): Promise<Prisma.DiceEventWhereInput> {
+  const hiddenDms = await prisma.campaignPlayer.findMany({
+    where: {
+      role: "DM",
+      campaign: {
+        showDmRolls: false,
+        players: { some: { userId: viewerId } },
+        ...(filters.campaignId ? { id: filters.campaignId } : {}),
+      },
+    },
+    select: { campaignId: true, userId: true },
+  });
+
   return {
     campaign: { players: { some: { userId: viewerId } } },
+    ...(hiddenDms.length > 0
+      ? { NOT: { OR: hiddenDms.map((pair) => ({ campaignId: pair.campaignId, userId: pair.userId })) } }
+      : {}),
     ...(filters.campaignId ? { campaignId: filters.campaignId } : {}),
     ...(filters.userId ? { userId: filters.userId } : {}),
     ...(filters.kind ? { kind: filters.kind } : {}),
@@ -170,7 +190,7 @@ export async function listDiceEvents(
   viewerId: string,
   filters: DiceEventFilters,
 ): Promise<DiceEventPage> {
-  const where = buildWhere(viewerId, filters);
+  const where = await buildWhere(viewerId, filters);
 
   const [total, rows] = await Promise.all([
     prisma.diceEvent.count({ where }),
@@ -206,7 +226,7 @@ export async function listAllDiceEvents(
   filters: DiceEventFilters,
 ): Promise<DiceEventRow[]> {
   const rows = await prisma.diceEvent.findMany({
-    where: buildWhere(viewerId, filters),
+    where: await buildWhere(viewerId, filters),
     orderBy: [{ date: "asc" }, { time: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     take: TABLE_ENTRY_LIMIT,
     select: ROW_SELECT,
@@ -233,6 +253,7 @@ export async function listDiceEventContext(
       name: true,
       tag: true,
       colorSlot: true,
+      showDmRolls: true,
       players: {
         select: { role: true, user: { select: { id: true, name: true } } },
         orderBy: { user: { name: "asc" } },
@@ -257,11 +278,15 @@ export async function listDiceEventContext(
     name: campaign.name,
     tag: campaign.tag,
     colorSlot: campaign.colorSlot,
-    members: campaign.players.map((player) => ({
-      userId: player.user.id,
-      name: player.user.name,
-      role: player.role,
-    })),
+    showDmRolls: campaign.showDmRolls,
+    // With the option off the DMs are not offered anywhere (table columns, filter, form).
+    members: campaign.players
+      .filter((player) => campaign.showDmRolls || player.role !== "DM")
+      .map((player) => ({
+        userId: player.user.id,
+        name: player.user.name,
+        role: player.role,
+      })),
     arcs: campaign.arcs,
     system: campaign.system
       ? { id: campaign.system.id, key: campaign.system.key, name: campaign.system.name }
@@ -286,7 +311,8 @@ export async function getDiceEventCampaignId(eventId: string): Promise<string | 
 }
 
 /**
- * Checks everything an input references: the campaign has a system and the
+ * Checks everything an input references: the campaign has a system, the player is
+ * not a DM of a campaign that does not log DMs' rolls, and the
  * chosen catalogue entry belongs to it (and is still offered, unless the event
  * already uses it), `detail` only comes with an entry that allows it and always
  * with one that requires it, the player
@@ -311,7 +337,7 @@ async function checkReferences(
 
   const campaign = await prisma.campaign.findUnique({
     where: { id: campaignId },
-    select: { systemId: true },
+    select: { systemId: true, showDmRolls: true },
   });
   if (!campaign?.systemId) {
     return "diceEvents.errors.noSystem";
@@ -332,10 +358,13 @@ async function checkReferences(
 
   const member = await prisma.campaignPlayer.findUnique({
     where: { campaignId_userId: { campaignId, userId: input.userId } },
-    select: { userId: true },
+    select: { userId: true, role: true },
   });
   if (!member) {
     return "diceEvents.errors.playerNotMember";
+  }
+  if (!campaign.showDmRolls && member.role === "DM") {
+    return "diceEvents.errors.dmHidden";
   }
 
   if (input.arcId) {

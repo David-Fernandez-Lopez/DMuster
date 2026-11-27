@@ -34,6 +34,14 @@ describe("campaignSchema systemId", () => {
   });
 });
 
+describe("campaignSchema showDmRolls", () => {
+  it("is an optional boolean", () => {
+    expect(campaignSchema.parse(base).showDmRolls).toBeUndefined();
+    expect(campaignSchema.parse({ ...base, showDmRolls: true }).showDmRolls).toBe(true);
+    expect(campaignSchema.safeParse({ ...base, showDmRolls: "yes" }).success).toBe(false);
+  });
+});
+
 describe("createCampaign", () => {
   let tx: { campaign: { findMany: jest.Mock; create: jest.Mock } };
 
@@ -60,6 +68,14 @@ describe("createCampaign", () => {
       error: "campaigns.errors.systemInvalid",
     });
     expect(tx.campaign.create).not.toHaveBeenCalled();
+  });
+
+  it("starts with the DMs' rolls hidden, unless asked to show them", async () => {
+    await createCampaign("david", base);
+    expect(tx.campaign.create.mock.calls[0][0].data.showDmRolls).toBe(false);
+
+    await createCampaign("david", { ...base, showDmRolls: true });
+    expect(tx.campaign.create.mock.calls[1][0].data.showDmRolls).toBe(true);
   });
 
   it("creates a campaign with no system when none is given", async () => {
@@ -118,6 +134,24 @@ describe("updateCampaign systemId", () => {
 
     await expect(updateCampaign("c1", { ...base, systemId: null })).resolves.toMatchObject({ ok: true });
     expect(db.campaign.update.mock.calls[0][0].data.systemId).toBeNull();
+  });
+});
+
+describe("updateCampaign showDmRolls", () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+    db.campaign.update.mockResolvedValue({ id: "c1" });
+  });
+
+  it("changes it when sent and leaves it alone when omitted", async () => {
+    await updateCampaign("c1", { ...base, showDmRolls: true });
+    expect(db.campaign.update.mock.calls[0][0].data.showDmRolls).toBe(true);
+
+    await updateCampaign("c1", { ...base, showDmRolls: false });
+    expect(db.campaign.update.mock.calls[1][0].data.showDmRolls).toBe(false);
+
+    await updateCampaign("c1", base);
+    expect(db.campaign.update.mock.calls[2][0].data).not.toHaveProperty("showDmRolls");
   });
 });
 

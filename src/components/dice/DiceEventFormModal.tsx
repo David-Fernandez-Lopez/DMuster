@@ -196,6 +196,24 @@ export default function DiceEventFormModal({
     );
   }
 
+  // Nobody to log for: the campaign hides its DMs and has no other member.
+  if (campaign && campaign.members.length === 0) {
+    return (
+      <FiltersModal title={title} onClose={onClose}>
+        <p className="text-sm text-ink">{t("diceEvents.noPlayers")}</p>
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-secondary min-h-[44px] px-4 text-sm font-semibold"
+          >
+            {t("common.close")}
+          </button>
+        </div>
+      </FiltersModal>
+    );
+  }
+
   return (
     <FiltersModal title={title} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">

@@ -69,6 +69,7 @@ export default async function EditCampaignPage({
           description: campaign.description,
           colorSlot: campaign.colorSlot,
           systemId: campaign.systemId,
+          showDmRolls: campaign.showDmRolls,
         }}
         usedColorSlots={usedColorSlots}
         systems={systems}

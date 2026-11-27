@@ -30,6 +30,7 @@ interface CampaignFormProps {
     description: string | null;
     colorSlot: number;
     systemId: string | null;
+    showDmRolls: boolean;
   };
   /** Colour slots held by other campaigns (edit only), with the holder's tag. */
   usedColorSlots?: Record<number, string>;
@@ -75,6 +76,8 @@ export default function CampaignForm({ campaign, usedColorSlots = {}, systems = 
       colorSlot: formData.has("colorSlot") ? Number(formData.get("colorSlot")) : undefined,
       // Only sent when the select is there: leaving it out keeps the system as it is.
       systemId: formData.has("systemId") ? formData.get("systemId") : undefined,
+      // An unchecked box is not part of the form data, so it is always sent explicitly.
+      showDmRolls: formData.has("showDmRolls"),
     });
 
     if (!parsed.success) {
@@ -168,6 +171,20 @@ export default function CampaignForm({ campaign, usedColorSlots = {}, systems = 
           <p className="text-xs text-ink-muted">{t("campaigns.form.systemHint")}</p>
         </div>
       ) : null}
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="showDmRolls" className="flex min-h-[44px] items-center gap-3 text-sm font-medium text-ink">
+          <input
+            id="showDmRolls"
+            name="showDmRolls"
+            type="checkbox"
+            defaultChecked={campaign?.showDmRolls ?? false}
+            className="h-5 w-5 shrink-0 accent-[var(--color-brand)]"
+          />
+          {t("campaigns.form.showDmRolls")}
+        </label>
+        <p className="text-xs text-ink-muted">{t("campaigns.form.showDmRollsHint")}</p>
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <label

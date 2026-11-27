@@ -129,6 +129,13 @@ model Campaign {
   // existed have none until a DM picks one, and cannot log anything meanwhile.
   systemId String?
 
+  // Whether the critical/fumble log shows (and accepts) the DMs' own entries.
+  // Off by default: at most tables nobody logs the DM's rolls. "DM" means holding
+  // the DM role in THIS campaign. While off, DMs are hidden from the table, the
+  // list, the filters and the form, and the service refuses to log for them;
+  // entries that already exist are kept, just hidden, and reappear if it is turned on.
+  showDmRolls Boolean @default(false)
+
   createdBy User             @relation("CampaignCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   players   CampaignPlayer[]
 

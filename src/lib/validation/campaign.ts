@@ -54,6 +54,9 @@ export const campaignSchema = z.object({
     .trim()
     .transform((value) => (value === "" ? null : value))
     .nullish(),
+  // Whether the critical/fumble log shows the DMs' own entries. Omitted = leave it
+  // as it is (edit) or off (create).
+  showDmRolls: z.boolean({ error: "campaigns.errors.validation" }).optional(),
 });
 
 export type CampaignInput = z.infer<typeof campaignSchema>;

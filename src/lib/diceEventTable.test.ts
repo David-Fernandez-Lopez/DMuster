@@ -11,6 +11,7 @@ const campaign: DiceEventCampaignContext = {
   name: "Academia",
   tag: "AC",
   colorSlot: 0,
+  showDmRolls: true,
   system: { id: "s", key: "pf2e", name: "Pathfinder 2e" },
   skills: [],
   members: [

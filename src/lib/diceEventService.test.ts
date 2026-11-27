@@ -36,7 +36,7 @@ jest.mock("@/lib/prisma", () => ({
       delete: jest.fn(),
     },
     campaign: { findMany: jest.fn(), findUnique: jest.fn() },
-    campaignPlayer: { findUnique: jest.fn() },
+    campaignPlayer: { findUnique: jest.fn(), findMany: jest.fn() },
     campaignArc: { findFirst: jest.fn() },
     confirmedSession: { findFirst: jest.fn() },
     systemSkill: { findFirst: jest.fn() },
@@ -46,7 +46,7 @@ jest.mock("@/lib/prisma", () => ({
 const db = prisma as unknown as {
   diceEvent: Record<"count" | "findMany" | "findUnique" | "create" | "update" | "delete", jest.Mock>;
   campaign: { findMany: jest.Mock; findUnique: jest.Mock };
-  campaignPlayer: { findUnique: jest.Mock };
+  campaignPlayer: { findUnique: jest.Mock; findMany: jest.Mock };
   campaignArc: { findFirst: jest.Mock };
   confirmedSession: { findFirst: jest.Mock };
   systemSkill: { findFirst: jest.Mock };
@@ -65,9 +65,10 @@ const input = { ...createInput, date: "2026-11-01", time: "19:20" };
 
 beforeEach(() => {
   jest.resetAllMocks();
-  db.campaign.findUnique.mockResolvedValue({ systemId: "pf2e" });
+  db.campaign.findUnique.mockResolvedValue({ systemId: "pf2e", showDmRolls: false });
+  db.campaignPlayer.findMany.mockResolvedValue([]);
   db.systemSkill.findFirst.mockResolvedValue({ active: true, allowsDetail: false });
-  db.campaignPlayer.findUnique.mockResolvedValue({ userId: "paola" });
+  db.campaignPlayer.findUnique.mockResolvedValue({ userId: "paola", role: "PLAYER" });
   db.diceEvent.create.mockResolvedValue({ id: "e1" });
   db.diceEvent.findUnique.mockResolvedValue({ skillId: "sk-perception" });
   db.diceEvent.update.mockResolvedValue({ id: "e1" });
@@ -161,6 +162,19 @@ describe("createDiceEvent", () => {
     await expect(createDiceEvent("orden", "david", { ...createInput, detail: "FUERZA" })).resolves.toMatchObject({ ok: true });
   });
 
+  it("does not log for a DM while the campaign hides the DMs' rolls, and does once it shows them", async () => {
+    db.campaignPlayer.findUnique.mockResolvedValue({ userId: "paola", role: "DM" });
+
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.dmHidden",
+    });
+    expect(db.diceEvent.create).not.toHaveBeenCalled();
+
+    db.campaign.findUnique.mockResolvedValue({ systemId: "pf2e", showDmRolls: true });
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toMatchObject({ ok: true });
+  });
+
   it("refuses a player who is not in the campaign", async () => {
     db.campaignPlayer.findUnique.mockResolvedValue(null);
 
@@ -238,6 +252,16 @@ describe("updateDiceEvent", () => {
     expect(db.diceEvent.update).not.toHaveBeenCalled();
   });
 
+  it("does not let an edit hand an entry to a hidden DM", async () => {
+    db.campaignPlayer.findUnique.mockResolvedValue({ userId: "paola", role: "DM" });
+
+    await expect(updateDiceEvent("e1", "orden", input)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.dmHidden",
+    });
+    expect(db.diceEvent.update).not.toHaveBeenCalled();
+  });
+
   it("maps a record deleted mid-update to notFound", async () => {
     const { Prisma } = jest.requireMock("@/generated/prisma/client");
     db.diceEvent.update.mockRejectedValue(new Prisma.PrismaClientKnownRequestError("gone", "P2025"));
@@ -275,6 +299,37 @@ describe("listDiceEvents", () => {
         take: 10,
       }),
     );
+  });
+
+  it("leaves out the entries of DMs of campaigns that hide them, counting and paging without them", async () => {
+    db.campaignPlayer.findMany.mockResolvedValue([
+      { campaignId: "orden", userId: "dm1" },
+      { campaignId: "verkko", userId: "dm2" },
+    ]);
+    db.diceEvent.count.mockResolvedValue(0);
+    db.diceEvent.findMany.mockResolvedValue([]);
+
+    await listDiceEvents("david", { page: 1, pageSize: 25 });
+
+    expect(db.campaignPlayer.findMany).toHaveBeenCalledWith({
+      where: { role: "DM", campaign: { showDmRolls: false, players: { some: { userId: "david" } } } },
+      select: { campaignId: true, userId: true },
+    });
+    const expected = {
+      campaign: { players: { some: { userId: "david" } } },
+      NOT: { OR: [{ campaignId: "orden", userId: "dm1" }, { campaignId: "verkko", userId: "dm2" }] },
+    };
+    expect(db.diceEvent.count).toHaveBeenCalledWith({ where: expected });
+    expect(db.diceEvent.findMany.mock.calls[0][0].where).toEqual(expected);
+  });
+
+  it("adds no exclusion when no campaign hides a DM, and narrows the lookup to the filtered campaign", async () => {
+    db.diceEvent.findMany.mockResolvedValue([]);
+
+    await listAllDiceEvents("david", { campaignId: "orden", page: 1, pageSize: 25 });
+
+    expect(db.campaignPlayer.findMany.mock.calls[0][0].where.campaign).toMatchObject({ id: "orden" });
+    expect(db.diceEvent.findMany.mock.calls[0][0].where).not.toHaveProperty("NOT");
   });
 
   it("returns each row with its catalogue entry and detail", async () => {
@@ -338,6 +393,7 @@ describe("listDiceEventContext", () => {
         name: "La Orden",
         tag: "OR",
         colorSlot: 1,
+        showDmRolls: true,
         players: [{ role: "PLAYER", user: { id: "paola", name: "Paola" } }],
         arcs: [{ id: "a1", number: 1, name: null }],
         system: { id: "pf2e", key: "pathfinder-2e", name: "Pathfinder 2e", skills },
@@ -350,6 +406,7 @@ describe("listDiceEventContext", () => {
         name: "La Orden",
         tag: "OR",
         colorSlot: 1,
+        showDmRolls: true,
         members: [{ userId: "paola", name: "Paola", role: "PLAYER" }],
         arcs: [{ id: "a1", number: 1, name: null }],
         system: { id: "pf2e", key: "pathfinder-2e", name: "Pathfinder 2e" },
@@ -360,9 +417,38 @@ describe("listDiceEventContext", () => {
     expect(select.system.select.skills).toMatchObject({ where: { active: true }, orderBy: { sortOrder: "asc" } });
   });
 
+  it("takes the DMs out of the members while the campaign hides them, and keeps them when it shows them", async () => {
+    const players = [
+      { role: "DM", user: { id: "dm", name: "Salgado" } },
+      { role: "PLAYER", user: { id: "paola", name: "Paola" } },
+    ];
+    db.campaign.findMany.mockResolvedValue([
+      { id: "hidden", name: "H", tag: "HH", colorSlot: 0, showDmRolls: false, players, arcs: [], system: null },
+      { id: "shown", name: "S", tag: "SS", colorSlot: 1, showDmRolls: true, players, arcs: [], system: null },
+    ]);
+
+    const [hidden, shown] = await listDiceEventContext("david");
+
+    expect(hidden.showDmRolls).toBe(false);
+    expect(hidden.members.map((m) => m.userId)).toEqual(["paola"]);
+    expect(shown.members.map((m) => m.userId)).toEqual(["dm", "paola"]);
+  });
+
+  it("treats roles per campaign: the same person is hidden as DM in one and shown as a player in the other", async () => {
+    db.campaign.findMany.mockResolvedValue([
+      { id: "a", name: "A", tag: "AA", colorSlot: 0, showDmRolls: false, arcs: [], system: null, players: [{ role: "DM", user: { id: "u", name: "U" } }] },
+      { id: "b", name: "B", tag: "BB", colorSlot: 1, showDmRolls: false, arcs: [], system: null, players: [{ role: "PLAYER", user: { id: "u", name: "U" } }] },
+    ]);
+
+    const [a, b] = await listDiceEventContext("david");
+
+    expect(a.members).toEqual([]);
+    expect(b.members.map((m) => m.userId)).toEqual(["u"]);
+  });
+
   it("gives a campaign without a system an empty catalogue", async () => {
     db.campaign.findMany.mockResolvedValue([
-      { id: "x", name: "X", tag: "XX", colorSlot: 0, players: [], arcs: [], system: null },
+      { id: "x", name: "X", tag: "XX", colorSlot: 0, showDmRolls: false, players: [], arcs: [], system: null },
     ]);
 
     const [campaign] = await listDiceEventContext("david");

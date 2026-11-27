@@ -130,7 +130,9 @@
       "colorOption": "Colour {{number}}",
       "system": "Role system",
       "noSystem": "No system",
-      "systemHint": "Sets which skills and conditions the crit & fumble log offers. It cannot be changed once the campaign has entries."
+      "systemHint": "Sets which skills and conditions the crit & fumble log offers. It cannot be changed once the campaign has entries.",
+      "showDmRolls": "Show the DM's crits and fumbles",
+      "showDmRollsHint": "Off by default. When unchecked, the DM does not appear in the log's table, list, filters or form, and no entries can be logged for them. Existing ones are kept and come back when it is turned on."
     },
     "actions": {
       "players": "Players",
@@ -530,7 +532,8 @@
       "skillNotFound": "That skill or condition does not exist in the campaign's system.",
       "detailNotAllowed": "That entry does not take a detail.",
       "detailTooLong": "The detail is too long.",
-      "detailRequired": "This entry needs a detail."
+      "detailRequired": "This entry needs a detail.",
+      "dmHidden": "This campaign does not log the DM's crits and fumbles."
     },
     "emptyTitle": "No crits or fumbles yet",
     "emptyText": "Log the first roll and it will show up here.",
@@ -559,7 +562,8 @@
       "SKILL": "Skill",
       "ATTRIBUTE": "Attribute",
       "CONDITION": "Condition"
-    }
+    },
+    "noPlayers": "There is nobody to log for: this campaign does not show the DM's crits and fumbles and has no other members. A DM can turn it on in \"Edit campaign\"."
   },
   "arcs": {
     "title": "Arcs",
