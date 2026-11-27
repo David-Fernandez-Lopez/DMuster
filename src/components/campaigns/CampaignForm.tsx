@@ -29,9 +29,13 @@ interface CampaignFormProps {
     tag: string;
     description: string | null;
     colorSlot: number;
+    systemId: string | null;
+    showDmRolls: boolean;
   };
   /** Colour slots held by other campaigns (edit only), with the holder's tag. */
   usedColorSlots?: Record<number, string>;
+  /** Role systems to pick from; the select is hidden when there are none. */
+  systems?: { id: string; name: string }[];
 }
 
 const INITIAL_STATE: CampaignFormState = {};
@@ -45,7 +49,7 @@ const INITIAL_STATE: CampaignFormState = {};
  * @param {CampaignFormProps} props - Optional campaign to edit.
  * @returns {JSX.Element} The campaign form.
  */
-export default function CampaignForm({ campaign, usedColorSlots = {} }: CampaignFormProps) {
+export default function CampaignForm({ campaign, usedColorSlots = {}, systems = [] }: CampaignFormProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const [state, setState] = useState<CampaignFormState>(INITIAL_STATE);
@@ -70,6 +74,10 @@ export default function CampaignForm({ campaign, usedColorSlots = {} }: Campaign
       description: formData.get("description"),
       // Only the edit form has the picker; a new campaign gets a free colour.
       colorSlot: formData.has("colorSlot") ? Number(formData.get("colorSlot")) : undefined,
+      // Only sent when the select is there: leaving it out keeps the system as it is.
+      systemId: formData.has("systemId") ? formData.get("systemId") : undefined,
+      // An unchecked box is not part of the form data, so it is always sent explicitly.
+      showDmRolls: formData.has("showDmRolls"),
     });
 
     if (!parsed.success) {
@@ -141,6 +149,42 @@ export default function CampaignForm({ campaign, usedColorSlots = {} }: Campaign
           used={usedColorSlots}
         />
       ) : null}
+
+      {systems.length > 0 ? (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="systemId" className="text-sm font-medium text-ink">
+            {t("campaigns.form.system")}
+          </label>
+          <select
+            id="systemId"
+            name="systemId"
+            defaultValue={campaign?.systemId ?? ""}
+            className="min-h-[44px] rounded-[var(--radius-control)] border border-border bg-bg px-3 text-ink outline-none focus:border-brand"
+          >
+            <option value="">{t("campaigns.form.noSystem")}</option>
+            {systems.map((system) => (
+              <option key={system.id} value={system.id}>
+                {system.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-ink-muted">{t("campaigns.form.systemHint")}</p>
+        </div>
+      ) : null}
+
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="showDmRolls" className="flex min-h-[44px] items-center gap-3 text-sm font-medium text-ink">
+          <input
+            id="showDmRolls"
+            name="showDmRolls"
+            type="checkbox"
+            defaultChecked={campaign?.showDmRolls ?? false}
+            className="h-5 w-5 shrink-0 accent-[var(--color-brand)]"
+          />
+          {t("campaigns.form.showDmRolls")}
+        </label>
+        <p className="text-xs text-ink-muted">{t("campaigns.form.showDmRollsHint")}</p>
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <label

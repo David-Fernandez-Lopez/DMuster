@@ -62,7 +62,7 @@ export async function GET(
  * @param {Request} request - The incoming request with the JSON body.
  * @param {RouteContext} context - Route context with the async `params`.
  * @returns {Promise<NextResponse>} 200, 400, 401, 403, 404, 409 (colour already
- *   used by another campaign), or 500.
+ *   used by another campaign, or system locked by existing entries), or 500.
  */
 export async function PUT(
   request: Request,
@@ -109,9 +109,12 @@ export async function PUT(
     const status =
       result.error === "campaigns.errors.notFound"
         ? 404
-        : result.error === "campaigns.errors.colorTaken"
+        : result.error === "campaigns.errors.colorTaken" ||
+            result.error === "campaigns.errors.systemLocked"
           ? 409
-          : 500;
+          : result.error === "campaigns.errors.systemInvalid"
+            ? 400
+            : 500;
     return NextResponse.json({ error: result.error }, { status });
   }
 

@@ -2,6 +2,7 @@
 
 import { useTranslation } from "react-i18next";
 
+import StatusIcon, { type StatusKind } from "@/components/status/StatusIcon";
 import type { PlayerStatusValue } from "@/lib/calendarService";
 import type { BusySession } from "@/lib/sessionConflict";
 import type { ResponseStatus } from "@/lib/viability";
@@ -9,20 +10,21 @@ import type { ResponseStatus } from "@/lib/viability";
 /** Soft-pill classes + label key per response value (null = pending). */
 const STATUS_STYLE: Record<
   ResponseStatus | "NONE",
-  { className: string; labelKey: string }
+  { className: string; labelKey: string; icon: StatusKind }
 > = {
-  YES: { className: "bg-s-soft text-s", labelKey: "date.status.yes" },
-  ONLINE: { className: "bg-o-soft text-o", labelKey: "date.status.online" },
-  MAYBE: { className: "bg-t-soft text-t", labelKey: "date.status.maybe" },
-  NO: { className: "bg-n-soft text-n", labelKey: "date.status.no" },
+  YES: { className: "bg-s-soft text-s", labelKey: "date.status.yes", icon: "S" },
+  ONLINE: { className: "bg-o-soft text-o", labelKey: "date.status.online", icon: "O" },
+  MAYBE: { className: "bg-t-soft text-t", labelKey: "date.status.maybe", icon: "T" },
+  NO: { className: "bg-n-soft text-n", labelKey: "date.status.no", icon: "N" },
   NONE: {
     className: "border border-border bg-bg text-ink-muted",
     labelKey: "date.status.none",
+    icon: "NONE",
   },
 };
 
 const PILL_CLASS =
-  "shrink-0 rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-semibold";
+  "inline-flex shrink-0 items-center gap-1 rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-semibold";
 
 interface StatusPillProps {
   /** The member's stored response, or `null` when unanswered. */
@@ -48,11 +50,17 @@ export default function StatusPill({ status, busyIn }: StatusPillProps) {
   if (busyIn) {
     return (
       <span title={busyIn.campaignName} className={`${PILL_CLASS} bg-b-soft text-b`}>
+        <StatusIcon kind="B" className="h-3 w-3" />
         {t("date.status.busy", { tag: busyIn.campaignTag })}
       </span>
     );
   }
 
   const style = STATUS_STYLE[status ?? "NONE"];
-  return <span className={`${PILL_CLASS} ${style.className}`}>{t(style.labelKey)}</span>;
+  return (
+    <span className={`${PILL_CLASS} ${style.className}`}>
+      <StatusIcon kind={style.icon} className="h-3 w-3" />
+      {t(style.labelKey)}
+    </span>
+  );
 }

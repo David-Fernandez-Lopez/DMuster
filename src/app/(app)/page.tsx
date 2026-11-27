@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import CalendarBoard from "@/components/calendar/CalendarBoard";
 import MonthNav from "@/components/calendar/MonthNav";
+import StatusIcon from "@/components/status/StatusIcon";
 import { getServerTranslation } from "@/i18n/server";
 import { getUserAvailability } from "@/lib/availabilityService";
 import { auth } from "@/lib/auth";
@@ -61,23 +62,23 @@ export default async function CalendarPage({
 
       <div className="mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-ink-muted">
         <span className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-s" />
+          <StatusIcon kind="S" className="h-3.5 w-3.5 text-s" />
           {t("calendar.legend.yes")}
         </span>
         <span className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-o" />
+          <StatusIcon kind="O" className="h-3.5 w-3.5 text-o" />
           {t("calendar.legend.online")}
         </span>
         <span className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-n" />
+          <StatusIcon kind="N" className="h-3.5 w-3.5 text-n" />
           {t("calendar.legend.no")}
         </span>
         <span className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-t" />
+          <StatusIcon kind="T" className="h-3.5 w-3.5 text-t" />
           {t("calendar.legend.maybe")}
         </span>
         <span className="flex items-center gap-1.5">
-          <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-b" />
+          <StatusIcon kind="B" className="h-3.5 w-3.5 text-b" />
           {t("calendar.legend.busy")}
         </span>
         <span className="italic">{t("calendar.legend.note")}</span>

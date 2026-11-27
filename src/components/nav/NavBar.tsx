@@ -31,6 +31,7 @@ export default async function NavBar() {
     { href: "/availability", label: t("nav.availability") },
     { href: "/campaigns", label: t("nav.campaigns") },
     { href: "/statistics", label: t("nav.statistics") },
+    { href: "/rolls", label: t("nav.rolls") },
   ];
 
   const menuItems: NavLinkItem[] = [

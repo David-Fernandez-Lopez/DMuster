@@ -21,6 +21,7 @@ writes anything until explicitly told to.
 | `rotate-secrets.sh` | Generates a fresh `AUTH_SECRET` value to paste into `.env` |
 | `rotatePasswords.ts` | Gives every account a fresh random password with its own bcrypt salt |
 | `disableAccount.ts` | Revokes (or restores) one account's access and ends its sessions |
+| `importDiceEvents.ts` | One-off import of the critical/fumble history from the Excel export, through an explicit name mapping (see below) |
 
 ## Order, and what depends on what
 
@@ -147,3 +148,85 @@ already equivalent to root on the host: anyone who can run these could equally
 `docker-compose.yml` already documents the same access path in a comment.
 
 What must never be published is their **output**.
+
+## Importing the critical/fumble history
+
+`importDiceEvents.ts` loads the Excel export (player → campaign → critico/pifia)
+into the log. It guesses nothing: copy `diceEvents.mapping.example.json` to a
+`*.mapping.json` file (git-ignored, it holds real names) and list every campaign
+and player of the export — `null` skips one on purpose. Anything unmapped, a
+player who is not a member of the campaign, a bad date or time, or a repeated
+cell is reported as **blocking** and nothing is written.
+
+```bash
+docker compose cp history.json app:/tmp/history.json
+docker compose cp dice-events.mapping.json app:/tmp/dice-events.mapping.json
+docker compose exec app npx tsx scripts/ops/importDiceEvents.ts \
+  --file=/tmp/history.json --mapping=/tmp/dice-events.mapping.json            # report
+docker compose exec app npx tsx scripts/ops/importDiceEvents.ts \
+  --file=/tmp/history.json --mapping=/tmp/dice-events.mapping.json --apply    # write
+```
+
+The campaigns it imports into must already have a **role system**, and that
+system's catalogue must be loaded (`npm run catalog:sync`): the `skills` section
+maps each Excel text to a catalogue **key** (`"WILL": "WILL"`, `"PERCEPCIÓN":
+"PERCEPTION"`, `"DYING": "DYING"`), and a `"LORE: GUILD"` splits on its own into the
+Lore entry plus the detail. A text that means something else in another system
+gets a per-campaign adjustment, which wins over `skills` for that campaign only:
+`"campaignSkills": { "Puente X": { "ATAQUE": "LIGHT_WEAPONRY" } }` (Stormlight has
+no `ATTACK`). A rare text goes to "Personalizado" with an explicit
+detail: `"FUERZA": "CUSTOM_SKILL: FUERZA"` (an entry that requires a detail, or
+takes none, is checked). The report lists the problems, what would be written
+per campaign, the arcs it would create, what is skipped, the **Excel texts still
+to map** with their counts (use that list to complete `skills`) and the catalogue
+entries used. Order: migrate → catalogue sync → assign a system to each campaign →
+import. Back up first
+(`backup-db.sh`). Re-running is safe: each row is keyed by its Excel cell and
+rows already stored are left alone.
+
+
+### Pointing the mapping at ids, and assigning systems with SQL
+
+The mapping's `campaigns`, `players` and `importedBy` take an **id**, an email or a name, and an exact id wins, so
+production can avoid names altogether (they can repeat or change; ids cannot). Read-only queries to get them:
+
+```sql
+-- Campaigns: id, name, tag and current system
+SELECT id, name, tag, systemId FROM campaigns ORDER BY name;
+
+-- Players
+SELECT id, name, email, disabledAt IS NOT NULL AS disabled FROM users ORDER BY name;
+
+-- Memberships: each Excel player must belong to their campaign
+SELECT c.name AS campaign, u.name AS player, cp.role
+FROM campaign_players cp
+JOIN campaigns c ON c.id = cp.campaignId
+JOIN users u ON u.id = cp.userId
+ORDER BY c.name, u.name;
+
+-- Systems (after `npm run catalog:sync`)
+SELECT id, `key`, name, active FROM role_systems;
+
+-- Mapping lines ready to paste (campaigns, then players)
+SELECT CONCAT('    "', name, '": "', id, '",') AS mapping_line FROM campaigns ORDER BY name;
+SELECT CONCAT('    "', name, '": "', id, '",') AS mapping_line FROM users ORDER BY name;
+```
+
+The mapping lines come out as `"name-in-the-app": "id"`: use the id as the **value** and put the Excel's own name
+on the left. Assign the systems by `key`, which is stable across environments, instead of pasting a system id:
+
+```sql
+UPDATE campaigns
+SET systemId = (SELECT id FROM role_systems WHERE `key` = 'pathfinder-2e')
+WHERE id IN ('<Orden id>', '<Academia id>', '<Verkko id>', '<Fishing id>');
+
+UPDATE campaigns
+SET systemId = (SELECT id FROM role_systems WHERE `key` = 'stormlight-rpg')
+WHERE id = '<Puente X id>';
+
+-- Check
+SELECT c.name, s.`key` FROM campaigns c LEFT JOIN role_systems s ON s.id = c.systemId ORDER BY c.name;
+```
+
+Only do this while the campaigns have no entries yet (the app refuses to change a system afterwards). Players
+missing from a campaign are added from the app (`/campaigns/<id>/players`), not by SQL.

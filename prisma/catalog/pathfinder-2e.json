@@ -1,0 +1,450 @@
+{
+  "key": "pathfinder-2e",
+  "name": "Pathfinder 2e Remaster",
+  "skills": [
+    {
+      "key": "ACROBATICS",
+      "category": "SKILL",
+      "es": "Acrobacias",
+      "en": "Acrobatics"
+    },
+    {
+      "key": "ARCANA",
+      "category": "SKILL",
+      "es": "Arcanos",
+      "en": "Arcana"
+    },
+    {
+      "key": "ATHLETICS",
+      "category": "SKILL",
+      "es": "Atletismo",
+      "en": "Athletics"
+    },
+    {
+      "key": "CRAFTING",
+      "category": "SKILL",
+      "es": "Artesanía",
+      "en": "Crafting"
+    },
+    {
+      "key": "DECEPTION",
+      "category": "SKILL",
+      "es": "Engaño",
+      "en": "Deception"
+    },
+    {
+      "key": "DIPLOMACY",
+      "category": "SKILL",
+      "es": "Diplomacia",
+      "en": "Diplomacy"
+    },
+    {
+      "key": "INTIMIDATION",
+      "category": "SKILL",
+      "es": "Intimidación",
+      "en": "Intimidation"
+    },
+    {
+      "key": "LORE",
+      "category": "SKILL",
+      "es": "Saber",
+      "en": "Lore",
+      "allowsDetail": true
+    },
+    {
+      "key": "MEDICINE",
+      "category": "SKILL",
+      "es": "Medicina",
+      "en": "Medicine"
+    },
+    {
+      "key": "NATURE",
+      "category": "SKILL",
+      "es": "Naturaleza",
+      "en": "Nature"
+    },
+    {
+      "key": "OCCULTISM",
+      "category": "SKILL",
+      "es": "Ocultismo",
+      "en": "Occultism"
+    },
+    {
+      "key": "PERFORMANCE",
+      "category": "SKILL",
+      "es": "Interpretación",
+      "en": "Performance",
+      "allowsDetail": true
+    },
+    {
+      "key": "RELIGION",
+      "category": "SKILL",
+      "es": "Religión",
+      "en": "Religion"
+    },
+    {
+      "key": "SOCIETY",
+      "category": "SKILL",
+      "es": "Sociedad",
+      "en": "Society"
+    },
+    {
+      "key": "STEALTH",
+      "category": "SKILL",
+      "es": "Sigilo",
+      "en": "Stealth"
+    },
+    {
+      "key": "SURVIVAL",
+      "category": "SKILL",
+      "es": "Supervivencia",
+      "en": "Survival"
+    },
+    {
+      "key": "THIEVERY",
+      "category": "SKILL",
+      "es": "Latrocinio",
+      "en": "Thievery"
+    },
+    {
+      "key": "PERCEPTION",
+      "category": "SKILL",
+      "es": "Percepción",
+      "en": "Perception"
+    },
+    {
+      "key": "FORTITUDE",
+      "category": "SKILL",
+      "es": "Fortaleza",
+      "en": "Fortitude"
+    },
+    {
+      "key": "REFLEX",
+      "category": "SKILL",
+      "es": "Reflejos",
+      "en": "Reflex"
+    },
+    {
+      "key": "WILL",
+      "category": "SKILL",
+      "es": "Voluntad",
+      "en": "Will"
+    },
+    {
+      "key": "ATTACK",
+      "category": "SKILL",
+      "es": "Ataque",
+      "en": "Strike"
+    },
+    {
+      "key": "INITIATIVE",
+      "category": "SKILL",
+      "es": "Iniciativa",
+      "en": "Initiative"
+    },
+    {
+      "key": "CUSTOM_SKILL",
+      "category": "SKILL",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
+    },
+    {
+      "key": "STRENGTH",
+      "category": "ATTRIBUTE",
+      "es": "Fuerza",
+      "en": "Strength"
+    },
+    {
+      "key": "DEXTERITY",
+      "category": "ATTRIBUTE",
+      "es": "Destreza",
+      "en": "Dexterity"
+    },
+    {
+      "key": "CONSTITUTION",
+      "category": "ATTRIBUTE",
+      "es": "Constitución",
+      "en": "Constitution"
+    },
+    {
+      "key": "INTELLIGENCE",
+      "category": "ATTRIBUTE",
+      "es": "Inteligencia",
+      "en": "Intelligence"
+    },
+    {
+      "key": "WISDOM",
+      "category": "ATTRIBUTE",
+      "es": "Sabiduría",
+      "en": "Wisdom"
+    },
+    {
+      "key": "CHARISMA",
+      "category": "ATTRIBUTE",
+      "es": "Carisma",
+      "en": "Charisma"
+    },
+    {
+      "key": "BLINDED",
+      "category": "CONDITION",
+      "es": "Cegado",
+      "en": "Blinded"
+    },
+    {
+      "key": "BROKEN",
+      "category": "CONDITION",
+      "es": "Roto",
+      "en": "Broken"
+    },
+    {
+      "key": "CLUMSY",
+      "category": "CONDITION",
+      "es": "Torpe",
+      "en": "Clumsy"
+    },
+    {
+      "key": "CONCEALED",
+      "category": "CONDITION",
+      "es": "Oculto",
+      "en": "Concealed"
+    },
+    {
+      "key": "CONFUSED",
+      "category": "CONDITION",
+      "es": "Confundido",
+      "en": "Confused"
+    },
+    {
+      "key": "CONTROLLED",
+      "category": "CONDITION",
+      "es": "Controlado",
+      "en": "Controlled"
+    },
+    {
+      "key": "DAZZLED",
+      "category": "CONDITION",
+      "es": "Deslumbrado",
+      "en": "Dazzled"
+    },
+    {
+      "key": "DEAFENED",
+      "category": "CONDITION",
+      "es": "Ensordecido",
+      "en": "Deafened"
+    },
+    {
+      "key": "DOOMED",
+      "category": "CONDITION",
+      "es": "Condenado",
+      "en": "Doomed"
+    },
+    {
+      "key": "DRAINED",
+      "category": "CONDITION",
+      "es": "Drenado",
+      "en": "Drained"
+    },
+    {
+      "key": "DYING",
+      "category": "CONDITION",
+      "es": "Moribundo",
+      "en": "Dying"
+    },
+    {
+      "key": "ENCUMBERED",
+      "category": "CONDITION",
+      "es": "Sobrecargado",
+      "en": "Encumbered"
+    },
+    {
+      "key": "ENFEEBLED",
+      "category": "CONDITION",
+      "es": "Debilitado",
+      "en": "Enfeebled"
+    },
+    {
+      "key": "FASCINATED",
+      "category": "CONDITION",
+      "es": "Fascinado",
+      "en": "Fascinated"
+    },
+    {
+      "key": "FATIGUED",
+      "category": "CONDITION",
+      "es": "Fatigado",
+      "en": "Fatigued"
+    },
+    {
+      "key": "FLEEING",
+      "category": "CONDITION",
+      "es": "Huyendo",
+      "en": "Fleeing"
+    },
+    {
+      "key": "FRIENDLY",
+      "category": "CONDITION",
+      "es": "Amistoso",
+      "en": "Friendly"
+    },
+    {
+      "key": "FRIGHTENED",
+      "category": "CONDITION",
+      "es": "Asustado",
+      "en": "Frightened"
+    },
+    {
+      "key": "GRABBED",
+      "category": "CONDITION",
+      "es": "Agarrado",
+      "en": "Grabbed"
+    },
+    {
+      "key": "HELPFUL",
+      "category": "CONDITION",
+      "es": "Solícito",
+      "en": "Helpful"
+    },
+    {
+      "key": "HIDDEN",
+      "category": "CONDITION",
+      "es": "Escondido",
+      "en": "Hidden"
+    },
+    {
+      "key": "HOSTILE",
+      "category": "CONDITION",
+      "es": "Hostil",
+      "en": "Hostile"
+    },
+    {
+      "key": "IMMOBILIZED",
+      "category": "CONDITION",
+      "es": "Inmovilizado",
+      "en": "Immobilized"
+    },
+    {
+      "key": "INDIFFERENT",
+      "category": "CONDITION",
+      "es": "Indiferente",
+      "en": "Indifferent"
+    },
+    {
+      "key": "INVISIBLE",
+      "category": "CONDITION",
+      "es": "Invisible",
+      "en": "Invisible"
+    },
+    {
+      "key": "OBSERVED",
+      "category": "CONDITION",
+      "es": "Observado",
+      "en": "Observed"
+    },
+    {
+      "key": "OFF_GUARD",
+      "category": "CONDITION",
+      "es": "Desprevenido",
+      "en": "Off-Guard"
+    },
+    {
+      "key": "PARALYZED",
+      "category": "CONDITION",
+      "es": "Paralizado",
+      "en": "Paralyzed"
+    },
+    {
+      "key": "PERSISTENT_DAMAGE",
+      "category": "CONDITION",
+      "es": "Daño persistente",
+      "en": "Persistent Damage"
+    },
+    {
+      "key": "PETRIFIED",
+      "category": "CONDITION",
+      "es": "Petrificado",
+      "en": "Petrified"
+    },
+    {
+      "key": "PRONE",
+      "category": "CONDITION",
+      "es": "Tumbado",
+      "en": "Prone"
+    },
+    {
+      "key": "QUICKENED",
+      "category": "CONDITION",
+      "es": "Acelerado",
+      "en": "Quickened"
+    },
+    {
+      "key": "RESTRAINED",
+      "category": "CONDITION",
+      "es": "Neutralizado",
+      "en": "Restrained"
+    },
+    {
+      "key": "SICKENED",
+      "category": "CONDITION",
+      "es": "Indispuesto",
+      "en": "Sickened"
+    },
+    {
+      "key": "SLOWED",
+      "category": "CONDITION",
+      "es": "Ralentizado",
+      "en": "Slowed"
+    },
+    {
+      "key": "STUNNED",
+      "category": "CONDITION",
+      "es": "Aturdido",
+      "en": "Stunned"
+    },
+    {
+      "key": "STUPEFIED",
+      "category": "CONDITION",
+      "es": "Anonadado",
+      "en": "Stupefied"
+    },
+    {
+      "key": "UNCONSCIOUS",
+      "category": "CONDITION",
+      "es": "Inconsciente",
+      "en": "Unconscious"
+    },
+    {
+      "key": "UNDETECTED",
+      "category": "CONDITION",
+      "es": "No detectado",
+      "en": "Undetected"
+    },
+    {
+      "key": "UNFRIENDLY",
+      "category": "CONDITION",
+      "es": "Poco amistoso",
+      "en": "Unfriendly"
+    },
+    {
+      "key": "UNNOTICED",
+      "category": "CONDITION",
+      "es": "Inadvertido",
+      "en": "Unnoticed"
+    },
+    {
+      "key": "WOUNDED",
+      "category": "CONDITION",
+      "es": "Herido",
+      "en": "Wounded"
+    },
+    {
+      "key": "CUSTOM_CONDITION",
+      "category": "CONDITION",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
+    }
+  ]
+}

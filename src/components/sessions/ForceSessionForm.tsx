@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import StatusPill from "@/components/date/StatusPill";
+import StatusIcon from "@/components/status/StatusIcon";
 import type { PlayerDayStatus } from "@/lib/calendarService";
 import { isAvailableResponse, type Viability } from "@/lib/viability";
 
@@ -206,7 +207,8 @@ export default function ForceSessionForm({
     return (
       <div className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-border bg-bg p-3">
         {busyPlayers.length > 0 ? (
-          <p className="text-sm text-b">
+          <p className="flex items-start gap-1.5 text-sm text-b">
+            <StatusIcon kind="B" className="mt-0.5 h-4 w-4" />
             {t("sessions.forceWarningBusy", {
               players: busyPlayers
                 .map((player) => `${player.name} (${player.busyIn?.campaignTag})`)
@@ -215,14 +217,16 @@ export default function ForceSessionForm({
           </p>
         ) : null}
         {noPlayers.length > 0 ? (
-          <p className="text-sm text-n">
+          <p className="flex items-start gap-1.5 text-sm text-n">
+            <StatusIcon kind="N" className="mt-0.5 h-4 w-4" />
             {t("sessions.forceWarning", {
               players: noPlayers.map((player) => player.name).join(", "),
             })}
           </p>
         ) : null}
         {pendingPlayers.length > 0 ? (
-          <p className="text-sm text-t">
+          <p className="flex items-start gap-1.5 text-sm text-t">
+            <StatusIcon kind="T" className="mt-0.5 h-4 w-4" />
             {t("sessions.forceWarningPending", {
               players: pendingPlayers.map((player) => player.name).join(", "),
             })}

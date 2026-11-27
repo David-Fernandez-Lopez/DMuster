@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
+import ArcManager from "@/components/campaigns/ArcManager";
 import ArchiveCampaignButton from "@/components/campaigns/ArchiveCampaignButton";
 import CampaignForm from "@/components/campaigns/CampaignForm";
 import CampaignRequirementsForm from "@/components/campaigns/CampaignRequirementsForm";
 import { CampaignRole } from "@/generated/prisma/enums";
 import { getServerTranslation } from "@/i18n/server";
 import { auth } from "@/lib/auth";
+import { listCampaignArcs } from "@/lib/campaignArcService";
 import { getCampaignRequirements } from "@/lib/campaignRequirementsService";
-import { getCampaignForUser, listUsedColorSlots } from "@/lib/campaignService";
+import { getCampaignForUser, listSystemOptions, listUsedColorSlots } from "@/lib/campaignService";
 
 type EditCampaignPageProps = { params: Promise<{ id: string }> };
 
@@ -39,10 +41,12 @@ export default async function EditCampaignPage({
     redirect("/campaigns");
   }
 
-  const [{ t }, requirements, usedColorSlots] = await Promise.all([
+  const [{ t }, requirements, usedColorSlots, arcs, systems] = await Promise.all([
     getServerTranslation(),
     getCampaignRequirements(campaign.id),
     listUsedColorSlots(campaign.id),
+    listCampaignArcs(campaign.id),
+    listSystemOptions(campaign.systemId),
   ]);
 
   return (
@@ -65,8 +69,11 @@ export default async function EditCampaignPage({
           tag: campaign.tag,
           description: campaign.description,
           colorSlot: campaign.colorSlot,
+          systemId: campaign.systemId,
+          showDmRolls: campaign.showDmRolls,
         }}
         usedColorSlots={usedColorSlots}
+        systems={systems}
       />
 
       {requirements ? (
@@ -78,6 +85,7 @@ export default async function EditCampaignPage({
         />
       ) : null}
 
+      <ArcManager key={arcs.map((arc) => `${arc.id}:${arc.name}`).join("|")} campaignId={campaign.id} arcs={arcs} />
       <div className="mt-6 rounded-[var(--radius-card)] border border-border bg-bg-elevated p-4">
         <ArchiveCampaignButton
           campaignId={campaign.id}

@@ -46,6 +46,17 @@ export const campaignSchema = z.object({
     .min(0, { error: "campaigns.errors.colorInvalid" })
     .max(MAX_COLOR_SLOT, { error: "campaigns.errors.colorInvalid" })
     .optional(),
+  // The role system the campaign plays. Omitted = leave it as it is; an empty
+  // string or null = no system; an id = that system (checked by the service:
+  // it must exist and be active, and it cannot change once entries are logged).
+  systemId: z
+    .string()
+    .trim()
+    .transform((value) => (value === "" ? null : value))
+    .nullish(),
+  // Whether the critical/fumble log shows the DMs' own entries. Omitted = leave it
+  // as it is (edit) or off (create).
+  showDmRolls: z.boolean({ error: "campaigns.errors.validation" }).optional(),
 });
 
 export type CampaignInput = z.infer<typeof campaignSchema>;

@@ -1,3 +1,6 @@
+import { useTranslation } from "react-i18next";
+
+import StatusIcon, { STATUS_TEXT_CLASS } from "@/components/status/StatusIcon";
 import type { Viability } from "@/lib/viability";
 
 /** A per-campaign viability chip for a day cell. */
@@ -15,15 +18,6 @@ export type ForeignIndicator = {
   sessionId: string;
   tag: string;
   name: string;
-};
-
-/** Dot color per viability tier (S→green, O→blue, N→red, T→amber, B→slate-violet). */
-const DOT_CLASS: Record<Viability, string> = {
-  S: "bg-s",
-  O: "bg-o",
-  N: "bg-n",
-  T: "bg-t",
-  B: "bg-b",
 };
 
 /**
@@ -124,6 +118,7 @@ export default function DayCell({
   foreign = [],
   moreLabel,
 }: DayCellProps) {
+  const { t } = useTranslation();
   const dayNumber = Number(iso.slice(8));
 
   const confirmed = indicators?.filter((indicator) => indicator.confirmed) ?? [];
@@ -134,11 +129,11 @@ export default function DayCell({
   const base = "min-h-[56px] p-1 md:min-h-[110px] md:p-2";
   const state = eligible
     ? hasConfirmedSession
-      ? "bg-brand-soft"
+      ? "day-confirmed bg-brand-soft"
       : "bg-bg-elevated"
     : "bg-bg opacity-45 pointer-events-none";
   const dimmed = outOfMonth ? "opacity-30" : "";
-  const ring = today ? "border-2 border-brand" : "";
+  const ring = today ? "day-today border-2 border-brand" : "";
   const className = `${base} ${state} ${dimmed} ${ring}`.trim();
 
   const content = (
@@ -171,10 +166,11 @@ export default function DayCell({
               </span>
             ))}
             {pending.slice(0, MOBILE_MAX_CHIPS).map((indicator) => (
-              <span
+              <StatusIcon
                 key={indicator.campaignId}
-                aria-hidden="true"
-                className={`h-2 w-2 rounded-full ${DOT_CLASS[indicator.viability]}`}
+                kind={indicator.viability}
+                label={`${indicator.tag}: ${t(`calendar.viability.${indicator.viability}`)}`}
+                className={`h-3.5 w-3.5 ${STATUS_TEXT_CLASS[indicator.viability]}`}
               />
             ))}
             {moreLabel ? (
@@ -211,9 +207,10 @@ export default function DayCell({
                 key={indicator.campaignId}
                 className="flex items-center gap-1 text-[10px] font-semibold leading-tight text-ink-muted"
               >
-                <span
-                  aria-hidden="true"
-                  className={`h-2 w-2 shrink-0 rounded-full ${DOT_CLASS[indicator.viability]}`}
+                <StatusIcon
+                  kind={indicator.viability}
+                  label={t(`calendar.viability.${indicator.viability}`)}
+                  className={`h-3 w-3 ${STATUS_TEXT_CLASS[indicator.viability]}`}
                 />
                 {indicator.tag}
               </span>

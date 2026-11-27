@@ -1,6 +1,6 @@
 import type { DefaultSession } from "next-auth";
 
-import type { Locale, Theme } from "@/generated/prisma/enums";
+import type { ColorVision, Locale, Theme } from "@/generated/prisma/enums";
 
 // Module augmentation adding DMuster-specific fields to the Auth.js types.
 
@@ -11,6 +11,7 @@ declare module "next-auth" {
       id: string;
       locale: Locale;
       theme: Theme | null;
+      colorVision: ColorVision | null;
     } & DefaultSession["user"];
   }
 
@@ -18,6 +19,7 @@ declare module "next-auth" {
   interface User {
     locale?: Locale;
     theme?: Theme | null;
+    colorVision?: ColorVision | null;
   }
 }
 
@@ -26,6 +28,7 @@ declare module "@auth/core/adapters" {
   interface AdapterUser {
     locale: Locale;
     theme: Theme | null;
+    colorVision: ColorVision | null;
   }
 }
 

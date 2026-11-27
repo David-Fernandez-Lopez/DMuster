@@ -56,27 +56,33 @@ export default function CampaignCard({ campaign, viewerId, t }: CampaignCardProp
         </p>
       ) : null}
 
-      {isDm ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Link
-            href={`/campaigns/${campaign.id}/players`}
-            className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold"
-          >
-            {t("campaigns.actions.players")}
-          </Link>
-          <Link
-            href={`/campaigns/${campaign.id}/edit`}
-            className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold"
-          >
-            {t("campaigns.actions.edit")}
-          </Link>
-          <DeleteCampaignButton campaignId={campaign.id} />
-        </div>
-      ) : (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <Link
+          href={`/campaigns/${campaign.id}/rolls`}
+          className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold"
+        >
+          {t("campaigns.actions.rolls")}
+        </Link>
+        {isDm ? (
+          <>
+            <Link
+              href={`/campaigns/${campaign.id}/players`}
+              className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold"
+            >
+              {t("campaigns.actions.players")}
+            </Link>
+            <Link
+              href={`/campaigns/${campaign.id}/edit`}
+              className="btn btn-secondary min-h-[44px] px-3 text-sm font-semibold"
+            >
+              {t("campaigns.actions.edit")}
+            </Link>
+            <DeleteCampaignButton campaignId={campaign.id} />
+          </>
+        ) : (
           <LeaveCampaignButton campaignId={campaign.id} userId={viewerId} />
-        </div>
-      )}
+        )}
+      </div>
     </li>
   );
 }

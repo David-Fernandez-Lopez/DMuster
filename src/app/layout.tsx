@@ -55,6 +55,7 @@ export default async function RootLayout({
     <html
       lang={locale}
       data-theme={theme}
+      data-color-vision={session?.user?.colorVision ?? undefined}
       className={`h-full ${cinzel.variable} ${manrope.variable}`}
     >
       <body className="papyrus-bg min-h-full flex flex-col antialiased">

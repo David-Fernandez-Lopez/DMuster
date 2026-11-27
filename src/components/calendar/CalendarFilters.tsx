@@ -3,6 +3,7 @@
 import { useTranslation } from "react-i18next";
 
 import MultiSelectFilter from "@/components/calendar/MultiSelectFilter";
+import StatusIcon from "@/components/status/StatusIcon";
 import { ALL_VIABILITIES } from "@/lib/calendarFilterStorage";
 import type {
   CalendarCampaign,
@@ -114,11 +115,13 @@ export default function CalendarFilters({
                 type="button"
                 onClick={() => onToggleViability(viability)}
                 aria-pressed={isActive}
-                className={`btn ${VIABILITY_CHIP_CLASS[viability]} min-h-[44px] px-4 text-sm font-semibold ${
-                  isActive ? "" : "opacity-60 hover:opacity-100"
+                className={`btn ${VIABILITY_CHIP_CLASS[viability]} min-h-[44px] gap-1.5 px-4 text-sm font-semibold ${
+                  isActive ? "" : "border-dashed opacity-60 hover:opacity-100"
                 }`}
               >
+                <StatusIcon kind={viability} className="h-4 w-4" />
                 {t(`calendar.viability.${viability}`)}
+                {isActive ? <span aria-hidden="true">✓</span> : null}
               </button>
             );
           })}

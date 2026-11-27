@@ -9,6 +9,7 @@ import {
   monthDays,
   toIsoDate,
   toIsoDateIn,
+  toTimeIn,
   todayIsoIn,
   toUtcDate,
   upcomingEligibleDaysThroughMonth,
@@ -203,6 +204,25 @@ describe("groupByYear", () => {
     expect(groups[0].items[1]).toBe(dec25);
     expect(groups[1].year).toBe("2027");
     expect(groups[1].items).toEqual([jan1]);
+  });
+});
+
+describe("toTimeIn", () => {
+  it("reads the local wall clock, summer and winter", () => {
+    expect(toTimeIn(new Date("2026-08-26T19:15:00.000Z"), "Europe/Madrid")).toBe("21:15");
+    expect(toTimeIn(new Date("2026-01-14T19:15:00.000Z"), "Europe/Madrid")).toBe("20:15");
+  });
+
+  it("writes midnight as 00:xx and never 24:xx", () => {
+    // 22:21 UTC in August is 00:21 in Madrid, the same moment toIsoDateIn calls the next day.
+    const justAfterMidnight = new Date("2026-08-26T22:21:00.000Z");
+
+    expect(toTimeIn(justAfterMidnight, "Europe/Madrid")).toBe("00:21");
+    expect(toIsoDateIn(justAfterMidnight, "Europe/Madrid")).toBe("2026-08-27");
+  });
+
+  it("pads single-digit hours and minutes", () => {
+    expect(toTimeIn(new Date("2026-08-27T05:05:00.000Z"), "UTC")).toBe("05:05");
   });
 });
 

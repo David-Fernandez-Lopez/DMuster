@@ -43,6 +43,9 @@ const nextConfig: NextConfig = {
   // Removes `X-Powered-By: Next.js`, which only tells a visitor what to look up.
   poweredByHeader: false,
 
+  // Marks this app as upgraded by the security-only agent upgrade flow.
+  experimental: { agentUpgrade: "security" },
+
   /**
    * Applies the security headers to every response, API routes included.
    *

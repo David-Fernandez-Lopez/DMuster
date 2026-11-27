@@ -8,6 +8,7 @@ import AttendeeControls, {
   type AttendeeListMember,
 } from "@/components/sessions/AttendeeControls";
 import CancelSessionButton from "@/components/sessions/CancelSessionButton";
+import StatusIcon from "@/components/status/StatusIcon";
 import ConfirmSessionForm from "@/components/sessions/ConfirmSessionForm";
 import ForceSessionForm from "@/components/sessions/ForceSessionForm";
 import SelfJoinButton from "@/components/sessions/SelfJoinButton";
@@ -148,8 +149,9 @@ export default function CampaignViabilityCard({
         </h3>
         {confirmedSession ? <ConfirmedBadgeIcon /> : null}
         <span
-          className={`shrink-0 rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-semibold ${style.className}`}
+          className={`inline-flex shrink-0 items-center gap-1 rounded-[var(--radius-control)] px-2 py-0.5 text-xs font-semibold ${style.className}`}
         >
+          <StatusIcon kind={campaign.viability} className="h-3 w-3" />
           {t(style.labelKey)}
         </span>
         <svg

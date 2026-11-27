@@ -1,0 +1,459 @@
+import {
+  createDiceEvent,
+  deleteDiceEvent,
+  listAllDiceEvents,
+  listDiceEventContext,
+  listDiceEvents,
+  updateDiceEvent,
+} from "@/lib/diceEventService";
+import { prisma } from "@/lib/prisma";
+
+jest.mock("@/lib/today", () => ({
+  todayIso: () => "2026-11-22",
+  nowStamp: () => ({ date: "2026-11-22", time: "00:21" }),
+}));
+
+// The generated Prisma client is ESM and uses `import.meta.url`, which ts-jest
+// cannot parse — same stand-in as the other service tests.
+jest.mock("@/generated/prisma/client", () => {
+  class PrismaClientKnownRequestError extends Error {
+    code: string;
+    constructor(message: string, code = "P2025") {
+      super(message);
+      this.code = code;
+    }
+  }
+  return { Prisma: { PrismaClientKnownRequestError } };
+});
+jest.mock("@/lib/prisma", () => ({
+  prisma: {
+    diceEvent: {
+      count: jest.fn(),
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    campaign: { findMany: jest.fn(), findUnique: jest.fn() },
+    campaignPlayer: { findUnique: jest.fn(), findMany: jest.fn() },
+    campaignArc: { findFirst: jest.fn() },
+    confirmedSession: { findFirst: jest.fn() },
+    systemSkill: { findFirst: jest.fn() },
+  },
+}));
+
+const db = prisma as unknown as {
+  diceEvent: Record<"count" | "findMany" | "findUnique" | "create" | "update" | "delete", jest.Mock>;
+  campaign: { findMany: jest.Mock; findUnique: jest.Mock };
+  campaignPlayer: { findUnique: jest.Mock; findMany: jest.Mock };
+  campaignArc: { findFirst: jest.Mock };
+  confirmedSession: { findFirst: jest.Mock };
+  systemSkill: { findFirst: jest.Mock };
+};
+
+const createInput = {
+  userId: "paola",
+  kind: "FUMBLE" as const,
+  skillId: "sk-perception",
+  detail: null,
+  arcId: null,
+  sessionId: null,
+};
+
+const input = { ...createInput, date: "2026-11-01", time: "19:20" };
+
+beforeEach(() => {
+  jest.resetAllMocks();
+  db.campaign.findUnique.mockResolvedValue({ systemId: "pf2e", showDmRolls: false });
+  db.campaignPlayer.findMany.mockResolvedValue([]);
+  db.systemSkill.findFirst.mockResolvedValue({ active: true, allowsDetail: false });
+  db.campaignPlayer.findUnique.mockResolvedValue({ userId: "paola", role: "PLAYER" });
+  db.diceEvent.create.mockResolvedValue({ id: "e1" });
+  db.diceEvent.findUnique.mockResolvedValue({ skillId: "sk-perception" });
+  db.diceEvent.update.mockResolvedValue({ id: "e1" });
+  db.diceEvent.delete.mockResolvedValue({ id: "e1" });
+});
+
+describe("createDiceEvent", () => {
+  it("stores the event with the actor as author, stamped with the current date and time", async () => {
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toEqual({ ok: true, eventId: "e1" });
+
+    expect(db.diceEvent.create).toHaveBeenCalledWith({
+      data: {
+        campaignId: "orden",
+        userId: "paola",
+        createdById: "david",
+        kind: "FUMBLE",
+        skillId: "sk-perception",
+        detail: null,
+        date: new Date("2026-11-22T00:00:00.000Z"),
+        time: "00:21",
+        arcId: null,
+        sessionId: null,
+      },
+      select: { id: true },
+    });
+  });
+
+  it("ignores any date or time the caller smuggles in", async () => {
+    await createDiceEvent("orden", "david", { ...createInput, date: "2020-01-01", time: "03:00" } as never);
+
+    expect(db.diceEvent.create.mock.calls[0][0].data).toMatchObject({
+      date: new Date("2026-11-22T00:00:00.000Z"),
+      time: "00:21",
+    });
+  });
+
+  it("refuses a campaign that has no role system", async () => {
+    db.campaign.findUnique.mockResolvedValue({ systemId: null });
+
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.noSystem",
+    });
+    expect(db.diceEvent.create).not.toHaveBeenCalled();
+  });
+
+  it("only accepts a catalogue entry of the campaign's own system", async () => {
+    db.systemSkill.findFirst.mockResolvedValue(null);
+
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.skillNotFound",
+    });
+    expect(db.systemSkill.findFirst).toHaveBeenCalledWith({
+      where: { id: "sk-perception", systemId: "pf2e" },
+      select: { active: true, allowsDetail: true, requiresDetail: true },
+    });
+  });
+
+  it("does not offer a deactivated entry for a new event", async () => {
+    db.systemSkill.findFirst.mockResolvedValue({ active: false, allowsDetail: false });
+
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.skillNotFound",
+    });
+  });
+
+  it("takes a detail only from entries that allow it", async () => {
+    await expect(createDiceEvent("orden", "david", { ...createInput, detail: "GUILD" })).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.detailNotAllowed",
+    });
+
+    db.systemSkill.findFirst.mockResolvedValue({ active: true, allowsDetail: true });
+    await expect(createDiceEvent("orden", "david", { ...createInput, detail: "GUILD" })).resolves.toMatchObject({
+      ok: true,
+    });
+    expect(db.diceEvent.create.mock.calls[0][0].data.detail).toBe("GUILD");
+  });
+
+  it("requires a detail from the entries that demand one", async () => {
+    db.systemSkill.findFirst.mockResolvedValue({ active: true, allowsDetail: true, requiresDetail: true });
+
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.detailRequired",
+    });
+    expect(db.diceEvent.create).not.toHaveBeenCalled();
+
+    await expect(createDiceEvent("orden", "david", { ...createInput, detail: "FUERZA" })).resolves.toMatchObject({ ok: true });
+  });
+
+  it("does not log for a DM while the campaign hides the DMs' rolls, and does once it shows them", async () => {
+    db.campaignPlayer.findUnique.mockResolvedValue({ userId: "paola", role: "DM" });
+
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.dmHidden",
+    });
+    expect(db.diceEvent.create).not.toHaveBeenCalled();
+
+    db.campaign.findUnique.mockResolvedValue({ systemId: "pf2e", showDmRolls: true });
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toMatchObject({ ok: true });
+  });
+
+  it("refuses a player who is not in the campaign", async () => {
+    db.campaignPlayer.findUnique.mockResolvedValue(null);
+
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.playerNotMember",
+    });
+    expect(db.diceEvent.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses an arc or a session of another campaign", async () => {
+    db.campaignArc.findFirst.mockResolvedValue(null);
+    await expect(createDiceEvent("orden", "david", { ...createInput, arcId: "x" })).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.arcNotFound",
+    });
+    expect(db.campaignArc.findFirst).toHaveBeenCalledWith({ where: { id: "x", campaignId: "orden" }, select: { id: true } });
+
+    db.confirmedSession.findFirst.mockResolvedValue(null);
+    await expect(createDiceEvent("orden", "david", { ...createInput, sessionId: "s" })).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.sessionNotFound",
+    });
+  });
+
+  it("answers with a safe error when the database fails", async () => {
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    db.diceEvent.create.mockRejectedValue(new Error("boom"));
+
+    await expect(createDiceEvent("orden", "david", createInput)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.unknown",
+    });
+  });
+});
+
+describe("updateDiceEvent", () => {
+  it("replaces the editable fields and keeps the author", async () => {
+    await expect(updateDiceEvent("e1", "orden", input)).resolves.toEqual({ ok: true, eventId: "e1" });
+
+    const data = db.diceEvent.update.mock.calls[0][0].data;
+    expect(data).not.toHaveProperty("createdById");
+    expect(data).not.toHaveProperty("campaignId");
+    // provenance of an imported entry survives an edit in the app
+    expect(data).not.toHaveProperty("originalText");
+    expect(data).not.toHaveProperty("note");
+    expect(data).toMatchObject({ skillId: "sk-perception", detail: null, date: new Date("2026-11-01T00:00:00.000Z") });
+  });
+
+  it("refuses a date after today but accepts today", async () => {
+    await expect(updateDiceEvent("e1", "orden", { ...input, date: "2026-11-23" })).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.futureDate",
+    });
+    await expect(updateDiceEvent("e1", "orden", { ...input, date: "2026-11-22" })).resolves.toMatchObject({ ok: true });
+  });
+
+  it("lets an event keep an entry that has since been deactivated, but not switch to one", async () => {
+    db.systemSkill.findFirst.mockResolvedValue({ active: false, allowsDetail: false });
+
+    await expect(updateDiceEvent("e1", "orden", input)).resolves.toMatchObject({ ok: true });
+    await expect(updateDiceEvent("e1", "orden", { ...input, skillId: "sk-other" })).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.skillNotFound",
+    });
+  });
+
+  it("answers notFound when the event is gone", async () => {
+    db.diceEvent.findUnique.mockResolvedValue(null);
+
+    await expect(updateDiceEvent("e1", "orden", input)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.notFound",
+    });
+    expect(db.diceEvent.update).not.toHaveBeenCalled();
+  });
+
+  it("does not let an edit hand an entry to a hidden DM", async () => {
+    db.campaignPlayer.findUnique.mockResolvedValue({ userId: "paola", role: "DM" });
+
+    await expect(updateDiceEvent("e1", "orden", input)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.dmHidden",
+    });
+    expect(db.diceEvent.update).not.toHaveBeenCalled();
+  });
+
+  it("maps a record deleted mid-update to notFound", async () => {
+    const { Prisma } = jest.requireMock("@/generated/prisma/client");
+    db.diceEvent.update.mockRejectedValue(new Prisma.PrismaClientKnownRequestError("gone", "P2025"));
+
+    await expect(updateDiceEvent("e1", "orden", input)).resolves.toEqual({
+      ok: false,
+      error: "diceEvents.errors.notFound",
+    });
+  });
+});
+
+describe("deleteDiceEvent", () => {
+  it("deletes by id", async () => {
+    await expect(deleteDiceEvent("e1")).resolves.toEqual({ ok: true, eventId: "e1" });
+    expect(db.diceEvent.delete).toHaveBeenCalledWith({ where: { id: "e1" }, select: { id: true } });
+  });
+});
+
+describe("listDiceEvents", () => {
+  it("only reads campaigns the viewer belongs to and pages the result", async () => {
+    db.diceEvent.count.mockResolvedValue(30);
+    db.diceEvent.findMany.mockResolvedValue([]);
+
+    const page = await listDiceEvents("david", { campaignId: "orden", kind: "FUMBLE", page: 2, pageSize: 10 });
+
+    expect(page).toEqual({ items: [], total: 30, page: 2, pageSize: 10 });
+    expect(db.diceEvent.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          campaign: { players: { some: { userId: "david" } } },
+          campaignId: "orden",
+          kind: "FUMBLE",
+        },
+        skip: 10,
+        take: 10,
+      }),
+    );
+  });
+
+  it("leaves out the entries of DMs of campaigns that hide them, counting and paging without them", async () => {
+    db.campaignPlayer.findMany.mockResolvedValue([
+      { campaignId: "orden", userId: "dm1" },
+      { campaignId: "verkko", userId: "dm2" },
+    ]);
+    db.diceEvent.count.mockResolvedValue(0);
+    db.diceEvent.findMany.mockResolvedValue([]);
+
+    await listDiceEvents("david", { page: 1, pageSize: 25 });
+
+    expect(db.campaignPlayer.findMany).toHaveBeenCalledWith({
+      where: { role: "DM", campaign: { showDmRolls: false, players: { some: { userId: "david" } } } },
+      select: { campaignId: true, userId: true },
+    });
+    const expected = {
+      campaign: { players: { some: { userId: "david" } } },
+      NOT: { OR: [{ campaignId: "orden", userId: "dm1" }, { campaignId: "verkko", userId: "dm2" }] },
+    };
+    expect(db.diceEvent.count).toHaveBeenCalledWith({ where: expected });
+    expect(db.diceEvent.findMany.mock.calls[0][0].where).toEqual(expected);
+  });
+
+  it("adds no exclusion when no campaign hides a DM, and narrows the lookup to the filtered campaign", async () => {
+    db.diceEvent.findMany.mockResolvedValue([]);
+
+    await listAllDiceEvents("david", { campaignId: "orden", page: 1, pageSize: 25 });
+
+    expect(db.campaignPlayer.findMany.mock.calls[0][0].where.campaign).toMatchObject({ id: "orden" });
+    expect(db.diceEvent.findMany.mock.calls[0][0].where).not.toHaveProperty("NOT");
+  });
+
+  it("returns each row with its catalogue entry and detail", async () => {
+    db.diceEvent.count.mockResolvedValue(1);
+    db.diceEvent.findMany.mockResolvedValue([
+      {
+        id: "e1",
+        campaignId: "orden",
+        userId: "paola",
+        kind: "FUMBLE",
+        skill: { id: "sk-lore", key: "LORE", category: "SKILL", nameEs: "Saber", nameEn: "Lore", allowsDetail: true },
+        detail: "GUILD",
+        originalText: "LORE: GUILD",
+        note: "supuesto",
+        date: new Date("2026-01-17T00:00:00.000Z"),
+        time: "20:48",
+        sessionId: null,
+        campaign: { name: "Orden", tag: "OR", colorSlot: 1 },
+        user: { name: "Paola" },
+        createdBy: { name: "David" },
+        arc: null,
+      },
+    ]);
+
+    const page = await listDiceEvents("david", { page: 1, pageSize: 25 });
+
+    expect(page.items[0]).toMatchObject({
+      skill: { key: "LORE", nameEs: "Saber" },
+      detail: "GUILD",
+      originalText: "LORE: GUILD",
+      note: "supuesto",
+      date: "2026-01-17",
+    });
+  });
+});
+
+describe("listAllDiceEvents", () => {
+  it("reads the whole filtered log oldest first, without paging", async () => {
+    db.diceEvent.findMany.mockResolvedValue([]);
+
+    await listAllDiceEvents("david", { campaignId: "orden", userId: "paola", page: 3, pageSize: 10 });
+
+    const args = db.diceEvent.findMany.mock.calls[0][0];
+    expect(args.where).toEqual({
+      campaign: { players: { some: { userId: "david" } } },
+      campaignId: "orden",
+      userId: "paola",
+    });
+    expect(args.orderBy[0]).toEqual({ date: "asc" });
+    expect(args).not.toHaveProperty("skip");
+  });
+});
+
+describe("listDiceEventContext", () => {
+  const skills = [{ id: "sk1", key: "PERCEPTION", category: "SKILL", nameEs: "Percepción", nameEn: "Perception", allowsDetail: false }];
+
+  it("flattens the viewer's campaigns with members, arcs, system and its active catalogue", async () => {
+    db.campaign.findMany.mockResolvedValue([
+      {
+        id: "orden",
+        name: "La Orden",
+        tag: "OR",
+        colorSlot: 1,
+        showDmRolls: true,
+        players: [{ role: "PLAYER", user: { id: "paola", name: "Paola" } }],
+        arcs: [{ id: "a1", number: 1, name: null }],
+        system: { id: "pf2e", key: "pathfinder-2e", name: "Pathfinder 2e", skills },
+      },
+    ]);
+
+    await expect(listDiceEventContext("david")).resolves.toEqual([
+      {
+        id: "orden",
+        name: "La Orden",
+        tag: "OR",
+        colorSlot: 1,
+        showDmRolls: true,
+        members: [{ userId: "paola", name: "Paola", role: "PLAYER" }],
+        arcs: [{ id: "a1", number: 1, name: null }],
+        system: { id: "pf2e", key: "pathfinder-2e", name: "Pathfinder 2e" },
+        skills,
+      },
+    ]);
+    const select = db.campaign.findMany.mock.calls[0][0].select;
+    expect(select.system.select.skills).toMatchObject({ where: { active: true }, orderBy: { sortOrder: "asc" } });
+  });
+
+  it("takes the DMs out of the members while the campaign hides them, and keeps them when it shows them", async () => {
+    const players = [
+      { role: "DM", user: { id: "dm", name: "Salgado" } },
+      { role: "PLAYER", user: { id: "paola", name: "Paola" } },
+    ];
+    db.campaign.findMany.mockResolvedValue([
+      { id: "hidden", name: "H", tag: "HH", colorSlot: 0, showDmRolls: false, players, arcs: [], system: null },
+      { id: "shown", name: "S", tag: "SS", colorSlot: 1, showDmRolls: true, players, arcs: [], system: null },
+    ]);
+
+    const [hidden, shown] = await listDiceEventContext("david");
+
+    expect(hidden.showDmRolls).toBe(false);
+    expect(hidden.members.map((m) => m.userId)).toEqual(["paola"]);
+    expect(shown.members.map((m) => m.userId)).toEqual(["dm", "paola"]);
+  });
+
+  it("treats roles per campaign: the same person is hidden as DM in one and shown as a player in the other", async () => {
+    db.campaign.findMany.mockResolvedValue([
+      { id: "a", name: "A", tag: "AA", colorSlot: 0, showDmRolls: false, arcs: [], system: null, players: [{ role: "DM", user: { id: "u", name: "U" } }] },
+      { id: "b", name: "B", tag: "BB", colorSlot: 1, showDmRolls: false, arcs: [], system: null, players: [{ role: "PLAYER", user: { id: "u", name: "U" } }] },
+    ]);
+
+    const [a, b] = await listDiceEventContext("david");
+
+    expect(a.members).toEqual([]);
+    expect(b.members.map((m) => m.userId)).toEqual(["u"]);
+  });
+
+  it("gives a campaign without a system an empty catalogue", async () => {
+    db.campaign.findMany.mockResolvedValue([
+      { id: "x", name: "X", tag: "XX", colorSlot: 0, showDmRolls: false, players: [], arcs: [], system: null },
+    ]);
+
+    const [campaign] = await listDiceEventContext("david");
+
+    expect(campaign.system).toBeNull();
+    expect(campaign.skills).toEqual([]);
+  });
+});

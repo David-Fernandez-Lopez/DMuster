@@ -1,0 +1,287 @@
+{
+  "key": "vampiro-v5",
+  "name": "Vampiro: La Mascarada 5ª edición",
+  "skills": [
+    {
+      "key": "ATHLETICS",
+      "category": "SKILL",
+      "es": "Atletismo",
+      "en": "Athletics"
+    },
+    {
+      "key": "BRAWL",
+      "category": "SKILL",
+      "es": "Pelea",
+      "en": "Brawl"
+    },
+    {
+      "key": "CRAFT",
+      "category": "SKILL",
+      "es": "Artesanía",
+      "en": "Craft"
+    },
+    {
+      "key": "DRIVE",
+      "category": "SKILL",
+      "es": "Conducir",
+      "en": "Drive"
+    },
+    {
+      "key": "FIREARMS",
+      "category": "SKILL",
+      "es": "Armas de fuego",
+      "en": "Firearms"
+    },
+    {
+      "key": "LARCENY",
+      "category": "SKILL",
+      "es": "Latrocinio",
+      "en": "Larceny"
+    },
+    {
+      "key": "MELEE",
+      "category": "SKILL",
+      "es": "Pelea con armas",
+      "en": "Melee"
+    },
+    {
+      "key": "STEALTH",
+      "category": "SKILL",
+      "es": "Sigilo",
+      "en": "Stealth"
+    },
+    {
+      "key": "SURVIVAL",
+      "category": "SKILL",
+      "es": "Supervivencia",
+      "en": "Survival"
+    },
+    {
+      "key": "ANIMAL_KEN",
+      "category": "SKILL",
+      "es": "Trato con animales",
+      "en": "Animal Ken"
+    },
+    {
+      "key": "ETIQUETTE",
+      "category": "SKILL",
+      "es": "Etiqueta",
+      "en": "Etiquette"
+    },
+    {
+      "key": "INSIGHT",
+      "category": "SKILL",
+      "es": "Perspicacia",
+      "en": "Insight"
+    },
+    {
+      "key": "INTIMIDATION",
+      "category": "SKILL",
+      "es": "Intimidación",
+      "en": "Intimidation"
+    },
+    {
+      "key": "LEADERSHIP",
+      "category": "SKILL",
+      "es": "Liderazgo",
+      "en": "Leadership"
+    },
+    {
+      "key": "PERFORMANCE",
+      "category": "SKILL",
+      "es": "Interpretación",
+      "en": "Performance",
+      "allowsDetail": true
+    },
+    {
+      "key": "PERSUASION",
+      "category": "SKILL",
+      "es": "Persuasión",
+      "en": "Persuasion"
+    },
+    {
+      "key": "STREETWISE",
+      "category": "SKILL",
+      "es": "Callejeo",
+      "en": "Streetwise"
+    },
+    {
+      "key": "SUBTERFUGE",
+      "category": "SKILL",
+      "es": "Subterfugio",
+      "en": "Subterfuge"
+    },
+    {
+      "key": "ACADEMICS",
+      "category": "SKILL",
+      "es": "Academicismo",
+      "en": "Academics"
+    },
+    {
+      "key": "AWARENESS",
+      "category": "SKILL",
+      "es": "Consciencia",
+      "en": "Awareness"
+    },
+    {
+      "key": "FINANCE",
+      "category": "SKILL",
+      "es": "Finanzas",
+      "en": "Finance"
+    },
+    {
+      "key": "INVESTIGATION",
+      "category": "SKILL",
+      "es": "Investigación",
+      "en": "Investigation"
+    },
+    {
+      "key": "MEDICINE",
+      "category": "SKILL",
+      "es": "Medicina",
+      "en": "Medicine"
+    },
+    {
+      "key": "OCCULT",
+      "category": "SKILL",
+      "es": "Ocultismo",
+      "en": "Occult"
+    },
+    {
+      "key": "POLITICS",
+      "category": "SKILL",
+      "es": "Política",
+      "en": "Politics"
+    },
+    {
+      "key": "SCIENCE",
+      "category": "SKILL",
+      "es": "Ciencias",
+      "en": "Science"
+    },
+    {
+      "key": "TECHNOLOGY",
+      "category": "SKILL",
+      "es": "Tecnología",
+      "en": "Technology"
+    },
+    {
+      "key": "CUSTOM_SKILL",
+      "category": "SKILL",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
+    },
+    {
+      "key": "STRENGTH",
+      "category": "ATTRIBUTE",
+      "es": "Fuerza",
+      "en": "Strength"
+    },
+    {
+      "key": "DEXTERITY",
+      "category": "ATTRIBUTE",
+      "es": "Destreza",
+      "en": "Dexterity"
+    },
+    {
+      "key": "STAMINA",
+      "category": "ATTRIBUTE",
+      "es": "Resistencia",
+      "en": "Stamina"
+    },
+    {
+      "key": "CHARISMA",
+      "category": "ATTRIBUTE",
+      "es": "Carisma",
+      "en": "Charisma"
+    },
+    {
+      "key": "MANIPULATION",
+      "category": "ATTRIBUTE",
+      "es": "Manipulación",
+      "en": "Manipulation"
+    },
+    {
+      "key": "COMPOSURE",
+      "category": "ATTRIBUTE",
+      "es": "Autocontrol",
+      "en": "Composure"
+    },
+    {
+      "key": "INTELLIGENCE",
+      "category": "ATTRIBUTE",
+      "es": "Inteligencia",
+      "en": "Intelligence"
+    },
+    {
+      "key": "WITS",
+      "category": "ATTRIBUTE",
+      "es": "Astucia",
+      "en": "Wits"
+    },
+    {
+      "key": "RESOLVE",
+      "category": "ATTRIBUTE",
+      "es": "Resolución",
+      "en": "Resolve"
+    },
+    {
+      "key": "HUNGER",
+      "category": "CONDITION",
+      "es": "Ansia",
+      "en": "Hunger"
+    },
+    {
+      "key": "IMPAIRED_PHYSICAL",
+      "category": "CONDITION",
+      "es": "Impedido (físico)",
+      "en": "Impaired (physical)"
+    },
+    {
+      "key": "IMPAIRED_MENTAL_SOCIAL",
+      "category": "CONDITION",
+      "es": "Impedido (mental/social)",
+      "en": "Impaired (mental/social)"
+    },
+    {
+      "key": "FRENZY",
+      "category": "CONDITION",
+      "es": "Frenesí",
+      "en": "Frenzy"
+    },
+    {
+      "key": "TORPOR",
+      "category": "CONDITION",
+      "es": "Letargo",
+      "en": "Torpor"
+    },
+    {
+      "key": "COMPULSION",
+      "category": "CONDITION",
+      "es": "Compulsión",
+      "en": "Compulsion"
+    },
+    {
+      "key": "STAINS",
+      "category": "CONDITION",
+      "es": "Mancillas",
+      "en": "Stains"
+    },
+    {
+      "key": "BLOOD_BOND",
+      "category": "CONDITION",
+      "es": "Vínculo de sangre",
+      "en": "Blood Bond"
+    },
+    {
+      "key": "CUSTOM_CONDITION",
+      "category": "CONDITION",
+      "es": "Personalizado",
+      "en": "Custom",
+      "allowsDetail": true,
+      "requiresDetail": true
+    }
+  ]
+}

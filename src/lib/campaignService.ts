@@ -17,10 +17,17 @@ export type CampaignWithRole = {
   description: string | null;
   /** Palette slot of the campaign's colour (see `campaignColor.ts`). */
   colorSlot: number;
+  /** The role system the campaign plays, or `null` while none is set. */
+  systemId: string | null;
+  /** Whether the critical/fumble log shows the DMs' own entries (off by default). */
+  showDmRolls: boolean;
   role: CampaignRole;
   /** When a DM archived the campaign, or `null` while it is active. */
   archivedAt: Date | null;
 };
+
+/** A role system a campaign can be assigned. */
+export type SystemOption = { id: string; name: string };
 
 /** Result of a campaign mutation. `error` holds an i18n key on failure. */
 export type CampaignMutationResult =
@@ -37,6 +44,8 @@ type MembershipWithCampaign = {
     description: string | null;
     archivedAt: Date | null;
     colorSlot: number;
+    systemId: string | null;
+    showDmRolls: boolean;
   };
 };
 
@@ -54,6 +63,8 @@ function toCampaignWithRole(membership: MembershipWithCampaign): CampaignWithRol
     tag: membership.campaign.tag,
     description: membership.campaign.description,
     colorSlot: membership.campaign.colorSlot,
+    systemId: membership.campaign.systemId,
+    showDmRolls: membership.campaign.showDmRolls,
     role: membership.role,
     archivedAt: membership.campaign.archivedAt,
   };
@@ -81,6 +92,8 @@ export async function listCampaignsForUser(
           description: true,
           archivedAt: true,
           colorSlot: true,
+          systemId: true,
+          showDmRolls: true,
         },
       },
     },
@@ -115,12 +128,32 @@ export async function getCampaignForUser(
           description: true,
           archivedAt: true,
           colorSlot: true,
+          systemId: true,
+          showDmRolls: true,
         },
       },
     },
   });
 
   return membership ? toCampaignWithRole(membership) : null;
+}
+
+/**
+ * Lists the role systems a campaign can be assigned: every active one, plus the
+ * campaign's current one even if it has since been deactivated (so editing does
+ * not silently drop it from the select).
+ *
+ * @param {string | null} [currentSystemId] - The system the campaign already has.
+ * @returns {Promise<SystemOption[]>} The systems, by name.
+ */
+export async function listSystemOptions(
+  currentSystemId: string | null = null,
+): Promise<SystemOption[]> {
+  return prisma.roleSystem.findMany({
+    where: { OR: [{ active: true }, ...(currentSystemId ? [{ id: currentSystemId }] : [])] },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
 }
 
 /**
@@ -149,13 +182,17 @@ export async function listUsedColorSlots(
  * @param {string} userId - Id of the creating user (becomes DM).
  * @param {CampaignInput} input - Already Zod-validated campaign payload.
  * @returns {Promise<CampaignMutationResult>} Success with the new id, or an
- *   error key (`campaigns.errors.unknown`).
+ *   error key (`campaigns.errors.systemInvalid` / `unknown`).
  */
 export async function createCampaign(
   userId: string,
   input: CampaignInput,
 ): Promise<CampaignMutationResult> {
   try {
+    if (input.systemId && !(await prisma.roleSystem.findFirst({ where: { id: input.systemId, active: true }, select: { id: true } }))) {
+      return { ok: false, error: "campaigns.errors.systemInvalid" };
+    }
+
     const campaign = await prisma.$transaction(async (tx) => {
       const taken = await tx.campaign.findMany({ select: { colorSlot: true } });
       return tx.campaign.create({
@@ -164,6 +201,8 @@ export async function createCampaign(
           tag: input.tag,
           description: input.description ?? null,
           colorSlot: nextFreeSlot(taken.map((row) => row.colorSlot)),
+          systemId: input.systemId ?? null,
+          showDmRolls: input.showDmRolls ?? false,
           createdById: userId,
           players: { create: { userId, role: CampaignRole.DM } },
         },
@@ -185,11 +224,15 @@ export async function createCampaign(
  *
  * @param {string} campaignId - Id of the campaign to update.
  * When the payload carries a `colorSlot` it must not be held by another
- * campaign; omitting it leaves the colour as it is.
+ * campaign; omitting it leaves the colour as it is. Likewise `systemId`: omitted
+ * leaves the system alone, a different one must exist and be active, and the
+ * system cannot change at all once the campaign has critical/fumble entries
+ * (they point at the old system's catalogue).
  *
  * @param {CampaignInput} input - Already Zod-validated campaign payload.
  * @returns {Promise<CampaignMutationResult>} Success, or an error key
- *   (`campaigns.errors.notFound` / `colorTaken` / `unknown`).
+ *   (`campaigns.errors.notFound` / `colorTaken` / `systemInvalid` /
+ *   `systemLocked` / `unknown`).
  */
 export async function updateCampaign(
   campaignId: string,
@@ -206,6 +249,27 @@ export async function updateCampaign(
       }
     }
 
+    if (input.systemId !== undefined) {
+      const current = await prisma.campaign.findUnique({
+        where: { id: campaignId },
+        select: { systemId: true },
+      });
+      if (!current) {
+        return { ok: false, error: "campaigns.errors.notFound" };
+      }
+      if (current.systemId !== input.systemId) {
+        if (
+          input.systemId &&
+          !(await prisma.roleSystem.findFirst({ where: { id: input.systemId, active: true }, select: { id: true } }))
+        ) {
+          return { ok: false, error: "campaigns.errors.systemInvalid" };
+        }
+        if ((await prisma.diceEvent.count({ where: { campaignId } })) > 0) {
+          return { ok: false, error: "campaigns.errors.systemLocked" };
+        }
+      }
+    }
+
     await prisma.campaign.update({
       where: { id: campaignId },
       data: {
@@ -213,6 +277,8 @@ export async function updateCampaign(
         tag: input.tag,
         description: input.description ?? null,
         ...(input.colorSlot !== undefined ? { colorSlot: input.colorSlot } : {}),
+        ...(input.systemId !== undefined ? { systemId: input.systemId } : {}),
+        ...(input.showDmRolls !== undefined ? { showDmRolls: input.showDmRolls } : {}),
       },
       select: { id: true },
     });

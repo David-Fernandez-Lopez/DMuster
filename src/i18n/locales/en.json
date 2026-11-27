@@ -17,7 +17,8 @@
     "logout": "Log out",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "statistics": "Statistics"
+    "statistics": "Statistics",
+    "rolls": "Crits & fumbles"
   },
   "calendar": {
     "title": "Session calendar",
@@ -129,7 +130,12 @@
       "color": "Colour",
       "colorHelp": "Identifies the campaign in charts and labels. It cannot repeat.",
       "colorTaken": "Used by {{tag}}",
-      "colorOption": "Colour {{number}}"
+      "colorOption": "Colour {{number}}",
+      "system": "Role system",
+      "noSystem": "No system",
+      "systemHint": "Sets which skills and conditions the crit & fumble log offers. It cannot be changed once the campaign has entries.",
+      "showDmRolls": "Show the DM's crits and fumbles",
+      "showDmRollsHint": "Off by default. When unchecked, the DM does not appear in the log's table, list, filters or form, and no entries can be logged for them. Existing ones are kept and come back when it is turned on."
     },
     "actions": {
       "players": "Players",
@@ -143,7 +149,8 @@
       "archive": "Archive",
       "confirmArchive": "Archive this campaign? It will leave the calendar and take no new sessions, but its history is kept.",
       "confirmArchiveYes": "Yes, archive",
-      "unarchive": "Unarchive"
+      "unarchive": "Unarchive",
+      "rolls": "Crits & fumbles"
     },
     "players": {
       "title": "Players",
@@ -199,7 +206,9 @@
       "alreadyArchived": "The campaign is already archived.",
       "notArchived": "The campaign is not archived.",
       "colorTaken": "Another campaign already uses that colour.",
-      "colorInvalid": "Pick a valid colour."
+      "colorInvalid": "Pick a valid colour.",
+      "systemLocked": "The role system cannot be changed: the campaign already has crits or fumbles logged.",
+      "systemInvalid": "The chosen role system does not exist."
     },
     "archivedBadge": "Archived"
   },
@@ -292,6 +301,15 @@
       "es": "ES",
       "en": "EN"
     },
+    "colorVision": {
+      "label": "Colour-blind mode",
+      "description": "A colour palette adapted to your type of colour blindness.",
+      "off": "Off",
+      "protan": "Protanopia (red)",
+      "deutan": "Deuteranopia (green)",
+      "tritan": "Tritanopia (blue)",
+      "all": "I don't know / all"
+    },
     "theme": {
       "label": "Theme",
       "light": "Light",
@@ -344,6 +362,7 @@
       "wrongPassword": "Your current password is not correct.",
       "samePassword": "The new password must differ from the current one.",
       "invalidTheme": "Invalid theme.",
+      "invalidColorVision": "Invalid value.",
       "updateFailed": "Could not save the change. Please try again."
     }
   },
@@ -640,6 +659,126 @@
       "reliabilityText": "You answered <b>{{rate}}%</b> of the eligible days, with <approx>≈ {{lead}} days</approx> of notice, and blocked <b>{{no}}</b> with a No.",
       "reliabilityNoLead": "You answered <b>{{rate}}%</b> of the eligible days and blocked <b>{{no}}</b> with a No.",
       "approxShort": "≈ approximate"
+    }
+  },
+  "diceEvents": {
+    "title": "Crits & fumbles",
+    "scope": "The group's log of critical hits and fumbles. Any member of a campaign can add, fix or delete its entries.",
+    "add": "Log one",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Delete this entry?",
+    "confirmYes": "Yes, delete",
+    "noCampaigns": "You don't belong to any campaign yet.",
+    "total": "Entries: {{count}}",
+    "createdBy": "Logged by {{name}}",
+    "kind": {
+      "CRITICAL": "Critical",
+      "FUMBLE": "Fumble"
+    },
+    "arcLabel": "Arc {{number}}",
+    "arcLabelNamed": "Arc {{number}}: {{name}}",
+    "form": {
+      "createTitle": "Log a crit or fumble",
+      "editTitle": "Edit entry",
+      "campaign": "Campaign",
+      "player": "Player",
+      "kind": "Type",
+      "skill": "Skill or condition",
+      "skillHint": "From the {{system}} system.",
+      "date": "Date",
+      "time": "Time (optional)",
+      "arc": "Arc",
+      "noArc": "No arc",
+      "submit": "Save",
+      "skillPlaceholder": "Pick one…",
+      "detail": "Detail (optional)",
+      "detailRequired": "Detail"
+    },
+    "filters": {
+      "title": "Filters",
+      "campaign": "Campaign",
+      "player": "Player",
+      "kind": "Type",
+      "arc": "Arc",
+      "all": "All",
+      "clear": "Clear filters"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {{page}} of {{pages}}"
+    },
+    "errors": {
+      "unauthorized": "You must sign in.",
+      "notFound": "Entry or campaign not found.",
+      "unknown": "Something went wrong. Please try again.",
+      "validation": "Check the form fields.",
+      "playerRequired": "Pick a player.",
+      "kindInvalid": "Pick critical or fumble.",
+      "skillRequired": "The skill is required.",
+      "dateInvalid": "Enter a valid date.",
+      "timeInvalid": "Enter a valid time (HH:MM).",
+      "futureDate": "The date cannot be in the future.",
+      "playerNotMember": "That player is not in the campaign.",
+      "arcNotFound": "The arc does not exist in this campaign.",
+      "sessionNotFound": "The session does not exist in this campaign.",
+      "noSystem": "The campaign has no role system assigned.",
+      "skillNotFound": "That skill or condition does not exist in the campaign's system.",
+      "detailNotAllowed": "That entry does not take a detail.",
+      "detailTooLong": "The detail is too long.",
+      "detailRequired": "This entry needs a detail.",
+      "dmHidden": "This campaign does not log the DM's crits and fumbles."
+    },
+    "emptyTitle": "No crits or fumbles yet",
+    "emptyText": "Log the first roll and it will show up here.",
+    "emptyFilteredTitle": "Nothing with these filters",
+    "emptyFilteredText": "No entry matches. Try removing a filter.",
+    "view": {
+      "label": "View",
+      "table": "Table",
+      "list": "List"
+    },
+    "cell": {
+      "when": "Date",
+      "loggedBy": "Logged by",
+      "type": "Type",
+      "note": "Note",
+      "originalText": "Original text"
+    },
+    "noSystem": "This campaign has no role system yet, so there are no skills to choose from. A DM can set it in \"Edit campaign\".",
+    "noSystemAction": "Edit campaign",
+    "category": {
+      "SKILL": "Skills",
+      "CONDITION": "Conditions",
+      "ATTRIBUTE": "Attributes"
+    },
+    "categoryOne": {
+      "SKILL": "Skill",
+      "ATTRIBUTE": "Attribute",
+      "CONDITION": "Condition"
+    },
+    "noPlayers": "There is nobody to log for: this campaign does not show the DM's crits and fumbles and has no other members. A DM can turn it on in \"Edit campaign\"."
+  },
+  "arcs": {
+    "title": "Arcs",
+    "description": "Group the campaign's crits and fumbles into arcs. Deleting an arc keeps its entries, without an arc.",
+    "empty": "This campaign has no arcs yet.",
+    "add": "Add arc",
+    "namePlaceholder": "Name (optional)",
+    "nameLabel": "Arc name",
+    "save": "Save name",
+    "entries": "Entries: {{count}}",
+    "delete": "Delete",
+    "confirmDelete": "Delete this arc? Its entries are kept, without an arc.",
+    "confirmYes": "Yes, delete",
+    "errors": {
+      "unauthorized": "You must sign in.",
+      "forbidden": "Only a DM of this campaign can manage arcs.",
+      "notFound": "Arc or campaign not found.",
+      "unknown": "Something went wrong. Please try again.",
+      "validation": "Check the form fields.",
+      "nameTooLong": "The name is too long."
     }
   }
 }

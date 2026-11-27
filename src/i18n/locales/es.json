@@ -17,7 +17,8 @@
     "logout": "Cerrar sesión",
     "openMenu": "Abrir menú",
     "closeMenu": "Cerrar menú",
-    "statistics": "Estadísticas"
+    "statistics": "Estadísticas",
+    "rolls": "Críticos y pifias"
   },
   "calendar": {
     "title": "Calendario de sesiones",
@@ -129,7 +130,12 @@
       "color": "Color",
       "colorHelp": "Identifica la campaña en gráficas y etiquetas. No puede repetirse.",
       "colorTaken": "En uso por {{tag}}",
-      "colorOption": "Color {{number}}"
+      "colorOption": "Color {{number}}",
+      "system": "Sistema de rol",
+      "noSystem": "Sin sistema",
+      "systemHint": "Define qué habilidades y condiciones ofrece el registro de críticos y pifias. No se puede cambiar cuando la campaña ya tiene entradas.",
+      "showDmRolls": "Mostrar los críticos y pifias del máster",
+      "showDmRollsHint": "Desactivado por defecto. Si no se marca, el máster no aparece en la tabla, la lista, los filtros ni el formulario del registro, y no se le pueden anotar entradas. Las que existan se conservan y reaparecen al activarlo."
     },
     "actions": {
       "players": "Jugadores",
@@ -143,7 +149,8 @@
       "archive": "Archivar",
       "confirmArchive": "¿Archivar esta campaña? Dejará de aparecer en el calendario y no admitirá nuevas partidas, pero su historial se conserva.",
       "confirmArchiveYes": "Sí, archivar",
-      "unarchive": "Desarchivar"
+      "unarchive": "Desarchivar",
+      "rolls": "Críticos y pifias"
     },
     "players": {
       "title": "Jugadores",
@@ -199,7 +206,9 @@
       "alreadyArchived": "La campaña ya está archivada.",
       "notArchived": "La campaña no está archivada.",
       "colorTaken": "Ese color ya lo usa otra campaña.",
-      "colorInvalid": "Elige un color válido."
+      "colorInvalid": "Elige un color válido.",
+      "systemLocked": "No se puede cambiar el sistema de rol: la campaña ya tiene críticos o pifias anotados.",
+      "systemInvalid": "El sistema de rol elegido no existe."
     },
     "archivedBadge": "Archivada"
   },
@@ -292,6 +301,15 @@
       "es": "ES",
       "en": "EN"
     },
+    "colorVision": {
+      "label": "Modo daltónico",
+      "description": "Paleta de colores adaptada a tu tipo de daltonismo.",
+      "off": "Desactivado",
+      "protan": "Protanopía (rojo)",
+      "deutan": "Deuteranopía (verde)",
+      "tritan": "Tritanopía (azul)",
+      "all": "No lo sé / todos"
+    },
     "theme": {
       "label": "Tema",
       "light": "Claro",
@@ -342,6 +360,7 @@
     "errors": {
       "invalidLocale": "Idioma no válido.",
       "invalidTheme": "Tema no válido.",
+      "invalidColorVision": "Valor no válido.",
       "wrongPassword": "La contraseña actual no es correcta.",
       "samePassword": "La contraseña nueva debe ser distinta de la actual.",
       "updateFailed": "No se ha podido guardar el cambio. Inténtalo de nuevo."
@@ -640,6 +659,126 @@
       "reliabilityText": "Has respondido el <b>{{rate}} %</b> de los días elegibles, con <approx>≈ {{lead}} días</approx> de antelación, y has bloqueado <b>{{no}}</b> con un No.",
       "reliabilityNoLead": "Has respondido el <b>{{rate}} %</b> de los días elegibles y has bloqueado <b>{{no}}</b> con un No.",
       "approxShort": "≈ aproximado"
+    }
+  },
+  "diceEvents": {
+    "title": "Críticos y pifias",
+    "scope": "Registro de los críticos y pifias del grupo. Cualquier miembro de una campaña puede anotar, corregir o borrar sus entradas.",
+    "add": "Anotar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Eliminar esta entrada?",
+    "confirmYes": "Sí, eliminar",
+    "noCampaigns": "Todavía no perteneces a ninguna campaña.",
+    "total": "Entradas: {{count}}",
+    "createdBy": "Anotado por {{name}}",
+    "kind": {
+      "CRITICAL": "Crítico",
+      "FUMBLE": "Pifia"
+    },
+    "arcLabel": "Arco {{number}}",
+    "arcLabelNamed": "Arco {{number}}: {{name}}",
+    "form": {
+      "createTitle": "Anotar crítico o pifia",
+      "editTitle": "Editar entrada",
+      "campaign": "Campaña",
+      "player": "Jugador",
+      "kind": "Tipo",
+      "skill": "Habilidad o condición",
+      "skillHint": "Del sistema {{system}}.",
+      "date": "Fecha",
+      "time": "Hora (opcional)",
+      "arc": "Arco",
+      "noArc": "Sin arco",
+      "submit": "Guardar",
+      "skillPlaceholder": "Elige una…",
+      "detail": "Detalle (opcional)",
+      "detailRequired": "Detalle"
+    },
+    "filters": {
+      "title": "Filtros",
+      "campaign": "Campaña",
+      "player": "Jugador",
+      "kind": "Tipo",
+      "arc": "Arco",
+      "all": "Todos",
+      "clear": "Quitar filtros"
+    },
+    "pagination": {
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "page": "Página {{page}} de {{pages}}"
+    },
+    "errors": {
+      "unauthorized": "Debes iniciar sesión.",
+      "notFound": "Entrada o campaña no encontrada.",
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo.",
+      "validation": "Revisa los campos del formulario.",
+      "playerRequired": "Elige un jugador.",
+      "kindInvalid": "Elige si es un crítico o una pifia.",
+      "skillRequired": "La habilidad es obligatoria.",
+      "dateInvalid": "Introduce una fecha válida.",
+      "timeInvalid": "Introduce una hora válida (HH:MM).",
+      "futureDate": "La fecha no puede ser futura.",
+      "playerNotMember": "Ese jugador no pertenece a la campaña.",
+      "arcNotFound": "El arco no existe en esta campaña.",
+      "sessionNotFound": "La sesión no existe en esta campaña.",
+      "noSystem": "La campaña no tiene sistema de rol asignado.",
+      "skillNotFound": "Esa habilidad o condición no existe en el sistema de la campaña.",
+      "detailNotAllowed": "Esa entrada no admite detalle.",
+      "detailTooLong": "El detalle es demasiado largo.",
+      "detailRequired": "El detalle es obligatorio para esta entrada.",
+      "dmHidden": "Esta campaña no registra los críticos y pifias del máster."
+    },
+    "emptyTitle": "Aún no hay críticos ni pifias",
+    "emptyText": "Anota la primera tirada y aparecerá aquí.",
+    "emptyFilteredTitle": "Nada con estos filtros",
+    "emptyFilteredText": "Ninguna entrada coincide. Prueba a quitar algún filtro.",
+    "view": {
+      "label": "Vista",
+      "table": "Tabla",
+      "list": "Lista"
+    },
+    "cell": {
+      "when": "Fecha",
+      "loggedBy": "Anotado por",
+      "type": "Tipo",
+      "note": "Nota",
+      "originalText": "Texto original"
+    },
+    "noSystem": "Esta campaña aún no tiene sistema de rol, así que no hay habilidades entre las que elegir. Un máster puede asignarlo en «Editar campaña».",
+    "noSystemAction": "Editar campaña",
+    "category": {
+      "SKILL": "Habilidades",
+      "CONDITION": "Condiciones",
+      "ATTRIBUTE": "Atributos"
+    },
+    "categoryOne": {
+      "SKILL": "Habilidad",
+      "ATTRIBUTE": "Atributo",
+      "CONDITION": "Condición"
+    },
+    "noPlayers": "No hay jugadores a quienes anotar: esta campaña no muestra los críticos y pifias del máster y no tiene más miembros. Un máster puede activarlo en «Editar campaña»."
+  },
+  "arcs": {
+    "title": "Arcos",
+    "description": "Agrupa los críticos y pifias de la campaña por arcos. Al borrar un arco, sus entradas se conservan sin arco.",
+    "empty": "Esta campaña aún no tiene arcos.",
+    "add": "Añadir arco",
+    "namePlaceholder": "Nombre (opcional)",
+    "nameLabel": "Nombre del arco",
+    "save": "Guardar nombre",
+    "entries": "Entradas: {{count}}",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Eliminar este arco? Sus entradas se conservan sin arco.",
+    "confirmYes": "Sí, eliminar",
+    "errors": {
+      "unauthorized": "Debes iniciar sesión.",
+      "forbidden": "Solo un máster de esta campaña puede gestionar los arcos.",
+      "notFound": "Arco o campaña no encontrados.",
+      "unknown": "Algo ha ido mal. Inténtalo de nuevo.",
+      "validation": "Revisa los campos del formulario.",
+      "nameTooLong": "El nombre es demasiado largo."
     }
   }
 }

@@ -1,0 +1,26 @@
+{
+  "importedBy": "id, email or name of the user the entries are attributed to",
+  "campaigns": {
+    "Name of a campaign in the Excel": "id (or exact name) of that campaign in the app",
+    "A campaign that is not in the app": null
+  },
+  "players": {
+    "Name of a player in the Excel": "id (or email, or name) of their account",
+    "A player that is not in the app": null
+  },
+  "skills": {
+    "Excel text, as written (case and spaces do not matter)": "KEY_IN_THE_SYSTEM_CATALOGUE",
+    "PERCEPCION": "PERCEPTION",
+    "LORE": "LORE",
+    "DYING": "DYING",
+    "A rare or homebrew text": "CUSTOM_SKILL: text shown after the name"
+  },
+  "skipPairs": [
+    "Player in the Excel|Campaign in the Excel"
+  ],
+  "campaignSkills": {
+    "A campaign in the Excel": {
+      "A text that means something else in its system": "KEY_IN_THAT_SYSTEM"
+    }
+  }
+}

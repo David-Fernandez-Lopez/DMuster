@@ -10,6 +10,7 @@ import {
 } from "@/lib/availabilityHorizon";
 import { hashPassword } from "@/lib/passwordHash";
 import { prisma } from "@/lib/prisma";
+import type { ColorVision } from "@/lib/colorVision";
 import type { Theme } from "@/lib/theme";
 
 /** Prisma error code raised on a unique-constraint violation. */
@@ -131,6 +132,37 @@ export async function updateUserTheme(
     return { ok: true };
   } catch (error) {
     console.error("[PROFILE/UPDATE_THEME] Failed to update user theme:", error);
+    return { ok: false, error: "profile.errors.updateFailed" };
+  }
+}
+
+/** Result of a colour-vision update. `error` holds an i18n key on failure. */
+export type UpdateColorVisionResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Persists which colour-vision palette the user wants (`null` = regular colours).
+ * Failures are logged server-side and returned as a friendly i18n error key
+ * rather than thrown.
+ *
+ * @param {string} userId - Id of the user whose preference is being updated.
+ * @param {ColorVision | null} colorVision - The vision type, or null for none.
+ * @returns {Promise<UpdateColorVisionResult>} Success, or an error key
+ *   (`profile.errors.updateFailed`).
+ */
+export async function updateUserColorVision(
+  userId: string,
+  colorVision: ColorVision | null,
+): Promise<UpdateColorVisionResult> {
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { colorVision },
+      select: { id: true },
+    });
+
+    return { ok: true };
+  } catch (error) {
+    console.error("[PROFILE/UPDATE_COLOR_VISION] Failed to update colour vision:", error);
     return { ok: false, error: "profile.errors.updateFailed" };
   }
 }
