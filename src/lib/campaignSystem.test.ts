@@ -2,6 +2,10 @@ import { createCampaign, listSystemOptions, updateCampaign } from "@/lib/campaig
 import { prisma } from "@/lib/prisma";
 import { campaignSchema } from "@/lib/validation/campaign";
 
+// campaignService reads today's date through @/lib/today, which validates the environment.
+jest.mock("@/lib/today", () => ({ todayIso: () => "2026-10-25" }));
+jest.mock("@/lib/env", () => ({ env: { APP_TIMEZONE: "Europe/Madrid" } }));
+
 // The generated Prisma client is ESM and uses `import.meta.url`, which ts-jest
 // cannot parse — same stand-in as the other service tests.
 jest.mock("@/generated/prisma/client", () => ({
